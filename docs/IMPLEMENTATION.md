@@ -217,3 +217,21 @@ outputs > 20 MB go to `reports/raw/` (gitignored).
 - Downloaded files are untrusted data: do not execute code from them without reading it first; prefer vendoring
   the minimal model-definition code (keep licence headers) over `trust_remote_code`.
 - Keep GPU memory per process under ~10 GB (GPU 5 is shared by several contributors).
+
+## 11. Service configuration (environment variables)
+
+| Var | Used by | Default / example |
+|---|---|---|
+| `FA_DB_DSN` | api, search, engine | `host=db,db-standby1,db-standby2 dbname=faceauth user=faceauth_api target_session_attrs=read-write` (search/engine: `user=faceauth_ro`, may add `target_session_attrs=any`) |
+| `FA_DB_PASSWORD_FILE` | api, search, engine | `/run/secrets/db_api_password` (search/engine: `db_ro_password`) |
+| `FA_KMS_DB_DSN`, `FA_KMS_DB_PASSWORD_FILE` | kms | `host=db,db-standby1,db-standby2 dbname=kms user=kms target_session_attrs=read-write`, `/run/secrets/db_kms_password` |
+| `FA_KMS_URL`, `FA_KMS_TOKEN_FILE` | api, search | `http://kms:8003`, `/run/secrets/kms_token_api` (search: `kms_token_search`) |
+| `FA_SEARCH_URLS` | api | `http://search-1:8002,http://search-2:8002` |
+| `FA_ENGINE_URLS` | api | `http://engine:8001` |
+| `FA_RECOG_MODEL` | api, search, engine | `kprpe_vitb_wf12m` (active version from `model_versions`; vector tag `"<name>@<version>"`) |
+| `FA_MODELS_DIR`, `FA_RELEASE_PUB` | engine | `/app/data/models`, `/run/secrets/release_pub` |
+| thresholds | api | `FA_T_ID`, `FA_MARGIN`, `FA_T_DUP`, `FA_T_SAME`, `FA_CONSENT_VERSION`, `FA_HIGH_RISK_ACTIONS`, `FA_ENROLL_MIN_DIRS` |
+
+DB roles: `faceauth_api` (owner of DB `faceauth`), `faceauth_ro` (SELECT on `templates`, `template_events`,
+`model_versions` only), `kms` (owner of DB `kms`; no access to `faceauth`), `replicator`. Neither api nor search
+can read DB `kms`. Ports: api 8000, engine 8001, search 8002, kms 8003, gateway 8443 (TLS, mTLS required).
