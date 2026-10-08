@@ -1,0 +1,39 @@
+# Base file: networks, secrets, tester. Services live in deploy/compose.*.yml (merged via COMPOSE_FILE in .env).
+# GPU policy: only host GPU 5 is ever reserved.
+name: faceauth
+
+networks:
+  edge: {}                      # terminals -> gateway (mTLS)
+  internal: { internal: true }  # gateway/api/engine/search/kms/db; no egress
+
+secrets:
+  ca_crt: { file: ./secrets/ca.crt }
+  gateway_crt: { file: ./secrets/gateway.crt }
+  gateway_key: { file: ./secrets/gateway.key }
+  release_pub: { file: ./secrets/release.pub }
+  approval_key: { file: ./secrets/approval.key }
+  approval_pub: { file: ./secrets/approval.pub }
+  account_pub: { file: ./secrets/account.pub }
+  kms_master_key: { file: ./secrets/kms_master.key }
+  kms_token_api: { file: ./secrets/kms_token_api }
+  kms_token_search: { file: ./secrets/kms_token_search }
+  admin_token: { file: ./secrets/admin_token }
+  db_postgres_password: { file: ./secrets/db_postgres_password }
+  db_api_password: { file: ./secrets/db_api_password }
+  db_ro_password: { file: ./secrets/db_ro_password }
+  db_kms_password: { file: ./secrets/db_kms_password }
+  db_repl_password: { file: ./secrets/db_repl_password }
+
+services:
+  # Runs tests / evals / load generation inside the networks. `docker compose run --rm tester pytest ...`
+  tester:
+    image: faceauth:dev
+    profiles: [tools]
+    working_dir: /app
+    volumes: [".:/app", "./data:/app/data"]
+    networks: [edge, internal]
+    shm_size: 16gb
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, device_ids: ["5"], capabilities: [gpu] }]

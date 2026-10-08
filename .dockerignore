@@ -1,0 +1,6 @@
+data
+secrets
+reports
+.git
+docs/*.docx
+**/__pycache__

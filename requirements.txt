@@ -1,0 +1,26 @@
+# Pinned (RFP/Design: version-pinned, reproducible builds). torch 2.12.0+cu130 comes from the base image.
+onnxruntime-gpu==1.30.0
+faiss-gpu-cu12==1.14.1.post1
+opencv-python-headless==5.0.0.93
+scikit-image==0.26.0
+scipy==1.18.1
+scikit-learn==1.9.1
+pandas==3.0.6
+matplotlib==3.11.2
+fastapi==0.142.4
+uvicorn[standard]==0.54.0
+httpx==0.28.1
+msgpack==1.2.3
+psycopg[binary]==3.3.6
+psycopg-pool==3.3.3
+cryptography==50.0.2
+timm==1.0.30
+einops==0.8.2
+transformers==5.19.0
+omegaconf==2.3.1
+huggingface_hub==1.33.0
+safetensors==0.8.0
+onnx==1.23.2
+pillow==12.2.0
+tqdm==4.70.1
+pytest==9.1.1

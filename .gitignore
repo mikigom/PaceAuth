@@ -1,0 +1,7 @@
+data/
+secrets/
+__pycache__/
+*.pyc
+.pytest_cache/
+reports/raw/
+*.egg-info/
