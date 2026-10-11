@@ -220,6 +220,11 @@ outputs > 20 MB go to `reports/raw/` (gitignored).
 
 ## 11. Service configuration (environment variables)
 
+Deviations recorded after the build phase: KMS `DELETE` is idempotent and leaves a tombstone (encrypt then 410);
+registry entries carry `dir`, `primary`, `model_json_sha256`; after a DB failover `synchronous_standby_names` is
+`ANY 1 (<other two nodes>)`; `approvals` records non-biometric approvals too (`subject_id` nullable, `account_id`,
+migration `deploy/db/migrations/001`); search replicas rebuild when a failover rewrote already-applied outbox events.
+
 | Var | Used by | Default / example |
 |---|---|---|
 | `FA_DB_DSN` | api, search, engine | `host=db,db-standby1,db-standby2 dbname=faceauth user=faceauth_api target_session_attrs=read-write` (search/engine: `user=faceauth_ro`, may add `target_session_attrs=any`) |
@@ -231,6 +236,14 @@ outputs > 20 MB go to `reports/raw/` (gitignored).
 | `FA_RECOG_MODEL` | api, search, engine | `kprpe_vitb_wf12m` (active version from `model_versions`; vector tag `"<name>@<version>"`) |
 | `FA_MODELS_DIR`, `FA_RELEASE_PUB` | engine | `/app/data/models`, `/run/secrets/release_pub` |
 | thresholds | api | `FA_T_ID`, `FA_MARGIN`, `FA_T_DUP`, `FA_T_SAME`, `FA_CONSENT_VERSION`, `FA_HIGH_RISK_ACTIONS`, `FA_ENROLL_MIN_DIRS` |
+| `FA_TRUSTED_PROXIES` | api | `gateway`: X-Client-Cert headers are honoured only from this TCP peer |
+| `FA_APPROVAL_KEY_FILE`, `FA_ACCOUNT_PUB_FILE`, `FA_ADMIN_TOKEN_FILE` | api (admin token also engine) | `/run/secrets/approval_key`, `account_pub`, `admin_token` |
+| `FA_KMS_MASTER_KEY_FILE`, `FA_KMS_API_TOKEN_FILE`, `FA_KMS_SEARCH_TOKEN_FILE` | kms | `/run/secrets/kms_master_key`, `kms_token_api`, `kms_token_search` |
+| `FA_ENGINE_TRT` | engine | `1`: SCRFD as a TensorRT fp16 engine built at start into tmpfs (`0`: CUDA EP) |
+
+Services using the multi-host DSN set `dns_opt: [timeout:1, attempts:1]` (a stopped container's name otherwise stalls
+Docker DNS ~10 s during failover) and libpq keepalives. Never cancel a write COMMIT (a cancelled synchronous-replication
+wait is reported as committed): use connection timeouts, and treat an unknown outcome as a rejection.
 
 DB roles: `faceauth_api` (owner of DB `faceauth`), `faceauth_ro` (SELECT on `templates`, `template_events`,
 `model_versions` only), `kms` (owner of DB `kms`; no access to `faceauth`), `replicator`. Neither api nor search

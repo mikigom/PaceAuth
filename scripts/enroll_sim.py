@@ -75,8 +75,9 @@ def same_person_min_cos(frames):
     return float((e @ (m / np.linalg.norm(m))).min()), an
 
 
-def capture(sim, pipe, pool, scenes, rng, speed, react, fps, guide):
-    """One guided capture. -> (done, sensor seconds, frames kept [(dir, (idx, enc))], ticks)."""
+def capture(sim, pipe, pool, scenes, rng, speed, react, fps, guide, trace=None):
+    """One guided capture. -> (done, sensor seconds, frames kept [(dir, (idx, enc))], ticks).
+    trace: optional dict filled with tick -> BIWI frame id shown (diagnostics)."""
     from faceauth.terminal.pipeline import wire_frame
     head = rng.normal(0, 3, 2).astype(np.float32)                       # starts roughly frontal
     poses = np.stack([p for p, _, _ in pool])
@@ -93,9 +94,12 @@ def capture(sim, pipe, pool, scenes, rng, speed, react, fps, guide):
             head = head + step * min(1.0, speed / fps / max(dist, 1e-6)) + rng.normal(0, 0.7, 2).astype(np.float32)
         near = np.argsort(np.linalg.norm(poses - head, axis=1))[:3]      # closest real frames of this person
         i = int(rng.choice(near))
-        if i not in scenes:
+        if trace is not None:
+            trace[tick] = pool[i][2]
+        if i not in scenes:   # the subject = largest face (BIWI frames can show people in the background)
             dets = pipe.detector.detect(pool[i][1])
-            scenes[i] = sim.scene("live", pool[i][1], dets[0]["kps"], np.random.default_rng(i), 600.0) if dets else None
+            big = max(dets, key=lambda d: (d["bbox"][2] - d["bbox"][0]) * (d["bbox"][3] - d["bbox"][1])) if dets else None
+            scenes[i] = sim.scene("live", pool[i][1], big["kps"], np.random.default_rng(i), 600.0) if big else None
         if scenes[i] is None:
             guide.feed(None, False, t=t, reasons=("no_face",))
         else:
@@ -125,9 +129,12 @@ def trials(job):
         rec = {"subject": subject, "trial": k, "speed_deg_s": speed, "react_s": react, "attempts": []}
         for attempt in range(MAX_ATTEMPTS):
             guide = Guide(timeout_s=TIMEOUT_S)
+            done, sensor_s, kept, ticks = capture(sim, pipe, pool, scenes, rng, speed, react, fps, guide)
+            # Simulation shortcut: a real terminal opens the session before capturing (Design §2) and the capture takes
+            # sensor_s; here the simulated capture runs far slower than real time on a shared GPU, so the session is
+            # opened right after it to keep the 180 s session TTL from failing trials that are 10-30 s in sensor time.
             session = client.create_session("enroll", "enroll")
             assertion = make_account_assertion(account, session["challenge"], "password", ttl_s=180)
-            done, sensor_s, kept, ticks = capture(sim, pipe, pool, scenes, rng, speed, react, fps, guide)
             a = {"captured": done, "sensor_s": sensor_s, "ticks": ticks, "coverage": guide.coverage()}
             if done:
                 frames = [enc for _, (_, enc) in kept]
@@ -166,7 +173,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--trials", type=int, default=10)
     ap.add_argument("--workers", type=int, default=9)
-    ap.add_argument("--fps", type=float, default=15.0, help="terminal analysis rate (frames analysed per second)")
+    ap.add_argument("--fps", type=float, default=10.0, help="terminal analysis rate (frames analysed per second)")
     ap.add_argument("--seed", type=int, default=0)
     a = ap.parse_args()
     from faceauth.sim.biwi import SUBJECTS

@@ -1,0 +1,804 @@
+{
+ "images": [
+  {
+   "image": "faceauth:dev",
+   "id": "sha256:42bfd59db10fe71558a59fff9cc0b04b89616c8efb0439759ee8506d049688ad",
+   "digest": "",
+   "created": "2026-10-11T14:40:09.901542756Z"
+  },
+  {
+   "image": "pytorch/pytorch:2.12.0-cuda13.0-cudnn9-devel",
+   "id": "sha256:9f53f3dd7ee4506952eb843d5a166afbd36c896aa1f347f5b80960409329067f",
+   "digest": "pytorch/pytorch@sha256:6961740947d7eb3a2f25ce6a6f28aff6383a48d3ceec56257d5e9ebc02d3b92c",
+   "created": "2026-05-13T17:44:34.36833285Z"
+  },
+  {
+   "image": "postgres:16-alpine",
+   "id": "sha256:d7ead3a9d3fe4f2906d95e00edc8b36b65749a00a49c47285a35d2be95e876dd",
+   "digest": "postgres@sha256:4327b9fd295502f326f44153a1045a7170ddbfffed1c3829798328556cfd09e2",
+   "created": "2026-01-28T02:32:08.166838897Z"
+  },
+  {
+   "image": "nginx:alpine",
+   "id": "sha256:5bd7bd52e5bcab15a093466b90e37472b0d0c0081052522afb8924cbdaf15f56",
+   "digest": "nginx@sha256:582c496ccf79d8aa6f8203a79d32aaf7ffd8b13362c60a701a2f9ac64886c93d",
+   "created": "2026-04-07T17:49:12.015849477Z"
+  }
+ ],
+ "python_packages": [
+  {
+   "name": "annotated-doc",
+   "version": "0.0.5"
+  },
+  {
+   "name": "annotated-types",
+   "version": "0.8.0"
+  },
+  {
+   "name": "antlr4-python3-runtime",
+   "version": "4.9.3"
+  },
+  {
+   "name": "anyio",
+   "version": "4.15.1"
+  },
+  {
+   "name": "asttokens",
+   "version": "3.0.1"
+  },
+  {
+   "name": "build",
+   "version": "1.5.0"
+  },
+  {
+   "name": "certifi",
+   "version": "2026.4.22"
+  },
+  {
+   "name": "cffi",
+   "version": "2.1.1"
+  },
+  {
+   "name": "charset-normalizer",
+   "version": "3.4.7"
+  },
+  {
+   "name": "click",
+   "version": "8.5.0"
+  },
+  {
+   "name": "cloudpickle",
+   "version": "3.1.2"
+  },
+  {
+   "name": "cmake",
+   "version": "4.3.2"
+  },
+  {
+   "name": "contourpy",
+   "version": "1.4.0"
+  },
+  {
+   "name": "cryptography",
+   "version": "50.0.2"
+  },
+  {
+   "name": "cuda-bindings",
+   "version": "13.0.3"
+  },
+  {
+   "name": "cuda-pathfinder",
+   "version": "1.2.2"
+  },
+  {
+   "name": "cuda-toolkit",
+   "version": "13.0.2"
+  },
+  {
+   "name": "cycler",
+   "version": "0.12.1"
+  },
+  {
+   "name": "decorator",
+   "version": "5.2.1"
+  },
+  {
+   "name": "dnspython",
+   "version": "2.8.0"
+  },
+  {
+   "name": "einops",
+   "version": "0.8.2"
+  },
+  {
+   "name": "executing",
+   "version": "2.2.1"
+  },
+  {
+   "name": "expecttest",
+   "version": "0.3.0"
+  },
+  {
+   "name": "faiss-gpu-cu12",
+   "version": "1.14.1.post1"
+  },
+  {
+   "name": "fastapi",
+   "version": "0.142.4"
+  },
+  {
+   "name": "filelock",
+   "version": "3.29.0"
+  },
+  {
+   "name": "flatbuffers",
+   "version": "25.12.19"
+  },
+  {
+   "name": "fonttools",
+   "version": "4.66.1"
+  },
+  {
+   "name": "fsspec",
+   "version": "2026.4.0"
+  },
+  {
+   "name": "h11",
+   "version": "0.16.0"
+  },
+  {
+   "name": "hf-xet",
+   "version": "1.7.0"
+  },
+  {
+   "name": "httpcore",
+   "version": "1.0.9"
+  },
+  {
+   "name": "httptools",
+   "version": "0.9.0"
+  },
+  {
+   "name": "httpx",
+   "version": "0.28.1"
+  },
+  {
+   "name": "huggingface_hub",
+   "version": "1.33.0"
+  },
+  {
+   "name": "hypothesis",
+   "version": "6.152.7"
+  },
+  {
+   "name": "idna",
+   "version": "3.15"
+  },
+  {
+   "name": "ImageIO",
+   "version": "2.38.1"
+  },
+  {
+   "name": "importlib_metadata",
+   "version": "9.0.0"
+  },
+  {
+   "name": "iniconfig",
+   "version": "2.3.1"
+  },
+  {
+   "name": "ipython",
+   "version": "9.13.0"
+  },
+  {
+   "name": "ipython_pygments_lexers",
+   "version": "1.1.1"
+  },
+  {
+   "name": "jedi",
+   "version": "0.20.0"
+  },
+  {
+   "name": "Jinja2",
+   "version": "3.1.6"
+  },
+  {
+   "name": "joblib",
+   "version": "1.6.0"
+  },
+  {
+   "name": "kiwisolver",
+   "version": "1.5.1"
+  },
+  {
+   "name": "lazy-loader",
+   "version": "0.6"
+  },
+  {
+   "name": "lintrunner",
+   "version": "0.13.1"
+  },
+  {
+   "name": "markdown-it-py",
+   "version": "4.2.0"
+  },
+  {
+   "name": "MarkupSafe",
+   "version": "3.0.3"
+  },
+  {
+   "name": "matplotlib",
+   "version": "3.11.2"
+  },
+  {
+   "name": "matplotlib-inline",
+   "version": "0.2.2"
+  },
+  {
+   "name": "mdurl",
+   "version": "0.1.2"
+  },
+  {
+   "name": "ml_dtypes",
+   "version": "0.6.0"
+  },
+  {
+   "name": "mpmath",
+   "version": "1.3.0"
+  },
+  {
+   "name": "msgpack",
+   "version": "1.2.3"
+  },
+  {
+   "name": "narwhals",
+   "version": "2.27.1"
+  },
+  {
+   "name": "networkx",
+   "version": "3.6.1"
+  },
+  {
+   "name": "ninja",
+   "version": "1.13.0"
+  },
+  {
+   "name": "numpy",
+   "version": "2.4.4"
+  },
+  {
+   "name": "nvidia-cublas",
+   "version": "13.1.1.3"
+  },
+  {
+   "name": "nvidia-cublas-cu12",
+   "version": "12.9.2.10"
+  },
+  {
+   "name": "nvidia-cuda-cupti",
+   "version": "13.0.85"
+  },
+  {
+   "name": "nvidia-cuda-nvrtc",
+   "version": "13.0.88"
+  },
+  {
+   "name": "nvidia-cuda-nvrtc-cu12",
+   "version": "12.9.86"
+  },
+  {
+   "name": "nvidia-cuda-runtime",
+   "version": "13.0.96"
+  },
+  {
+   "name": "nvidia-cuda-runtime-cu12",
+   "version": "12.9.79"
+  },
+  {
+   "name": "nvidia-cudnn-cu13",
+   "version": "9.20.0.48"
+  },
+  {
+   "name": "nvidia-cufft",
+   "version": "12.0.0.61"
+  },
+  {
+   "name": "nvidia-cufile",
+   "version": "1.15.1.6"
+  },
+  {
+   "name": "nvidia-curand",
+   "version": "10.4.0.35"
+  },
+  {
+   "name": "nvidia-cusolver",
+   "version": "12.0.4.66"
+  },
+  {
+   "name": "nvidia-cusparse",
+   "version": "12.6.3.3"
+  },
+  {
+   "name": "nvidia-cusparselt-cu13",
+   "version": "0.8.1"
+  },
+  {
+   "name": "nvidia-nccl-cu13",
+   "version": "2.29.7"
+  },
+  {
+   "name": "nvidia-nvjitlink",
+   "version": "13.0.88"
+  },
+  {
+   "name": "nvidia-nvshmem-cu13",
+   "version": "3.4.5"
+  },
+  {
+   "name": "nvidia-nvtx",
+   "version": "13.0.85"
+  },
+  {
+   "name": "omegaconf",
+   "version": "2.3.1"
+  },
+  {
+   "name": "onnx",
+   "version": "1.23.2"
+  },
+  {
+   "name": "onnxruntime-gpu",
+   "version": "1.30.0"
+  },
+  {
+   "name": "opencv-python-headless",
+   "version": "5.0.0.93"
+  },
+  {
+   "name": "opentelemetry-api",
+   "version": "1.45.1"
+  },
+  {
+   "name": "optree",
+   "version": "0.19.1"
+  },
+  {
+   "name": "packaging",
+   "version": "26.2"
+  },
+  {
+   "name": "pandas",
+   "version": "3.0.6"
+  },
+  {
+   "name": "parso",
+   "version": "0.8.7"
+  },
+  {
+   "name": "pexpect",
+   "version": "4.9.0"
+  },
+  {
+   "name": "pillow",
+   "version": "12.2.0"
+  },
+  {
+   "name": "pip",
+   "version": "26.1.1"
+  },
+  {
+   "name": "pluggy",
+   "version": "1.6.0"
+  },
+  {
+   "name": "prompt_toolkit",
+   "version": "3.0.52"
+  },
+  {
+   "name": "protobuf",
+   "version": "7.36.2"
+  },
+  {
+   "name": "psutil",
+   "version": "7.2.2"
+  },
+  {
+   "name": "psycopg",
+   "version": "3.3.6"
+  },
+  {
+   "name": "psycopg-binary",
+   "version": "3.3.6"
+  },
+  {
+   "name": "psycopg-pool",
+   "version": "3.3.3"
+  },
+  {
+   "name": "ptyprocess",
+   "version": "0.7.0"
+  },
+  {
+   "name": "pure_eval",
+   "version": "0.2.3"
+  },
+  {
+   "name": "pycparser",
+   "version": "3.11"
+  },
+  {
+   "name": "pydantic",
+   "version": "2.14.0"
+  },
+  {
+   "name": "pydantic_core",
+   "version": "2.50.0"
+  },
+  {
+   "name": "Pygments",
+   "version": "2.20.0"
+  },
+  {
+   "name": "pyparsing",
+   "version": "3.3.3"
+  },
+  {
+   "name": "pyproject_hooks",
+   "version": "1.2.0"
+  },
+  {
+   "name": "pytest",
+   "version": "9.1.1"
+  },
+  {
+   "name": "python-dateutil",
+   "version": "2.9.0.post0"
+  },
+  {
+   "name": "python-dotenv",
+   "version": "1.2.4"
+  },
+  {
+   "name": "python-etcd",
+   "version": "0.4.5"
+  },
+  {
+   "name": "PyYAML",
+   "version": "6.0.3"
+  },
+  {
+   "name": "regex",
+   "version": "2026.9.29"
+  },
+  {
+   "name": "requests",
+   "version": "2.34.0"
+  },
+  {
+   "name": "rich",
+   "version": "15.0.0"
+  },
+  {
+   "name": "safetensors",
+   "version": "0.8.0"
+  },
+  {
+   "name": "scikit-image",
+   "version": "0.26.0"
+  },
+  {
+   "name": "scikit-learn",
+   "version": "1.9.1"
+  },
+  {
+   "name": "scipy",
+   "version": "1.18.1"
+  },
+  {
+   "name": "setuptools",
+   "version": "81.0.0"
+  },
+  {
+   "name": "shellingham",
+   "version": "1.5.4"
+  },
+  {
+   "name": "six",
+   "version": "1.17.0"
+  },
+  {
+   "name": "sortedcontainers",
+   "version": "2.4.0"
+  },
+  {
+   "name": "spin",
+   "version": "0.18"
+  },
+  {
+   "name": "stack-data",
+   "version": "0.6.3"
+  },
+  {
+   "name": "starlette",
+   "version": "1.7.0"
+  },
+  {
+   "name": "sympy",
+   "version": "1.14.0"
+  },
+  {
+   "name": "tensorrt_cu13",
+   "version": "10.16.1.11"
+  },
+  {
+   "name": "tensorrt_cu13_bindings",
+   "version": "10.16.1.11"
+  },
+  {
+   "name": "tensorrt_cu13_libs",
+   "version": "10.16.1.11"
+  },
+  {
+   "name": "threadpoolctl",
+   "version": "3.7.0"
+  },
+  {
+   "name": "tifffile",
+   "version": "2026.9.20"
+  },
+  {
+   "name": "timm",
+   "version": "1.0.30"
+  },
+  {
+   "name": "tokenizers",
+   "version": "0.23.3"
+  },
+  {
+   "name": "torch",
+   "version": "2.12.0+cu130"
+  },
+  {
+   "name": "torchaudio",
+   "version": "2.11.0+cu130"
+  },
+  {
+   "name": "torchelastic",
+   "version": "0.2.2"
+  },
+  {
+   "name": "torchvision",
+   "version": "0.27.0+cu130"
+  },
+  {
+   "name": "tqdm",
+   "version": "4.70.1"
+  },
+  {
+   "name": "traitlets",
+   "version": "5.15.0"
+  },
+  {
+   "name": "transformers",
+   "version": "5.19.0"
+  },
+  {
+   "name": "triton",
+   "version": "3.7.0"
+  },
+  {
+   "name": "typer",
+   "version": "0.27.3"
+  },
+  {
+   "name": "typing_extensions",
+   "version": "4.16.0"
+  },
+  {
+   "name": "typing-inspection",
+   "version": "0.4.4"
+  },
+  {
+   "name": "urllib3",
+   "version": "2.7.0"
+  },
+  {
+   "name": "uv",
+   "version": "0.11.14"
+  },
+  {
+   "name": "uvicorn",
+   "version": "0.54.0"
+  },
+  {
+   "name": "uvloop",
+   "version": "0.23.0"
+  },
+  {
+   "name": "watchfiles",
+   "version": "1.3.0"
+  },
+  {
+   "name": "wcwidth",
+   "version": "0.7.0"
+  },
+  {
+   "name": "websockets",
+   "version": "17.2"
+  },
+  {
+   "name": "wheel",
+   "version": "0.47.0"
+  },
+  {
+   "name": "zipp",
+   "version": "3.23.1"
+  }
+ ],
+ "models": [
+  {
+   "name": "6drepnet",
+   "version": "1",
+   "kind": "headpose",
+   "sha256": {
+    "weights": "9bdcd0e072df0d21e92288b40ea1d1b3cf7173c44728ab9c45c4d673f361e018"
+   },
+   "source": "https://cloud.ovgu.de/s/Q67RnLDy6JKLRWm/download/6DRepNet_300W_LP_AFLW2000.pth (default weights of the official pip package, https://github.com/thohemp/6DRepNet @464b2ba sixdrepnet/regressor.py); byte-identical to https://huggingface.co/osanseviero/6DRepNet_300W_LP_AFLW2000 model.pth (same sha256)",
+   "license": "Code and weights: MIT (thohemp/6DRepNet LICENSE, Copyright (c) 2022 Thorsten Hempel; vendored inference code faceauth/models/vendor/sixdrepnet keeps the notice). The weights carry no separate licence. RESTRICTION FLAG - training data is research-only: 300W-LP (synthesised by 3DDFA from 300-W/iBUG images; iBUG 300-W: 'The data are provided for research purposes only. Commercial use (i.e., use in training commercial algorithms) is not allowed.'). Commercial deployment of these weights is NOT cleared; needs legal review or retraining on licensed data (RFP \u00a72)."
+  },
+  {
+   "name": "6drepnet360",
+   "version": "1",
+   "kind": "headpose",
+   "sha256": {
+    "weights": "3ee08f1e04b8d452a6c4a40926a6f38051894ae6d0aaa6d191fe6d8bc6e4f9c6"
+   },
+   "source": "https://cloud.ovgu.de/s/TewGC9TDLGgKkmS/download/6DRepNet360_Full-Rotation_300W_LP+Panoptic.pth (README 'Models' table of https://github.com/thohemp/6DRepNet360 @b06e4fed, row '6DRepNet360 Full Rotation: Fine-tuned on 300W-LP + Panoptic')",
+   "license": "Code and weights: MIT (thohemp/6DRepNet360 LICENSE, Copyright (c) 2023 Thorsten Hempel; vendored inference code faceauth/models/vendor/sixdrepnet keeps the notice). The weights carry no separate licence. RESTRICTION FLAG - training data is research-only: 300W-LP (synthesised by 3DDFA from 300-W/iBUG images; iBUG 300-W: 'The data are provided for research purposes only. Commercial use (i.e., use in training commercial algorithms) is not allowed.'); CMU Panoptic Studio ('shared only for research purposes, and this cannot be used for any commercial purposes'). Commercial deployment of these weights is NOT cleared; needs legal review or retraining on licensed data (RFP \u00a72)."
+  },
+  {
+   "name": "adaface_ir101_wf12m",
+   "version": "1",
+   "kind": "recognition",
+   "sha256": {
+    "weights": "2ea535a43877bd3de8091903935c783ce335be66a9f8917fae9a7a18ae4bbf56"
+   },
+   "source": "https://huggingface.co/minchul/cvlface_adaface_ir101_webface12m (revision 54f602a0737bd1ee4a4e7e9fd089a485f397fefd) model.safetensors (260,980,552 B; sha256 equals the HF LFS oid). The repo's pretrained_model/model.pt (pickle, LFS sha256 e312d792...) was not downloaded.",
+   "license": "NON-COMMERCIAL / ACADEMIC RESEARCH ONLY. The weights carry no licence of their own; model card: 'Please cite the orignal paper and follow the license of the training dataset.' Training data WebFace12M is a subset of WebFace260M, whose usage rules state: '1. This dataset and its subsets can only be used for academic research. 2. Applicants are not allowed to use this dataset and its subsets for any commercial purposes.' Code (CVLFace / AdaFace, vendored in faceauth/models/vendor/cvlface_iresnet.py): MIT. Commercial use requires permission from the data owners or own lawful training (RFP \u00a72)."
+  },
+  {
+   "name": "farl_wflw_448",
+   "version": "1",
+   "kind": "landmarks",
+   "sha256": {
+    "jit": "0179c9dcce372ae27484463a750dc007e7444574372b97b67fa3baf74511a280"
+   },
+   "source": "https://github.com/FacePerceiver/facer/releases/download/models-v1/face_alignment.farl.wflw.main_ema_jit.pt (facer commit ddd35c76ff840174b8a5403ad1c1255e37b8782b, config 'wflw/448'; FaRL https://github.com/FacePerceiver/FaRL)",
+   "license": "Code: MIT (facer (c) 2022 FacePerceiver; FaRL (c) Microsoft Corporation). Weights: published in the facer GitHub release with no separate weight licence (repository licence MIT). Training data: backbone pre-trained on LAION-Face 20M (web images from LAION-400M; LAION-Face id list CC-BY 4.0, images keep their original copyrights), fine-tuned on WFLW (WIDER FACE images, CC BY-NC-ND). RESTRICTION FLAG: fine-tuning data is non-commercial (NC-ND); commercial deployment of these weights needs legal clearance or retraining on licensed data."
+  },
+  {
+   "name": "insightface_r100_glint360k",
+   "version": "1",
+   "kind": "recognition",
+   "sha256": {
+    "onnx": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf"
+   },
+   "source": "InsightFace model-zoo pack antelopev2: https://github.com/deepinsight/insightface/releases/download/model-zoo/antelopev2.zip (360,662,982 B, sha256 8e182f14fc6e80b3bfa375b33eb6cff7ee05d8ef7633e738d1c89021dcf0c5c5, downloaded 2026-10-11), member antelopev2/glintr100.onnx (260,665,334 B) extracted unmodified.",
+   "license": "NON-COMMERCIAL RESEARCH ONLY. insightface model_zoo/README.md: 'ALL models are available for non-commercial research purposes only.' InsightFace README (License): 'The training data containing the annotation (and the models trained with these data) are available for non-commercial research purposes only.' Commercial licensing of the open-sourced recognition models: recognition-oss-pack@insightface.ai. Training data Glint360K (InsightFace Partial FC release, celebrity web images) falls under the same non-commercial policy."
+  },
+  {
+   "name": "insightface_r50_wf600k",
+   "version": "1",
+   "kind": "recognition",
+   "sha256": {
+    "onnx": "4c06341c33c2ca1f86781dab0e829f88ad5b64be9fba56e56bc9ebdefc619e43"
+   },
+   "source": "InsightFace model-zoo pack buffalo_l: https://github.com/deepinsight/insightface/releases/download/model-zoo/buffalo_l.zip (288,621,354 B, sha256 80ffe37d8a5940d59a7384c201a2a38d4741f2f3c51eef46ebb28218a7b0ca2f, downloaded 2026-10-11), member w600k_r50.onnx (174,383,860 B) extracted unmodified. Same file is reused byte-for-byte by the newer raccoon/cheetah packs (docs/INSIGHTFACE_SURVEY.md).",
+   "license": "NON-COMMERCIAL RESEARCH ONLY. insightface model_zoo/README.md: 'ALL models are available for non-commercial research purposes only.' InsightFace README (License): 'The training data containing the annotation (and the models trained with these data) are available for non-commercial research purposes only.' ... 'For open-sourced face recognition models (e.g., buffalo_l package), please contact recognition-oss-pack@insightface.ai for licensing.' Training data WebFace (WebFace260M subset): academic research only, no commercial use. Commercial use requires a licence from InsightFace or own lawful training (RFP \u00a72)."
+  },
+  {
+   "name": "kprpe_vitb_wf12m",
+   "version": "1",
+   "kind": "recognition",
+   "sha256": {
+    "aligner": "80b6e922e4c76c10d5e24061fe47cd96112d18689bf5ae7e34af52e641c18c4a",
+    "weights": "99d16ed4aac0fdf0fcc82526b9b70703f3ec8c3041bf1bf44bd22751536e65db"
+   },
+   "source": "https://huggingface.co/minchul/cvlface_adaface_vit_base_kprpe_webface12m (revision daefd5012d369588bd214fbaf4cc6b1d286e7066) model.safetensors; aligner = https://huggingface.co/minchul/cvlface_DFA_mobilenet (revision 8317e6dda53d91e7074979923144c2cc08906a33) model.safetensors",
+   "license": "NON-COMMERCIAL / ACADEMIC RESEARCH ONLY. Weights carry no licence of their own; model cards (both repos): 'Please cite the orignal paper and follow the license of the training dataset.' Training data WebFace12M is a subset of WebFace260M, whose usage rules state: '1. This dataset and its subsets can only be used for academic research. 2. Applicants are not allowed to use this dataset and its subsets for any commercial purposes.' (face-benchmark.org download page). The DFA aligner card names no training dataset. Code (CVLFace, vendored in faceauth/models/vendor/cvlface_*.py): MIT. Commercial use requires permission from the data owners or own lawful training (RFP \u00a72)."
+  },
+  {
+   "name": "pad_rgbdir",
+   "version": "1",
+   "kind": "pad",
+   "sha256": {
+    "weights": "7c05ad9abf62b793b66332d6f366ee1352242bec05e4ebd633c088d6a07a55ed"
+   },
+   "source": "Trained in-house on SYNTHETIC data (faceauth/sim + scripts/train_pad.py, protocol seen); not validated on any real sensor.",
+   "license": "In-house weights; trained on renders of CelebA images -> treat as NON-COMMERCIAL / RESEARCH-ONLY (CelebA: non-commercial research and educational use only). Replace by weights trained on consented real-sensor data before any deployment."
+  },
+  {
+   "name": "pad_rgbdir",
+   "version": "2",
+   "kind": "pad",
+   "sha256": {
+    "weights": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18"
+   },
+   "source": "Trained in-house on SYNTHETIC data (faceauth/sim + scripts/train_pad.py, protocol seen); not validated on any real sensor.",
+   "license": "In-house weights; trained on renders of CelebA images -> treat as NON-COMMERCIAL / RESEARCH-ONLY (CelebA: non-commercial research and educational use only). Replace by weights trained on consented real-sensor data before any deployment."
+  },
+  {
+   "name": "scrfd_34g",
+   "version": "1",
+   "kind": "detector",
+   "sha256": {
+    "onnx": "aa19f0e7f4d120d4cf990086639ab74a0136adceaebd232e0dc4745e0cfd4257"
+   },
+   "source": "https://huggingface.co/immich-app/scrfd_34g_gnkps/resolve/32b5674a7e69b8d741ca6f6969476faab2257add/detection/model.onnx (ONNX export, pytorch 2.1, opset 11). Weights = SCRFD_34G_GNKPS_v2 released by Alibaba DAMO on ModelScope as iic/cv_resnet_facedetection_scrfd10gkps (the id says 10g but the default model was replaced by the 34G GN+kps v2 model, see github.com/modelscope/modelscope/issues/24), pytorch_model.bin sha256 8db579dd6947798a36e8ac2d94fb8c47369b1bcc979bbebd861070f6e91049b5. Verified: all 303 weight initializers of this ONNX equal that checkpoint (exactly or after BatchNorm folding). This is NOT the InsightFace SCRFD_34G release (that one has no keypoint head).",
+   "license": "RESTRICTED - treat as NON-COMMERCIAL / RESEARCH-ONLY until legal review. ModelScope model card and the immich HF mirror declare 'MIT License', but the model card also says the model and code come from InsightFace SCRFD and that the relevant licences must be respected. The weights were trained on WIDER FACE (CC BY-NC-ND 4.0: non-commercial, no derivatives). InsightFace policy: code MIT, models trained on their annotated training data are for non-commercial research purposes only. Commercial use needs written confirmation from the rights holders."
+  }
+ ],
+ "datasets": [
+  {
+   "name": "aflw2000",
+   "version": null,
+   "source": "http://www.cbsr.ia.ac.cn/users/xiangyuzhu/projects/3DDFA/Database/AFLW2000-3D.zip (3DDFA project page, Zhu et al., 'Face Alignment Across Large Poses: A 3D Solution', CVPR 2016); downloaded 2026-10-08",
+   "license": "RESEARCH-ONLY / NON-COMMERCIAL (flag). The 3DDFA page states no licence of its own. AFLW2000-3D = 3DMM fits of the first 2000 images of AFLW (TU Graz), which was distributed only under a signed agreement for non-commercial research; the original AFLW page (lrs.icg.tugraz.at/research/aflw/) is offline (404 on 2026-10-08), so its exact wording could not be re-read. Use for benchmarking only."
+  },
+  {
+   "name": "biwi",
+   "version": null,
+   "source": "Biwi Kinect Head Pose Database (G. Fanelli et al., 'Random Forests for Real Time 3D Face Analysis', IJCV 101(3), 2013; ETH Zurich). The original archive https://data.vision.ee.ethz.ch/cvl/gfanelli/kinect_head_pose_db.tgz returns HTTP 403 and the ETHZurich/biwi_kinect_head_pose HF dataset is only a loader script pointing to it (checked 2026-10-08). Obtained from the unofficial HuggingFace mirror https://huggingface.co/datasets/ZihanWang1029/BIWI (BIWI/BK-1.zip = sequences 01-10, BIWI/BK-2.zip = sequences 11-24; sha256 equal to the HF LFS object ids). The mirror's 'mit' tag is the uploader's and is NOT the dataset licence.",
+   "license": "NON-COMMERCIAL / RESEARCH-ONLY (flag): 'This database is made available for non-commercial use such as university research and education.' (BIWI readme, as quoted on the ETHZurich/biwi_kinect_head_pose dataset card). Cite Fanelli et al. IJCV 2013."
+  },
+  {
+   "name": "celeba",
+   "version": null,
+   "source": "CelebA (Liu, Luo, Wang, Tang, 'Deep Learning Face Attributes in the Wild', ICCV 2015; MMLAB, CUHK, http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html). In-the-wild images: the official 14-part archive Img/img_celeba.7z (parts dated 2022-05-31, 734,003,200 B each except the last) obtained via the third-party HF mirror https://huggingface.co/datasets/noname110/celeba (revision 438b96fa79375870b726cd408a3da1eda4f074c4; Google-Drive export zips CelebA-20240106T040341Z-0NN.zip, LFS sha256 listed in raw/hf_noname110.sha256; the mirror's 'apache-2.0' tag is not the dataset licence), extracted to img_celeba/ (202,599 JPEG). archives/img_align_celeba.zip -> img_align_celeba/. Anno/ (identity_CelebA.txt = the identity labels the authors release on request, list_landmarks_celeba.txt 5-point landmarks of the labelled face in the in-the-wild images, bbox, attributes), Eval/list_eval_partition.txt, README.txt (official).",
+   "license": "NON-COMMERCIAL RESEARCH ONLY, NO REDISTRIBUTION. Official agreement (project page, checked 2026-10-11): 'The CelebA dataset is available for non-commercial research purposes only.' 'All images of the CelebA dataset are obtained from the Internet which are not property of MMLAB' 'You agree not to reproduce, duplicate, copy, sell, trade, resell or exploit for any commercial purposes, any portion of the images and any portion of derived data.' 'You agree not to further copy, publish or distribute any portion of the CelebA dataset. Except, for internal use at a single site within the same organization it is allowed to make copies of the dataset.' 'The face identities are released upon request for research purposes only.' README.txt: 'Their use is RESTRICTED to non-commercial research and educational purposes.' Images are web photos of celebrities (third-party copyright)."
+  },
+  {
+   "name": "digiface1m",
+   "version": null,
+   "source": "DigiFace-1M (Bae et al., 'DigiFace-1M: 1 Million Digital Face Images for Face Recognition', WACV 2023; Microsoft, https://github.com/microsoft/DigiFace1M). raw/subjects_*.zip are the eight official parts (README links https://facesyntheticspubwedata.z6.web.core.windows.net/wacv-2023/<name>.zip); LICENSE.txt is the repository's licence file. Read directly from the zips (members '<id>/<k>.png'), not extracted.",
+   "license": "Research Use of Data Agreement v1.0 (R-UDA, LICENSE.txt): 'You agree that you will use the Data solely for Computational Use for non-commercial research. ... you may not use the Data or any Results in any commercial offering, including as part of a product or service (or to improve any product or service) you use or provide to others.' Redistribution only with attribution and bound to the R-UDA. NON-COMMERCIAL RESEARCH ONLY."
+  },
+  {
+   "name": "ffhq",
+   "version": null,
+   "source": "Flickr-Faces-HQ (Karras, Laine, Aila, NVIDIA, CVPR 2019; https://github.com/NVlabs/ffhq-dataset). images256/: 70,000 PNG 256x256 (downscaled from the official 1024x1024 aligned images) from the third-party HF mirror https://huggingface.co/datasets/pravsels/FFHQ_256 (revision fcb28f9e140dfcf914b8b2f129cbe9eebd94cd79, raw/shard_{1..14}_of_14.zip, sha256 = HF LFS oids, archives/SHA256SUMS_raw.txt). archives/ffhq-dataset-v2.json (official metadata: Flickr URL, author, per-image licence) and thumbnails128x128.zip are from the official release; LICENSE.txt is the official licence file.",
+   "license": "Dataset (JSON metadata, documentation, compilation): CC BY-NC-SA 4.0 by NVIDIA - NON-COMMERCIAL, share-alike, attribution. Individual images keep their Flickr licences (ffhq-dataset-v2.json counts over the 70,000 images: Attribution 34,874, Attribution-NonCommercial 29,158, Public Domain Mark 4,487, CC0 1,144, U.S. Government Work 337); LICENSE.txt: 'All of these licenses allow free use, redistribution, and adaptation for non-commercial purposes.' The 256px HF mirror carries no licence of its own."
+  },
+  {
+   "name": "pad_synth",
+   "version": "2",
+   "source": "Rendered by faceauth/sim/sensor.py (SensorSim profiles gemini336-sim-v1, sensor_b) from CelebA align&cropped images (img_align_celeba, 202,599 JPEGs, from the HF mirror https://huggingface.co/datasets/student/celebA rev 2d31e6555722815c74ea7c845b07c1063dd705e9, Dataset.zip sha256 9464985fa6cfc84d0fe6b87a6e4f07a275c8bd3dfc8abd713218765de7d62306, extracted to data/tmp/pad/celeba_align) with the OFFICIAL annotations list_landmarks_align_celeba.txt + identity_CelebA.txt (data/datasets/celeba/raw/Anno); MediaPipe canonical face mesh (Apache-2.0) for live/mask geometry. Command: python scripts/train_pad.py gen --workers 40",
+   "license": "Derived from CelebA: 'use is RESTRICTED to non-commercial research and educational purposes' (CelebA README; CUHK does not own the image copyrights). NON-COMMERCIAL / RESEARCH-ONLY. Simulator assets: MediaPipe canonical_face_model.obj, Apache-2.0."
+  },
+  {
+   "name": "verification",
+   "version": null,
+   "source": "InsightFace-format validation bins (pickle of (list of 112x112 JPEGs as uint8 ndarrays, issame list); pairs = images 2i, 2i+1) from the third-party HF mirror https://huggingface.co/datasets/gaunernst/face-recognition-eval (revision 9921cccf7bc4b317c3021c0eb9d1330d3d732fc0, no dataset card / licence). Official distribution of the same bins: inside the InsightFace training packages (recognition/_datasets_/README.md, e.g. MS1M-ArcFace / MS1M-RetinaFace). The CVLFace eval toolkit (password-protected, form-gated) was not used. Images are already ArcFace-aligned (5-point, 112x112).",
+   "license": "RESEARCH / EVALUATION ONLY, NOT FOR REDISTRIBUTION, NO COMMERCIAL USE. AgeDB (agedb_30): 'The dataset is available for non-commercial research purposes only ... You agree not to reproduce, duplicate, copy, sell, trade, resell or exploit for any commercial purposes, any portion of the annotations and any portion of derived data. You agree not to further copy, publish or distribute any portion of annotations of the dataset.' (ibug.doc.ic.ac.uk/resources/agedb). LFW: no licence granted; site: 'LFW is a public benchmark for face verification ... it should not be used to conclude that an algorithm is suitable for any commercial purpose' / 'published to help the research community'. CALFW, CPLFW (LFW renovations, whdeng.cn) and CFP (cfpw.io): research benchmarks, no licence text on their pages; images are web photos of public figures. The HF mirror itself states no licence. Keep under data/ (gitignored); use only for model evaluation."
+  },
+  {
+   "name": "vggface2_test",
+   "version": null,
+   "source": "VGGFace2 test split (Cao, Shen, Xie, Parkhi, Zisserman, FG 2018; Oxford VGG, https://www.robots.ox.ac.uk/~vgg/data/vgg_face2/ - the page now states 'The download links for the VGGFace2 dataset are no longer available from this website.'). raw/data/vggface2_test.tar.gz + raw/meta/* from the third-party HF mirror https://huggingface.co/datasets/ProgramComputer/VGGFace2 (raw/README.md is that mirror's card), extracted to test/ (500 identity folders); bb_landmark/ from raw/meta/bb_landmark.tar.gz (official loose boxes + 5 MTCNN-style landmarks).",
+   "license": "NON-COMMERCIAL RESEARCH ONLY (conservative reading). The HF mirror card states 'license: cc-by-nc-4.0' (its loader script is Apache-2.0 code only). The official page no longer shows licence text (checked 2026-10-11), so the original terms could not be verified here. Images were collected from Google Image Search and remain under their owners' copyright."
+  },
+  {
+   "name": "wflw",
+   "version": null,
+   "source": "Official page https://wywu.github.io/projects/LAB/WFLW.html (Wu et al., 'Look at Boundary', CVPR 2018). Images: Google Drive id 1hzBd48JIdWTJSsATBEB_eFVvPL1bx6UC (WFLW_images.tar.gz, fetched with gdown 2026-10-08). Annotations: https://wywu.github.io/projects/LAB/support/WFLW_annotations.tar.gz",
+   "license": "No licence is stated on the official WFLW page. The images are a subset of WIDER FACE, whose official page (http://shuoyang1213.me/WIDERFACE/) states 'Creative Common License (cc by-nc-nd)'. RESTRICTION FLAG: treat as NON-COMMERCIAL, NO-DERIVATIVES, research/evaluation use only; not usable for commercial training or product data."
+  },
+  {
+   "name": "widerface",
+   "version": null,
+   "source": "Images + split annotations: https://huggingface.co/datasets/CUHK-CSE/wider_face (revision db171f1b7fedf4d3453e81297ff02f9915356d19; mirror of the official release by the WIDER FACE authors, homepage http://shuoyang1213.me/WIDERFACE/). Evaluation ground truth + MATLAB eval code: official http://shuoyang1213.me/WIDERFACE/support/eval_script/eval_tools.zip (downloaded 2026-10-08).",
+   "license": "CC BY-NC-ND 4.0 (stated on the official homepage and the HF dataset card): NON-COMMERCIAL, no derivatives, attribution (Yang, Luo, Loy, Tang, 'WIDER FACE: A Face Detection Benchmark', CVPR 2016). Images come from the WIDER dataset (Internet photos; image copyright stays with the original owners). Use only for research/benchmarking."
+  }
+ ],
+ "note": "Model weights and datasets are research/non-commercial unless stated; see each licence field."
+}

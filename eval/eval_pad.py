@@ -91,8 +91,8 @@ def evaluate(pad, res):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--seen", type=Path, default=ROOT / "data/models/pad_rgbdir")
-    ap.add_argument("--unseen-species", type=Path, default=ROOT / "data/tmp/pad/unseen_species")
+    ap.add_argument("--seen", type=Path, default=ROOT / "data/models/pad_rgbdir_v2")
+    ap.add_argument("--unseen-species", type=Path, default=ROOT / "data/tmp/pad/unseen_species_v2")
     ap.add_argument("--out", type=Path, default=ROOT / "reports/E7_pad")
     ap.add_argument("--device", default="cuda")
     a = ap.parse_args()
@@ -118,6 +118,13 @@ def main():
     print("(a) seen", flush=True)
     P["a_seen"] = dict(model="seen", profile=tp.DEFAULT_PROFILE,
                        **evaluate(pads["seen"], run(pads["seen"], test(tp.DEFAULT_PROFILE, kinds))))
+    print("(a2) pose-diverse subset", flush=True)
+    biwi = [r for r in test(tp.DEFAULT_PROFILE, kinds) if r["src"].startswith("biwi/")]
+    if biwi:
+        P["a2_pose_diverse"] = dict(model="seen", profile=tp.DEFAULT_PROFILE,
+                                    subset="BIWI subjects held out from PAD training (real head rotation, |yaw|<=50, "
+                                           "|pitch|<=40), rendered by SensorSim",
+                                    **evaluate(pads["seen"], run(pads["seen"], biwi)))
     if "unseen_species" in pads:
         print("(b) unseen species", flush=True)
         P["b_unseen_species"] = dict(model="unseen_species (trained on live+print+replay only)", profile=tp.DEFAULT_PROFILE,
