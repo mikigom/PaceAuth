@@ -1,0 +1,17 @@
+{
+  "name": "widerface",
+  "source": "Images + split annotations: https://huggingface.co/datasets/CUHK-CSE/wider_face (revision db171f1b7fedf4d3453e81297ff02f9915356d19; mirror of the official release by the WIDER FACE authors, homepage http://shuoyang1213.me/WIDERFACE/). Evaluation ground truth + MATLAB eval code: official http://shuoyang1213.me/WIDERFACE/support/eval_script/eval_tools.zip (downloaded 2026-10-08).",
+  "license": "CC BY-NC-ND 4.0 (stated on the official homepage and the HF dataset card): NON-COMMERCIAL, no derivatives, attribution (Yang, Luo, Loy, Tang, 'WIDER FACE: A Face Detection Benchmark', CVPR 2016). Images come from the WIDER dataset (Internet photos; image copyright stays with the original owners). Use only for research/benchmarking.",
+  "files": {
+    "raw/WIDER_val.zip": "f9efbd09f28c5d2d884be8c0eaef3967158c866a593fc36ab0413e4b2a58a17a",
+    "raw/wider_face_split.zip": "c7561e4f5e7a118c249e0a5c5c902b0de90bbf120d7da9fa28d99041f68a8a5c",
+    "raw/eval_tools.zip": "1cf49c8243fa8a1632efe7f6aa09fd7a3994ac838c9008bdbc9dd1d547bb234a",
+    "eval_tools/wider_face_val.mat": "1dfe6a9853950f9dde256b5e8bb75d8f272e6bc02a15ae1968f5a9b883f458cb",
+    "eval_tools/wider_easy_val.mat": "c2fb672d16f75653eb89fb8bc437a7d060896a71cd7a65c1a5a3e4479024099c",
+    "eval_tools/wider_medium_val.mat": "4a031970bc132cef5cfacd05068aabcf4fe15d4a31a1e9f4f00eb134fdf449c1",
+    "eval_tools/wider_hard_val.mat": "bb1af19dc5bc4dd9517dd8ae8096326c68175f2c3411763bdd4f23fa98638b78",
+    "wider_face_split/wider_face_val_bbx_gt.txt": "5ca83488f72758ca4826c35212610a8abf04a7af7b17eb407d6284007baba3b6"
+  },
+  "counts": {"val_images": 3226, "val_events": 61, "val_faces": 39708, "easy_faces": 7211, "medium_faces": 13319, "hard_faces": 31958},
+  "notes": "Layout: WIDER_val/images/<event>/<name>.jpg (extracted from raw/WIDER_val.zip), wider_face_split/ (extracted from raw/wider_face_split.zip), eval_tools/ (ground_truth/*.mat and the MATLAB .m files from raw/eval_tools.zip). wider_face_split/wider_face_val.mat is byte-identical to eval_tools/wider_face_val.mat. Only the val split is used (E3). The HF cache on this host had only refs/main (no blobs), so files were downloaded directly from the HF resolve URLs and checked against the HF LFS sha256."
+}

@@ -32,6 +32,8 @@ services:
     working_dir: /app
     volumes: [".:/app", "./data:/app/data"]
     networks: [edge, internal]
+    environment:
+      FA_RECOG_MODEL: ${FA_RECOG_MODEL:-kprpe_vitb_wf12m}   # same deployed recognizer as api/engine/search
     shm_size: 16gb
     deploy:
       resources:

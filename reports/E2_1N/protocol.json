@@ -1,0 +1,129 @@
+{
+ "name": "celeba_v1",
+ "identity": "celeba",
+ "celeba_images": "img_celeba",
+ "distractors": [
+  "ffhq",
+  "digiface1m"
+ ],
+ "probe_frac": {
+  "ffhq": 0.5
+ },
+ "seed": 0,
+ "enroll_frac": 0.5,
+ "n_templates": 4,
+ "min_images": 5,
+ "max_probes": 0,
+ "group_size": 3,
+ "created": "2026-10-11T20:02:46+00:00",
+ "counts": {
+  "template": {
+   "images": 18336,
+   "subjects": 4584
+  },
+  "mated": {
+   "images": 78657,
+   "subjects": 4545,
+   "groups": 24120
+  },
+  "nonmated": {
+   "images": 132993,
+   "subjects": 39741,
+   "groups": 30963,
+   "by_dataset": {
+    "celeba": {
+     "images": 98567,
+     "identities": 5315
+    },
+    "ffhq": {
+     "images": 34426,
+     "identities": 34426
+    }
+   }
+  },
+  "distractor": {
+   "images": 474805,
+   "subjects": 144808,
+   "by_dataset": {
+    "digiface1m": {
+     "images": 439996,
+     "subjects": 109999
+    },
+    "ffhq": {
+     "images": 34809,
+     "subjects": 34809
+    }
+   }
+  },
+  "enrolled_subjects": 4584,
+  "max_gallery_subjects": 149392,
+  "max_gallery_templates": 493141
+ },
+ "failure_to_acquire": {
+  "celeba": {
+   "n": 202599,
+   "ok": 202461,
+   "no_face": 76,
+   "unmatched": 62,
+   "fta_rate": 0.0006811484755601116
+  },
+  "ffhq": {
+   "n": 70000,
+   "ok": 69989,
+   "no_face": 11,
+   "unmatched": 0,
+   "fta_rate": 0.0001571428571428557
+  }
+ },
+ "cleaning": "reports/E2_1N/cleaning.json",
+ "counts_before_probe_cleaning": {
+  "template": {
+   "images": 18336,
+   "subjects": 4584
+  },
+  "mated": {
+   "images": 80128,
+   "subjects": 4584,
+   "groups": 24804
+  },
+  "nonmated": {
+   "images": 135515,
+   "subjects": 40169,
+   "groups": 31950,
+   "by_dataset": {
+    "celeba": {
+     "images": 100704,
+     "identities": 5358
+    },
+    "ffhq": {
+     "images": 34811,
+     "identities": 34811
+    }
+   }
+  },
+  "distractor": {
+   "images": 474805,
+   "subjects": 144808,
+   "by_dataset": {
+    "digiface1m": {
+     "images": 439996,
+     "subjects": 109999
+    },
+    "ffhq": {
+     "images": 34809,
+     "subjects": 34809
+    }
+   }
+  },
+  "enrolled_subjects": 4584,
+  "max_gallery_subjects": 149392,
+  "max_gallery_templates": 493141
+ },
+ "images_csv": "data/tmp/recog/onen/protocol/celeba_v1/images.csv.gz",
+ "images_csv_sha256": "73357bbb468bf6a796c1492c9c946c941ee594bd6cedc22960d1b654e4fe9529",
+ "dataset_json_sha256": {
+  "celeba": "b381ab47f87d66179b0463a7a7ca1a88af15429c33bcceba25e5ce36a59a108f",
+  "ffhq": "1472d55b8bb9799dd3b044d2bdfc437543169519f2f51a1ea8a92ba654731266",
+  "digiface1m": "201b9b28b680c3967f16dc1f81eda5ec2a95b50819128f46c076e62a80aa4cba"
+ }
+}

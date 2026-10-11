@@ -1,0 +1,22 @@
+{
+  "name": "insightface_r50_wf600k",
+  "version": "1",
+  "kind": "recognition",
+  "files": {"onnx": "w600k_r50.onnx"},
+  "sha256": {"onnx": "4c06341c33c2ca1f86781dab0e829f88ad5b64be9fba56e56bc9ebdefc619e43"},
+  "dim": 512,
+  "source": "InsightFace model-zoo pack buffalo_l: https://github.com/deepinsight/insightface/releases/download/model-zoo/buffalo_l.zip (288,621,354 B, sha256 80ffe37d8a5940d59a7384c201a2a38d4741f2f3c51eef46ebb28218a7b0ca2f, downloaded 2026-10-11), member w600k_r50.onnx (174,383,860 B) extracted unmodified. Same file is reused byte-for-byte by the newer raccoon/cheetah packs (docs/INSIGHTFACE_SURVEY.md).",
+  "license": "NON-COMMERCIAL RESEARCH ONLY. insightface model_zoo/README.md: 'ALL models are available for non-commercial research purposes only.' InsightFace README (License): 'The training data containing the annotation (and the models trained with these data) are available for non-commercial research purposes only.' ... 'For open-sourced face recognition models (e.g., buffalo_l package), please contact recognition-oss-pack@insightface.ai for licensing.' Training data WebFace (WebFace260M subset): academic research only, no commercial use. Commercial use requires a licence from InsightFace or own lawful training (RFP §2).",
+  "params": {
+    "arch": "insightface_onnx",
+    "align": "arcface5-112@1",
+    "fp16": false,
+    "input_mean": 127.5,
+    "input_std": 127.5,
+    "input": "ArcFace norm_crop 112x112, RGB, (x-127.5)/127.5, NCHW float32 (insightface ArcFaceONNX: no Sub/Mul in the first graph nodes -> mean=std=127.5, swapRB on BGR input = RGB)",
+    "runtime": "ONNX Runtime CUDA EP, fp32 weights/activations (CUDA EP default use_tf32=1 for convs), dynamic batch (input 'input.1' [None,3,112,112]; output declared [1,512] but follows the batch)",
+    "backbone": "IResNet-50 (43.6M parameters in the ONNX initializers), 512-d",
+    "train_data": "WebFace600K (InsightFace naming; the ~0.6M-identity WebFace12M identity set, see docs/INSIGHTFACE_SURVEY.md)",
+    "published": "insightface model_zoo/README.md 'Recognition accuracy of python library model packs', row buffalo_l: MR-ALL 91.25, African 90.29, Caucasian 94.70, South Asian 93.16, East Asian 74.96, LFW 99.83, CFP-FP 99.33, AgeDB-30 98.23, IJB-C(E4) 97.25"
+  }
+}

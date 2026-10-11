@@ -1,0 +1,22 @@
+{
+  "name": "vggface2_test",
+  "source": "VGGFace2 test split (Cao, Shen, Xie, Parkhi, Zisserman, FG 2018; Oxford VGG, https://www.robots.ox.ac.uk/~vgg/data/vgg_face2/ - the page now states 'The download links for the VGGFace2 dataset are no longer available from this website.'). raw/data/vggface2_test.tar.gz + raw/meta/* from the third-party HF mirror https://huggingface.co/datasets/ProgramComputer/VGGFace2 (raw/README.md is that mirror's card), extracted to test/ (500 identity folders); bb_landmark/ from raw/meta/bb_landmark.tar.gz (official loose boxes + 5 MTCNN-style landmarks).",
+  "license": "NON-COMMERCIAL RESEARCH ONLY (conservative reading). The HF mirror card states 'license: cc-by-nc-4.0' (its loader script is Apache-2.0 code only). The official page no longer shows licence text (checked 2026-10-11), so the original terms could not be verified here. Images were collected from Google Image Search and remain under their owners' copyright.",
+  "files": {
+    "raw/data/vggface2_test.tar.gz": "6ddf619f4d8a472dec49030783534a42e4743cf57d04a76aaaae50bca7e16b44",
+    "raw/meta/bb_landmark.tar.gz": "7d5c68eaf56c6f7f93910fc88da7d2b0fd61e77848b9c9c4dba6b78cdad2db11",
+    "raw/meta/class_overlap_vgg1_2.txt": "df389949b7091cedf8ab779e272a8e2b60cb8a756900b75a97d67cb18b111daf",
+    "raw/meta/identity_meta.csv": "3e0caaeb1cc30bf784edbfdf77e988cfedb56eaf3d2ba87d7724e4a8f7ff737f",
+    "raw/meta/test_agetemp_imglist.txt": "6cdbbde54eb948bd49fd1bedfe05442fc80632524f344b6ccf3a5ea500db3e00",
+    "raw/meta/test_list.txt": "ddee596d95c2e4077da8caf4fab6aa468aa4fd5de4dc31cc09e63735d6156f94",
+    "raw/meta/test_posetemp_imglist.txt": "fbd48f81feada42719f6e2c9168bb4a0d427aba1447f3295f01bdc4cab68a7fd",
+    "bb_landmark/loose_bb_test.csv": "da9e3efe538411a257717c003d52d4c5209ed1fc4558380fa5b20fe8a7e9cc8a",
+    "bb_landmark/loose_landmark_test.csv": "02dbc4b7cdf763a69cbd42e17647f3baae79e0e90438cf19f7608c4d9109a7c1"
+  },
+  "counts": {
+    "identities": 500,
+    "images": 169396,
+    "used_by": "not used in the final E2 run (optional second identity source; loader eval/onen/datasets.py:vggface2_test)"
+  },
+  "notes": "Celebrity identities (training-set overlap likely, as for CelebA). Its 500 test identities are disjoint from the VGGFace2 train identities, not from WebFace/Glint."
+}

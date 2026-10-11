@@ -1,0 +1,269 @@
+{
+ "name": "pad_rgbdir",
+ "version": "1",
+ "kind": "pad",
+ "files": {
+  "weights": "pad_rgbdir.pt"
+ },
+ "sha256": {
+  "weights": "7c05ad9abf62b793b66332d6f366ee1352242bec05e4ebd633c088d6a07a55ed"
+ },
+ "source": "Trained in-house on SYNTHETIC data (faceauth/sim + scripts/train_pad.py, protocol seen); not validated on any real sensor.",
+ "license": "In-house weights; trained on renders of CelebA images -> treat as NON-COMMERCIAL / RESEARCH-ONLY (CelebA: non-commercial research and educational use only). Replace by weights trained on consented real-sensor data before any deployment.",
+ "params": {
+  "threshold": 0.9992309808731079,
+  "checks": {
+   "min_valid_ratio": 0.5,
+   "min_relief_mm": 3.0,
+   "min_ir_median": 30.0,
+   "min_shading_corr": 0.1
+  },
+  "fx": 385.0,
+  "calib_version": "gemini336-sim-v1",
+  "input": {
+   "size": 128,
+   "zoom": 1.6,
+   "channels": [
+    "r",
+    "g",
+    "b",
+    "depth_rel",
+    "depth_valid",
+    "ir"
+   ],
+   "align": "faceauth.common.align.estimate_norm zoomed out by `zoom`",
+   "depth": "(d - median(face core)) / 100 mm clipped to [-1,1], invalid 0",
+   "rgb_ir": "(x/255 - 0.5)/0.25"
+  },
+  "train": {
+   "protocol": "seen",
+   "species": [
+    "print",
+    "replay",
+    "mask_rigid",
+    "mask_silicone"
+   ],
+   "epochs": 20,
+   "batch": 128,
+   "lr": 0.002,
+   "seed": 0,
+   "dataset_manifest_sha256": "3a68b6d56752a8f2bc9bc072a6438ffc51579c8f7e1a2f5891fa36d24b644188",
+   "n_train": 20000,
+   "n_val": 5000,
+   "log": [
+    {
+     "epoch": 0,
+     "train_loss": 0.5567663615712752,
+     "val_loss": 1.8400616645812988,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.535,
+     "sec": 57.4
+    },
+    {
+     "epoch": 1,
+     "train_loss": 0.2319219088038573,
+     "val_loss": 0.03921293467283249,
+     "val_bpcer05": 0.007,
+     "val_apcer05": 0.0045,
+     "sec": 60.6
+    },
+    {
+     "epoch": 2,
+     "train_loss": 0.12780658771785405,
+     "val_loss": 0.02735653705894947,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.00525,
+     "sec": 64.2
+    },
+    {
+     "epoch": 3,
+     "train_loss": 0.08667833928185968,
+     "val_loss": 0.012877182103693485,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.005,
+     "sec": 68.1
+    },
+    {
+     "epoch": 4,
+     "train_loss": 0.07441869568533431,
+     "val_loss": 0.004627672489732504,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0005,
+     "sec": 60.2
+    },
+    {
+     "epoch": 5,
+     "train_loss": 0.05234465771653236,
+     "val_loss": 0.003712052945047617,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.00075,
+     "sec": 60.6
+    },
+    {
+     "epoch": 6,
+     "train_loss": 0.04951722076377617,
+     "val_loss": 0.0055628567934036255,
+     "val_bpcer05": 0.002,
+     "val_apcer05": 0.00025,
+     "sec": 57.5
+    },
+    {
+     "epoch": 7,
+     "train_loss": 0.04206625060835041,
+     "val_loss": 0.0004402409540489316,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 62.1
+    },
+    {
+     "epoch": 8,
+     "train_loss": 0.04709961328831597,
+     "val_loss": 0.011704379692673683,
+     "val_bpcer05": 0.005,
+     "val_apcer05": 0.0,
+     "sec": 58.9
+    },
+    {
+     "epoch": 9,
+     "train_loss": 0.03295319013667699,
+     "val_loss": 0.0006923208711668849,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.00025,
+     "sec": 62.1
+    },
+    {
+     "epoch": 10,
+     "train_loss": 0.02420403353216198,
+     "val_loss": 0.000336958299158141,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 55.7
+    },
+    {
+     "epoch": 11,
+     "train_loss": 0.01973145976938749,
+     "val_loss": 0.0010501452488824725,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.00075,
+     "sec": 59.6
+    },
+    {
+     "epoch": 12,
+     "train_loss": 0.022003120038649425,
+     "val_loss": 0.0002797912457026541,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 54.0
+    },
+    {
+     "epoch": 13,
+     "train_loss": 0.020411396346902713,
+     "val_loss": 0.00041477548074908555,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 43.5
+    },
+    {
+     "epoch": 14,
+     "train_loss": 0.013437891435060943,
+     "val_loss": 0.00011174895917065442,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 42.2
+    },
+    {
+     "epoch": 15,
+     "train_loss": 0.00985197386949156,
+     "val_loss": 0.00011948221072088927,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 40.3
+    },
+    {
+     "epoch": 16,
+     "train_loss": 0.0094667945164614,
+     "val_loss": 0.00016503458027727902,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 40.1
+    },
+    {
+     "epoch": 17,
+     "train_loss": 0.008759631958897583,
+     "val_loss": 0.00011838499631267041,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 38.8
+    },
+    {
+     "epoch": 18,
+     "train_loss": 0.009739904425656185,
+     "val_loss": 0.00010662570275599137,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 38.2
+    },
+    {
+     "epoch": 19,
+     "train_loss": 0.009455488074775368,
+     "val_loss": 0.00011408435966586694,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 38.0
+    }
+   ]
+  },
+  "val": {
+   "n_bona_fide": 1000,
+   "bpcer": 0.01,
+   "bpcer_checks_only": 0.001,
+   "check_fail_bona_fide": {
+    "relief_mm": 0,
+    "ir_median": 0,
+    "shading_corr": 1
+   },
+   "bona_fide_quantiles_0p5_5_50": {
+    "valid_ratio": [
+     0.833,
+     0.891,
+     0.967
+    ],
+    "relief_mm": [
+     3.947,
+     4.516,
+     5.704
+    ],
+    "ir_median": [
+     133.498,
+     138.0,
+     144.0
+    ],
+    "shading_corr": [
+     0.32,
+     0.505,
+     0.713
+    ]
+   },
+   "mask_rigid": {
+    "n": 1000,
+    "nonresponse": 0,
+    "apcer": 0.0
+   },
+   "mask_silicone": {
+    "n": 1000,
+    "nonresponse": 0,
+    "apcer": 0.0
+   },
+   "print": {
+    "n": 1000,
+    "nonresponse": 0,
+    "apcer": 0.0
+   },
+   "replay": {
+    "n": 1000,
+    "nonresponse": 504,
+    "apcer": 0.0
+   }
+  }
+ }
+}

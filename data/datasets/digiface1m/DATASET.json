@@ -1,0 +1,24 @@
+{
+  "name": "digiface1m",
+  "source": "DigiFace-1M (Bae et al., 'DigiFace-1M: 1 Million Digital Face Images for Face Recognition', WACV 2023; Microsoft, https://github.com/microsoft/DigiFace1M). raw/subjects_*.zip are the eight official parts (README links https://facesyntheticspubwedata.z6.web.core.windows.net/wacv-2023/<name>.zip); LICENSE.txt is the repository's licence file. Read directly from the zips (members '<id>/<k>.png'), not extracted.",
+  "license": "Research Use of Data Agreement v1.0 (R-UDA, LICENSE.txt): 'You agree that you will use the Data solely for Computational Use for non-commercial research. ... you may not use the Data or any Results in any commercial offering, including as part of a product or service (or to improve any product or service) you use or provide to others.' Redistribution only with attribution and bound to the R-UDA. NON-COMMERCIAL RESEARCH ONLY.",
+  "files": {
+    "raw/subjects_0-1999_72_imgs.zip": "29c5347f2287637c646eee7a760cbc392763ecd804e7bb5a9ba6d557fa94f9b3",
+    "raw/subjects_100000-133332_5_imgs.zip": "998253e11e8c3cca20e92fd51a6b6a40dd6661344ee6c0a2e46a8586cd84f641",
+    "raw/subjects_133333-166665_5_imgs.zip": "1d99a9512366cbe0b2f51ee19ef847d76adde3fd42097b7aa4c274316b980701",
+    "raw/subjects_166666-199998_5_imgs.zip": "a70f53ae6306ad1266491f2314dffcbd69a1c6cba10b63cc63eb15e248a28606",
+    "raw/subjects_2000-3999_72_imgs.zip": "0e0edb4f8ff7ddeced29aa3e1e734c62cc097b7a1f63eacbac09aa75f3fba989",
+    "raw/subjects_4000-5999_72_imgs.zip": "d5237cc674351b08f708b0393d7ddea6778c3200a17115eee5a2fbea41e498fa",
+    "raw/subjects_6000-7999_72_imgs.zip": "227ab9f733a7b2e4952b283774e83f461484c55d177a185e86d0b69e82d71964",
+    "raw/subjects_8000-9999_72_imgs.zip": "9510e30f07eb3ec523df95cf83fa5401a3a8fd0c9c0970fbb548d1d2718b9651",
+    "LICENSE.txt": "4ca5e434d1faf7e964b14e4a2508ae33ef5447ecd84a9a9f6e25767a64498595"
+  },
+  "counts": {
+    "identities": 109999,
+    "images": 1219995,
+    "layout": "10,000 ids x 72 images (subjects 0-9999) + 99,999 ids x 5 images (subjects 100000-199998)",
+    "image_format": "112x112 RGBA PNG (alpha 255 on a 600-image sample), ArcFace-style aligned (SCRFD kps on a sample: mean 1.6-4 px from the ArcFace template)",
+    "used_by": "E2 gallery distractors: 4 seeded images per identity (439,996 images, all decoded), embed_aligned, no detector"
+  },
+  "notes": "SYNTHETIC (rendered 3D faces): no identity overlap with real training sets, but also not real customers; its impostor scores against real probes are reported separately in E2 and are not used for the 1M extrapolation."
+}

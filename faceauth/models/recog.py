@@ -46,7 +46,9 @@ def _ort_session(path: Path, device: torch.device):
     if device.type == "cuda":
         ort.preload_dlls()  # faceauth:dev: cuDNN is only on the loader path via the nvidia pip packages
         so.add_session_config_entry("session.disable_cpu_ep_fallback", "1")  # a CPU-placed node fails the load
-        want = [("CUDAExecutionProvider", {"device_id": device.index or 0})]
+        # kSameAsRequested: the default power-of-two arena growth held ~5.7 GB for IResNet-50 at batch 256 (shared GPU)
+        opts = {"arena_extend_strategy": "kSameAsRequested", **({"device_id": device.index} if device.index else {})}
+        want = [("CUDAExecutionProvider", opts)]
     else:
         want = ["CPUExecutionProvider"]
     sess = ort.InferenceSession(str(path), so, providers=want)

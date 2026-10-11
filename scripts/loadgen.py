@@ -164,7 +164,7 @@ def cmd_setup(a):
             if len(tpl) < 2 or not probes:
                 stats["dropped"] += 1
                 continue
-            account = f"loadtest-{cid}"
+            account = f"loadtest-{mv.split('@')[0]}-{cid}"
             insert_user(conn, kms, mv, align, account, tpl)
             users.append({"id": account, "enrolled": True, "probes": probes})
             stats["enrolled"] += 1
@@ -321,7 +321,7 @@ if __name__ == "__main__":
     s.add_argument("--devices", type=int, default=600)
     s.add_argument("--seed", type=int, default=0)
     s.add_argument("--workers", type=int, default=32)
-    s.add_argument("--recog", default="kprpe_vitb_wf12m")
+    s.add_argument("--recog", default=__import__("os").environ.get("FA_RECOG_MODEL", "kprpe_vitb_wf12m"))
     s.add_argument("--dsn", default="host=db,db-standby1,db-standby2 dbname=faceauth user=faceauth_api target_session_attrs=read-write")
     s.add_argument("--password-file", default="secrets/db_api_password")
     s.add_argument("--kms-url", default="http://kms:8003")

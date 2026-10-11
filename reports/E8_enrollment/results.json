@@ -1,0 +1,229 @@
+{
+ "id": "E8_enrollment",
+ "user_model": "prompt-following, per-axis feedback from the terminal's pose estimate; BIWI real frames of the same person re-rendered by SensorSim (10 fps analysis, 60 s guide timeout, 2 attempts)",
+ "terminal_eye_check": "EAR < 0.06, skipped below pitch -8 (changed after the first runs; see notes)",
+ "stopped_early": "62 of 90 planned trials; remaining trials were mostly the slow failing subjects, so pooled rates are biased upward -> use the per-subject / macro rates",
+ "complete_coverage": {
+  "subjects": [
+   "F03",
+   "F05",
+   "F06",
+   "M03",
+   "M07",
+   "M09"
+  ],
+  "trials": 46,
+  "success": 37,
+  "pooled_rate": 0.8043478260869565,
+  "pooled_ci95": [
+   0.6608524004890015,
+   0.9064242655785913
+  ],
+  "macro_rate": 0.6845238095238096,
+  "time_s_success": {
+   "p50": 15.119688542047516,
+   "p95": 55.535524425925466,
+   "max": 104.6402197999414
+  }
+ },
+ "coverage_limited": {
+  "subjects": [
+   "F02",
+   "M01",
+   "M04"
+  ],
+  "trials": 16,
+  "success": 10,
+  "pooled_rate": 0.625,
+  "pooled_ci95": [
+   0.35434609430207814,
+   0.8480163249188779
+  ],
+  "macro_rate": 0.3333333333333333,
+  "time_s_success": {
+   "p50": 12.954688565945254,
+   "p95": 16.69539895383874,
+   "max": 16.76993766706437
+  }
+ },
+ "all": {
+  "subjects": [
+   "F02",
+   "F03",
+   "F05",
+   "F06",
+   "M01",
+   "M03",
+   "M04",
+   "M07",
+   "M09"
+  ],
+  "trials": 62,
+  "success": 47,
+  "pooled_rate": 0.7580645161290323,
+  "pooled_ci95": [
+   0.6325502928140554,
+   0.857813964151982
+  ],
+  "macro_rate": 0.5674603174603176,
+  "time_s_success": {
+   "p50": 14.930554293002933,
+   "p95": 43.51031286111099,
+   "max": 104.6402197999414
+  }
+ },
+ "per_subject": {
+  "F02": {
+   "trials": 3,
+   "success": 0,
+   "rate": 0.0,
+   "first_attempt": 0,
+   "times_s": [],
+   "failures": {
+    "capture_timeout:": 6
+   }
+  },
+  "F03": {
+   "trials": 7,
+   "success": 6,
+   "rate": 0.8571428571428571,
+   "first_attempt": 4,
+   "times_s": [
+    23.3,
+    27.7,
+    96.6,
+    104.6,
+    32.9,
+    22.1
+   ],
+   "failures": {
+    "capture_timeout:": 4
+   }
+  },
+  "F05": {
+   "trials": 10,
+   "success": 10,
+   "rate": 1.0,
+   "first_attempt": 7,
+   "times_s": [
+    45.3,
+    13.8,
+    16.1,
+    13.8,
+    15.9,
+    35.1,
+    25.6,
+    25.0,
+    39.4,
+    35.1
+   ],
+   "failures": {
+    "rejected:denied": 3
+   }
+  },
+  "F06": {
+   "trials": 4,
+   "success": 1,
+   "rate": 0.25,
+   "first_attempt": 1,
+   "times_s": [
+    31.7
+   ],
+   "failures": {
+    "capture_timeout:": 6
+   }
+  },
+  "M01": {
+   "trials": 10,
+   "success": 10,
+   "rate": 1.0,
+   "first_attempt": 10,
+   "times_s": [
+    11.5,
+    12.4,
+    13.5,
+    16.6,
+    14.2,
+    16.8,
+    10.7,
+    11.6,
+    14.4,
+    11.1
+   ],
+   "failures": {}
+  },
+  "M03": {
+   "trials": 10,
+   "success": 10,
+   "rate": 1.0,
+   "first_attempt": 10,
+   "times_s": [
+    12.5,
+    15.1,
+    13.7,
+    14.5,
+    9.3,
+    15.1,
+    13.8,
+    11.3,
+    14.9,
+    14.5
+   ],
+   "failures": {}
+  },
+  "M04": {
+   "trials": 3,
+   "success": 0,
+   "rate": 0.0,
+   "first_attempt": 0,
+   "times_s": [],
+   "failures": {
+    "capture_timeout:": 6
+   }
+  },
+  "M07": {
+   "trials": 10,
+   "success": 10,
+   "rate": 1.0,
+   "first_attempt": 10,
+   "times_s": [
+    17.1,
+    10.6,
+    14.2,
+    13.0,
+    15.0,
+    11.6,
+    15.1,
+    15.8,
+    11.5,
+    13.5
+   ],
+   "failures": {}
+  },
+  "M09": {
+   "trials": 5,
+   "success": 0,
+   "rate": 0.0,
+   "first_attempt": 0,
+   "times_s": [],
+   "failures": {
+    "capture_timeout:": 3,
+    "rejected:denied": 5,
+    "rejected:retry": 2
+   }
+  }
+ },
+ "failure_reasons_all_attempts": {
+  "rejected:denied": 8,
+  "capture_timeout:": 25,
+  "rejected:retry": 2
+ },
+ "targets": {
+  "success_rate": 0.99,
+  "time_p95_s": 20.0
+ },
+ "earlier_runs": {
+  "text_prompt_only_user, EAR 0.12": "21/28 success (75%), all failures capture timeouts",
+  "feedback_user, EAR 0.12 (stopped at 67/90)": "50/67 success; M09/F06 failed on down bins (eyes_closed on downward gaze)"
+ }
+}

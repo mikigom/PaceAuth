@@ -1,0 +1,26 @@
+{
+  "name": "insightface_r100_glint360k",
+  "version": "1",
+  "kind": "recognition",
+  "files": {
+    "onnx": "glintr100.onnx"
+  },
+  "sha256": {
+    "onnx": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf"
+  },
+  "dim": 512,
+  "source": "InsightFace model-zoo pack antelopev2: https://github.com/deepinsight/insightface/releases/download/model-zoo/antelopev2.zip (360,662,982 B, sha256 8e182f14fc6e80b3bfa375b33eb6cff7ee05d8ef7633e738d1c89021dcf0c5c5, downloaded 2026-10-11), member antelopev2/glintr100.onnx (260,665,334 B) extracted unmodified.",
+  "license": "NON-COMMERCIAL RESEARCH ONLY. insightface model_zoo/README.md: 'ALL models are available for non-commercial research purposes only.' InsightFace README (License): 'The training data containing the annotation (and the models trained with these data) are available for non-commercial research purposes only.' Commercial licensing of the open-sourced recognition models: recognition-oss-pack@insightface.ai. Training data Glint360K (InsightFace Partial FC release, celebrity web images) falls under the same non-commercial policy.",
+  "params": {
+    "arch": "insightface_onnx",
+    "align": "arcface5-112@1",
+    "fp16": false,
+    "input_mean": 127.5,
+    "input_std": 127.5,
+    "input": "ArcFace norm_crop 112x112, RGB, (x-127.5)/127.5, NCHW float32 (insightface ArcFaceONNX: no Sub/Mul in the first graph nodes -> mean=std=127.5, swapRB on BGR input = RGB)",
+    "runtime": "ONNX Runtime CUDA EP, fp32 weights/activations (CUDA EP default use_tf32=1 for convs), dynamic batch (input 'input.1' [None,3,112,112]; output declared [1,512] but follows the batch)",
+    "backbone": "IResNet-100 (65.2M parameters in the ONNX initializers), 512-d",
+    "train_data": "Glint360K (360K identities, 17.1M images)",
+    "published": "No accuracy is published for antelopev2/glintr100.onnx itself. Reference rows (not proven to be the same checkpoint): insightface model_zoo/README.md 'List of models by various depth IResNet', R100 Glint360K: MR-ALL 90.659, African 89.488, Caucasian 94.285, South Asian 93.434, East Asian 72.528; arcface_torch README Glint360k r100 (2022 re-training, log glint360k_r100/training.log): MFR-ALL 89.52, IJB-C 1e-4 97.55, 1e-5 96.38, final-step verification flip accuracy LFW 99.78, CFP-FP 99.10, AgeDB-30 98.65 (step 332000)."
+  }
+}

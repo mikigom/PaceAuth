@@ -12,8 +12,9 @@ Shards are marked done (<dir>/shards*/<i>.done) only after their data is flushed
 shard subsets (part=(k, N): shards with i % N == k) can run in parallel processes; finish() consolidates.
 """
 import json
+import multiprocessing as mp
+import os
 import time
-from multiprocessing import Pool
 from pathlib import Path
 
 import cv2
@@ -53,31 +54,54 @@ def _paths(store: Path, paths) -> list:
 
 
 def _memmap(path: Path, shape, dtype):
-    if path.exists():
-        m = np.memmap(path, dtype, "r+")
-        if m.size != int(np.prod(shape)):
-            raise ValueError(f"{path}: size mismatch, delete it")
-        return m.reshape(shape)
-    return np.memmap(path, dtype, "w+", shape=tuple(shape))
+    """Open (r+) or create a zero-filled memmap. Creation is atomic (link of a temp file), so parallel processes
+    starting together never truncate each other's data."""
+    if not path.exists():
+        tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+        np.memmap(tmp, dtype, "w+", shape=tuple(shape)).flush()
+        try:
+            os.link(tmp, path)
+        except FileExistsError:
+            pass
+        os.unlink(tmp)
+    m = np.memmap(path, dtype, "r+")
+    if m.size != int(np.prod(shape)):
+        raise ValueError(f"{path}: size mismatch, delete it")
+    return m.reshape(shape)
 
 
 def _read(args):
     return read_rgb(*args)
 
 
+def _claim(f: Path, stale_s=3 * 3600) -> bool:
+    """Work queue for parallel align processes: atomically claim a shard (claims older than stale_s without a
+    .done marker are taken over: a killed process)."""
+    try:
+        os.close(os.open(f, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+        return True
+    except FileExistsError:
+        if time.time() - f.stat().st_mtime > stale_s:
+            f.touch()
+            return True
+        return False
+
+
 def align(paths, store, det=None, hints=None, kps_in=None, refine=None, shard=4096, workers=12, det_thresh=0.5,
-          part=(0, 1), data_root=DATA, refine_batch=64):
+          part=(0, 1), data_root=DATA, refine_batch=64, reverse=False):
     store = Path(store)
     paths = _paths(store, paths)
     n = len(paths)
+    _meta(store, n, shard)
     crops = _memmap(store / "crops.u8", (n, *CROP), np.uint8)
     (store / "shards").mkdir(exist_ok=True)
     hints = hints or {}
     t0, done = time.time(), 0
-    with Pool(workers) as pool:
-        for si, s0 in enumerate(range(0, n, shard)):
+    with mp.get_context("spawn").Pool(workers) as pool:  # spawn: never fork a process holding CUDA/TRT state
+        order = list(enumerate(range(0, n, shard)))
+        for si, s0 in reversed(order) if reverse else order:
             mark = store / "shards" / f"{si:05d}.done"
-            if si % part[1] != part[0] or mark.exists():
+            if si % part[1] != part[0] or mark.exists() or not _claim(store / "shards" / f"{si:05d}.claim"):
                 continue
             ps = paths[s0:s0 + shard]
             m = len(ps)
@@ -145,11 +169,33 @@ def finish_align(store) -> dict | None:
     if sum(len(p["ok"]) for p in parts) != n:
         return None
     out = {key: np.concatenate([p[key] for p in parts]) for key in ("kps", "bbox", "det_score", "n_faces", "ok")}
-    np.savez(store / "det.npz", **out)
+    tmp = store / f"det.{os.getpid()}.tmp.npz"  # parallel parts may finish together: write atomically
+    np.savez(tmp, **out)
     (store / "align.json").write_text(json.dumps({"n": n, "ok": int(out["ok"].sum()),
                                                    "no_face": int((out["n_faces"] == 0).sum()),
                                                    "unmatched": int(((out["n_faces"] > 0) & ~out["ok"]).sum())}, indent=1))
+    os.replace(tmp, store / "det.npz")
     return out
+
+
+def init_store(paths, store, shard=4096) -> None:
+    """Create paths.txt + the crops memmap once (run before launching parallel parts: 'w+' would truncate)."""
+    store = Path(store)
+    n = len(_paths(store, paths))
+    _meta(store, n, shard)
+    _memmap(store / "crops.u8", (n, *CROP), np.uint8).flush()
+
+
+def _meta(store: Path, n: int, shard: int) -> None:
+    f = store / "meta.json"
+    if f.exists():
+        m = json.loads(f.read_text())
+        if (m["n"], m["shard"]) != (n, shard):
+            raise ValueError(f"{store} was built with n={m['n']} shard={m['shard']}")
+        return
+    tmp = store / f"meta.{os.getpid()}.tmp"
+    tmp.write_text(json.dumps({"n": n, "shard": shard}))
+    os.replace(tmp, f)
 
 
 def load_store(store):
@@ -162,32 +208,39 @@ def load_store(store):
     return paths, np.memmap(store / "crops.u8", np.uint8, "r").reshape(len(paths), *CROP), det
 
 
-def embed(store, rec, out, shard=16384, part=(0, 1)) -> np.ndarray | None:
-    """Embeddings of a finished store's crops -> (n, dim) float32 memmap at `out` (NaN rows = no crop)."""
-    paths, crops, det = load_store(store)
-    out = Path(out)
+def embed(store, rec, out, part=(0, 1)) -> np.ndarray | None:
+    """Embeddings of a store's crops -> (n, dim) float32 memmap at `out` (NaN rows = no crop). Works per align shard
+    and only on shards whose alignment is done, so it can run while alignment is still going: call again until it
+    returns the array (None = some align shards are not done yet)."""
+    store, out = Path(store), Path(out)
+    paths = (store / "paths.txt").read_text().split("\n")
+    n, shard = len(paths), json.loads((store / "meta.json").read_text())["shard"]
+    if out.with_suffix(".json").exists():
+        return np.memmap(out, np.float32, "r").reshape(n, rec.dim)
+    crops = np.memmap(store / "crops.u8", np.uint8, "r").reshape(n, *CROP)
     out.parent.mkdir(parents=True, exist_ok=True)
-    n = len(paths)
     emb = _memmap(out, (n, rec.dim), np.float32)
-    sdir = out.parent / f"shards_{out.stem}"
+    sdir = out.parent / f"ashards_{out.stem}"
     sdir.mkdir(exist_ok=True)
+    k = (n + shard - 1) // shard
     t0, done = time.time(), 0
-    for si, s0 in enumerate(range(0, n, shard)):
+    for si in range(k):
         mark = sdir / f"{si:05d}.done"
-        if si % part[1] != part[0] or mark.exists():
+        if si % part[1] != part[0] or mark.exists() or not (store / "shards" / f"{si:05d}.done").exists():
             continue
-        sl = slice(s0, min(s0 + shard, n))
-        ok = det["ok"][sl]
-        e = np.full((sl.stop - sl.start, rec.dim), np.nan, np.float32)
+        ok = np.load(store / "shards" / f"{si:05d}.npz")["ok"]
+        sl = slice(si * shard, si * shard + len(ok))
+        e = np.full((len(ok), rec.dim), np.nan, np.float32)
         if ok.any():
             e[ok] = rec.embed_aligned(np.ascontiguousarray(crops[sl][ok]))
         emb[sl] = e
         emb.flush()
         mark.touch()
         done += int(ok.sum())
-        print(f"[embed {rec.version} {out.stem}] {sl.stop}/{n} {done / (time.time() - t0):.0f} img/s", flush=True)
-    if len(list(sdir.glob("*.done"))) < (n + shard - 1) // shard:
+        print(f"[embed {rec.version} {out.stem}] shard {si + 1}/{k} {done / (time.time() - t0):.0f} img/s", flush=True)
+    if len(list(sdir.glob("*.done"))) < k:
         return None
-    (out.with_suffix(".json")).write_text(json.dumps({"recognizer": rec.version, "store": str(store), "n": n,
-                                                      "ok": int(det["ok"].sum())}, indent=1))
+    n_ok = int(sum(np.load(f)["ok"].sum() for f in (store / "shards").glob("*.npz")))
+    out.with_suffix(".json").write_text(json.dumps({"recognizer": rec.version, "store": str(store), "n": n, "ok": n_ok},
+                                                   indent=1))
     return emb

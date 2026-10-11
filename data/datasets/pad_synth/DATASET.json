@@ -1,0 +1,112 @@
+{
+ "name": "pad_synth",
+ "version": "2",
+ "source": "Rendered by faceauth/sim/sensor.py (SensorSim profiles gemini336-sim-v1, sensor_b) from CelebA align&cropped images (img_align_celeba, 202,599 JPEGs, from the HF mirror https://huggingface.co/datasets/student/celebA rev 2d31e6555722815c74ea7c845b07c1063dd705e9, Dataset.zip sha256 9464985fa6cfc84d0fe6b87a6e4f07a275c8bd3dfc8abd713218765de7d62306, extracted to data/tmp/pad/celeba_align) with the OFFICIAL annotations list_landmarks_align_celeba.txt + identity_CelebA.txt (data/datasets/celeba/raw/Anno); MediaPipe canonical face mesh (Apache-2.0) for live/mask geometry. Command: python scripts/train_pad.py gen --workers 40",
+ "license": "Derived from CelebA: 'use is RESTRICTED to non-commercial research and educational purposes' (CelebA README; CUHK does not own the image copyrights). NON-COMMERCIAL / RESEARCH-ONLY. Simulator assets: MediaPipe canonical_face_model.obj, Apache-2.0.",
+ "files": {
+  "manifest.jsonl": "891fb4cc97e9f053935360792135360618b8cfeccd2434d29d38a25929bc9f4a"
+ },
+ "counts": {
+  "frames": 47000,
+  "per_split_profile_kind": {
+   "test/gemini336-sim-v1/inject_live": 2000,
+   "test/gemini336-sim-v1/live": 2000,
+   "test/gemini336-sim-v1/mask_rigid": 2000,
+   "test/gemini336-sim-v1/mask_silicone": 2000,
+   "test/gemini336-sim-v1/print": 2000,
+   "test/gemini336-sim-v1/replay": 2000,
+   "test/sensor_b/live": 2000,
+   "test/sensor_b/mask_rigid": 2000,
+   "test/sensor_b/mask_silicone": 2000,
+   "test/sensor_b/print": 2000,
+   "test/sensor_b/replay": 2000,
+   "train/gemini336-sim-v1/live": 4000,
+   "train/gemini336-sim-v1/mask_rigid": 4000,
+   "train/gemini336-sim-v1/mask_silicone": 4000,
+   "train/gemini336-sim-v1/print": 4000,
+   "train/gemini336-sim-v1/replay": 4000,
+   "val/gemini336-sim-v1/live": 1000,
+   "val/gemini336-sim-v1/mask_rigid": 1000,
+   "val/gemini336-sim-v1/mask_silicone": 1000,
+   "val/gemini336-sim-v1/print": 1000,
+   "val/gemini336-sim-v1/replay": 1000
+  },
+  "identities": {
+   "train": 2000,
+   "val": 500,
+   "test": 1000
+  },
+  "failed_sources": 0
+ },
+ "notes": "SYNTHETIC presentations: live subjects, print (flat/bent), replay (phone/tablet/monitor), mask_rigid, mask_silicone; 'inject_live' = perfect synthetic live frames used as the digital-injection attack in eval. Identity-disjoint train/val/test (CelebA identity labels, seed 7). Each frame file is msgpack {rgb: JPEG q95, depth: PNG uint16 mm, ir: PNG uint8, kps5, kind, meta} (packet.encode_frame wire format); per-file sha256 in manifest.jsonl. Not real sensor data: validates the pipeline only.",
+ "split": {
+  "seed": 7,
+  "identities": {
+   "train": 2000,
+   "val": 500,
+   "test": 1000
+  },
+  "images_per_identity": 2
+ },
+ "errors": [],
+ "biwi": {
+  "split": {
+   "train": [
+    "01",
+    "04",
+    "08",
+    "11",
+    "12",
+    "14",
+    "17",
+    "19",
+    "20"
+   ],
+   "val": [
+    "23",
+    "24"
+   ],
+   "test": [
+    "02",
+    "03",
+    "05",
+    "06",
+    "07",
+    "09",
+    "10",
+    "13",
+    "15",
+    "16",
+    "18",
+    "21",
+    "22"
+   ]
+  },
+  "step": 3,
+  "pose_limit_deg": [
+   50,
+   40
+  ],
+  "counts": {
+   "train/gemini336-sim-v1/live": 1192,
+   "train/gemini336-sim-v1/print": 1192,
+   "train/gemini336-sim-v1/replay": 1192,
+   "train/gemini336-sim-v1/mask_rigid": 1192,
+   "train/gemini336-sim-v1/mask_silicone": 1192,
+   "val/gemini336-sim-v1/live": 271,
+   "val/gemini336-sim-v1/print": 271,
+   "val/gemini336-sim-v1/replay": 271,
+   "val/gemini336-sim-v1/mask_rigid": 271,
+   "val/gemini336-sim-v1/mask_silicone": 271,
+   "test/gemini336-sim-v1/live": 1743,
+   "test/gemini336-sim-v1/print": 1743,
+   "test/gemini336-sim-v1/replay": 1743,
+   "test/gemini336-sim-v1/mask_rigid": 1743,
+   "test/gemini336-sim-v1/mask_silicone": 1743,
+   "test/gemini336-sim-v1/inject_live": 1743
+  },
+  "failed_sources": 7,
+  "source": "BIWI Kinect Head Pose RGB frames (data/datasets/biwi, research only); depth/IR rendered by SensorSim like the CelebA part, BIWI depth is not used",
+  "command": "python scripts/train_pad.py gen_biwi --step 3 --workers 48"
+ }
+}

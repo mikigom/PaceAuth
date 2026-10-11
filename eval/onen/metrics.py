@@ -35,7 +35,7 @@ def upper_bound(x: int, n: int, alpha: float = ALPHA) -> float:
 
 
 def searches_needed(rate: float, alpha: float = ALPHA) -> int:
-    """Independent error-free searches needed for the one-sided upper bound to reach `rate` (1e-6 -> 2,995,732)."""
+    """Independent error-free searches needed for the one-sided upper bound to reach `rate` (1e-6 -> 2,995,731)."""
     return int(np.ceil(np.log(alpha) / np.log1p(-rate)))
 
 
@@ -77,7 +77,7 @@ def _clusters(c):
 def cluster_boot_ci(err, clusters, B=1000, seed=0, alpha=ALPHA) -> tuple[float, float]:
     """Percentile CI of mean(err) resampling clusters (subjects / identities) with replacement."""
     inv, C = _clusters(clusters)
-    if C == 0:
+    if C == 0 or B == 0:
         return (float("nan"), float("nan"))
     e = np.bincount(inv, np.asarray(err, float), C)
     n = np.bincount(inv, minlength=C).astype(float)
@@ -97,7 +97,7 @@ def boot_fnir_at_fpir(nm, nm_cl, hit, m_cl, fpir, B=1000, seed=0, alpha=ALPHA) -
     desc = np.asarray(nm, np.float64)[order]
     ninv, Cn = _clusters(np.asarray(nm_cl)[order])
     minv, Cm = _clusters(m_cl)
-    if Cn == 0 or Cm == 0:
+    if Cn == 0 or Cm == 0 or B == 0:
         return (float("nan"), float("nan"))
     hit = np.asarray(hit, np.float64)
     rng = np.random.default_rng(seed)
@@ -138,6 +138,7 @@ def evaluate(m_top1, m_top2, m_rank1, m_cluster, n_top1, n_top2, n_cluster, marg
             fp, h, mi = int((nm >= t).sum()), int((hit >= t).sum()), int((mis >= t).sum())
             rows.append({
                 "target_fpir": f, "threshold": t, "resolvable": bool(f * N >= 1),
+                "resolvable_by_identity": bool(f * n_ids >= 1),
                 "fpir": fp / N, "fp": fp, "fpir_ci95": cp_ci(fp, N), "fpir_upper95": upper_bound(fp, N),
                 "fpir_boot_ci95": cluster_boot_ci(nm >= t, n_cluster, B, seed),
                 "fp_identities": int(len(np.unique(n_cluster[nm >= t]))),

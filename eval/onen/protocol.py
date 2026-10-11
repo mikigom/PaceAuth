@@ -5,8 +5,11 @@ them is enrolled with `n_templates` random images as gallery templates and the r
 identity is non-enrolled and all its images are non-mated probes. Distractor datasets add gallery subjects (up to
 `n_templates` images each) in a seeded `order`, continuing across datasets in the given order (so a gallery with
 D distractors = order < D: the first datasets fill small galleries); probe_frac {name: F} turns a fraction F of a
-dataset's subjects into non-mated probe identities instead. Mated / non-mated images of one subject are also cut
+dataset's subjects into non-mated probe identities instead (if the dataset has a `unit` column the split is by unit,
+moved to a unit boundary, so probes and distractors never share a unit). Mated / non-mated images of one subject are also cut
 into multi-image probe groups of `group_size` (variant: probe = normalised mean of the group's embeddings).
+Every dataset draws from its own stream np.random.default_rng([seed, i]) (i = 0 identity, 1.. distractors in order),
+so a dataset's selection does not depend on another dataset's content (e.g. on which CelebA images were detected).
 
 Table: one row per image, sorted by path: path, subject, role in {template, mated, nonmated, distractor},
 group (-1 = none), order (-1 = not a distractor).
@@ -17,7 +20,7 @@ import pandas as pd
 
 def build(identity: pd.DataFrame, distractors=(), probe_frac=None, seed=0, enroll_frac=0.5, n_templates=4,
           min_images=5, max_probes=0, group_size=3) -> pd.DataFrame:
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng([seed, 0])
     probe_frac = probe_frac or {}
     rows = []
 
@@ -40,10 +43,19 @@ def build(identity: pd.DataFrame, distractors=(), probe_frac=None, seed=0, enrol
         groups(paths[:max_probes] if max_probes else paths, s, role)
 
     order = 0
-    for name, df in distractors:
+    for i, (name, df) in enumerate(distractors, 1):
+        rng = np.random.default_rng([seed, i])
         d = df.groupby("subject", sort=True)["path"].apply(sorted)
-        subj = rng.permutation(d.index.to_numpy())
+        if "unit" in df:  # split by unit (e.g. FFHQ Flickr account): probes and distractors never share a unit
+            units = df.groupby("unit", sort=True)["subject"].apply(lambda x: sorted(set(x)))
+            subj = np.array([s for u in rng.permutation(units.index.to_numpy()) for s in units[u]], dtype=object)
+        else:
+            subj = rng.permutation(d.index.to_numpy())
         n_probe = int(round(probe_frac.get(name, 0.0) * len(subj)))
+        if "unit" in df and n_probe:  # move the cut to the next unit boundary
+            unit_of = df.drop_duplicates("subject").set_index("subject")["unit"]
+            while n_probe < len(subj) and unit_of[subj[n_probe]] == unit_of[subj[n_probe - 1]]:
+                n_probe += 1
         for s in subj[:n_probe]:
             groups(list(rng.permutation(d[s])), s, "nonmated")
         for s in subj[n_probe:]:

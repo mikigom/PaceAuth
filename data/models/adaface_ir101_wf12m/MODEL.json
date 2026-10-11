@@ -1,0 +1,25 @@
+{
+  "name": "adaface_ir101_wf12m",
+  "version": "1",
+  "kind": "recognition",
+  "files": {
+    "weights": "model.safetensors"
+  },
+  "sha256": {
+    "weights": "2ea535a43877bd3de8091903935c783ce335be66a9f8917fae9a7a18ae4bbf56"
+  },
+  "dim": 512,
+  "source": "https://huggingface.co/minchul/cvlface_adaface_ir101_webface12m (revision 54f602a0737bd1ee4a4e7e9fd089a485f397fefd) model.safetensors (260,980,552 B; sha256 equals the HF LFS oid). The repo's pretrained_model/model.pt (pickle, LFS sha256 e312d792...) was not downloaded.",
+  "license": "NON-COMMERCIAL / ACADEMIC RESEARCH ONLY. The weights carry no licence of their own; model card: 'Please cite the orignal paper and follow the license of the training dataset.' Training data WebFace12M is a subset of WebFace260M, whose usage rules state: '1. This dataset and its subsets can only be used for academic research. 2. Applicants are not allowed to use this dataset and its subsets for any commercial purposes.' Code (CVLFace / AdaFace, vendored in faceauth/models/vendor/cvlface_iresnet.py): MIT. Commercial use requires permission from the data owners or own lawful training (RFP §2).",
+  "params": {
+    "arch": "cvlface_ir101",
+    "align": "arcface5-112@1",
+    "fp16": true,
+    "input": "ArcFace norm_crop 112x112, RGB (config color_space RGB), (x/255-0.5)/0.5",
+    "backbone": "IResNet-101 (AdaFace IR_101, 917 tensors, 65.2M parameters), 512-d raw output (BatchNorm1d affine=False), L2-normalised by the wrapper",
+    "loss": "AdaFace",
+    "train_data": "WebFace12M (same training data as kprpe_vitb_wf12m: isolates the ViT/KP-RPE architecture effect)",
+    "published": "CVLFace cvlface/pretrained_models/README.md 'Face Recognition Performance Board', row IR101 / AdaFace / WebFace12M: AVG 92.13, LFW 99.82, CPLFW 94.57, CFP-FP 99.24, CALFW 96.12, AgeDB 98.00, IJB-B TAR@FAR=1e-4 96.46, IJB-C TAR@FAR=1e-4 97.72, TinyFace R1 72.42 / R5 74.81",
+    "precision_note": "fp16 autocast chosen by the E1 rule (reports/E1_recognition: min cos(fp16, fp32) 0.99993 over 62,000 images, max |delta acc| 0.03 pp); E1 itself ran with fp16=false in MODEL.json and measured both"
+  }
+}

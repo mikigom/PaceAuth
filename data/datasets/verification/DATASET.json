@@ -1,0 +1,20 @@
+{
+  "name": "verification",
+  "source": "InsightFace-format validation bins (pickle of (list of 112x112 JPEGs as uint8 ndarrays, issame list); pairs = images 2i, 2i+1) from the third-party HF mirror https://huggingface.co/datasets/gaunernst/face-recognition-eval (revision 9921cccf7bc4b317c3021c0eb9d1330d3d732fc0, no dataset card / licence). Official distribution of the same bins: inside the InsightFace training packages (recognition/_datasets_/README.md, e.g. MS1M-ArcFace / MS1M-RetinaFace). The CVLFace eval toolkit (password-protected, form-gated) was not used. Images are already ArcFace-aligned (5-point, 112x112).",
+  "license": "RESEARCH / EVALUATION ONLY, NOT FOR REDISTRIBUTION, NO COMMERCIAL USE. AgeDB (agedb_30): 'The dataset is available for non-commercial research purposes only ... You agree not to reproduce, duplicate, copy, sell, trade, resell or exploit for any commercial purposes, any portion of the annotations and any portion of derived data. You agree not to further copy, publish or distribute any portion of annotations of the dataset.' (ibug.doc.ic.ac.uk/resources/agedb). LFW: no licence granted; site: 'LFW is a public benchmark for face verification ... it should not be used to conclude that an algorithm is suitable for any commercial purpose' / 'published to help the research community'. CALFW, CPLFW (LFW renovations, whdeng.cn) and CFP (cfpw.io): research benchmarks, no licence text on their pages; images are web photos of public figures. The HF mirror itself states no licence. Keep under data/ (gitignored); use only for model evaluation.",
+  "files": {
+    "lfw.bin": "2cdf0242947ad8287a96f84b5908bb2332879050c959c4a9a23a5cc6bcea112c",
+    "cfp_fp.bin": "a8754ddf9729a014438d00908a1dc2fe2dbdfb59db9d19a714251c2f814a94ad",
+    "agedb_30.bin": "1af672c0ea829b95951b12628687956fe54263614b60b0ec5af9cdfdc4480b30",
+    "calfw.bin": "f643466e875865670a91d6d836dcd0af7ac41730f279ba13de1ed5ae6546c4db",
+    "cplfw.bin": "2d18b80537ef3dce1ba163d8829c5994d1408d4c2a84eee499bba5563d8da2fc"
+  },
+  "counts": {
+    "lfw": {"images": 12000, "pairs": 6000, "genuine": 3000, "impostor": 3000},
+    "cfp_fp": {"images": 14000, "pairs": 7000, "genuine": 3500, "impostor": 3500},
+    "agedb_30": {"images": 12000, "pairs": 6000, "genuine": 3000, "impostor": 3000},
+    "calfw": {"images": 12000, "pairs": 6000, "genuine": 3000, "impostor": 3000},
+    "cplfw": {"images": 12000, "pairs": 6000, "genuine": 3000, "impostor": 3000}
+  },
+  "notes": "sha256 equal the HF LFS hashes. The pickles are untrusted: eval/eval_verification.py:load_bin uses an unpickler that only allows numpy array reconstruction (globals numpy.core.multiarray._reconstruct, numpy.ndarray, numpy.dtype; verified with pickletools that these are the only globals in all five files). Decoded with cv2.imdecode (BGR) -> RGB. The mirror stores images as uint8 ndarrays rather than py2 str (re-pickled), so files are not byte-identical to InsightFace's packages; image content was validated indirectly: KP-RPE reproduces its published accuracies (reports/E1_recognition). Not available here: IJB-B/C (NIST distribution stopped 2023-03-14, RFP §5), MFR."
+}

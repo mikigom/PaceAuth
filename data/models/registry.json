@@ -1,0 +1,787 @@
+{
+ "created_at": "2026-10-11T20:29:04.846227+00:00",
+ "format": 1,
+ "models": [
+  {
+   "dir": "6drepnet",
+   "files": {
+    "weights": "6DRepNet_300W_LP_AFLW2000.pth"
+   },
+   "kind": "headpose",
+   "license": "Code and weights: MIT (thohemp/6DRepNet LICENSE, Copyright (c) 2022 Thorsten Hempel; vendored inference code faceauth/models/vendor/sixdrepnet keeps the notice). The weights carry no separate licence. RESTRICTION FLAG - training data is research-only: 300W-LP (synthesised by 3DDFA from 300-W/iBUG images; iBUG 300-W: 'The data are provided for research purposes only. Commercial use (i.e., use in training commercial algorithms) is not allowed.'). Commercial deployment of these weights is NOT cleared; needs legal review or retraining on licensed data (RFP \u00a72).",
+   "model_json_sha256": "694655554814d5711d736b36829e84bda005f4aeb2af31c9ca659eea7da1035d",
+   "name": "6drepnet",
+   "params": {
+    "arch": "6drepnet_repvgg_b1g2",
+    "crop": "demo",
+    "input": "crop 'demo' (6DRepNet sixdrepnet/demo.py): detector box + int(0.2*h) left/right and int(0.2*w) top/bottom, RGB, Resize(224) shorter side + CenterCrop(224), ImageNet mean/std; output rotation matrix -> Euler (6DRepNet utils) -> \u00a70 yaw, pitch, roll (upstream yaw negated)",
+    "input_size": 224,
+    "paper": "Hempel et al., 6D Rotation Representation for Unconstrained Head Pose Estimation, ICIP 2022",
+    "train_data": "300W-LP (yaw within +-99 deg)"
+   },
+   "primary": "weights",
+   "sha256": {
+    "weights": "9bdcd0e072df0d21e92288b40ea1d1b3cf7173c44728ab9c45c4d673f361e018"
+   },
+   "source": "https://cloud.ovgu.de/s/Q67RnLDy6JKLRWm/download/6DRepNet_300W_LP_AFLW2000.pth (default weights of the official pip package, https://github.com/thohemp/6DRepNet @464b2ba sixdrepnet/regressor.py); byte-identical to https://huggingface.co/osanseviero/6DRepNet_300W_LP_AFLW2000 model.pth (same sha256)",
+   "version": "1"
+  },
+  {
+   "dir": "6drepnet360",
+   "files": {
+    "weights": "6DRepNet360_Full-Rotation_300W_LP+Panoptic.pth"
+   },
+   "kind": "headpose",
+   "license": "Code and weights: MIT (thohemp/6DRepNet360 LICENSE, Copyright (c) 2023 Thorsten Hempel; vendored inference code faceauth/models/vendor/sixdrepnet keeps the notice). The weights carry no separate licence. RESTRICTION FLAG - training data is research-only: 300W-LP (synthesised by 3DDFA from 300-W/iBUG images; iBUG 300-W: 'The data are provided for research purposes only. Commercial use (i.e., use in training commercial algorithms) is not allowed.'); CMU Panoptic Studio ('shared only for research purposes, and this cannot be used for any commercial purposes'). Commercial deployment of these weights is NOT cleared; needs legal review or retraining on licensed data (RFP \u00a72).",
+   "model_json_sha256": "9df4f9ac1d67f8a6c8a037226fe898eecdf2d96a1ee495a9d7d4fee11cf1a7e8",
+   "name": "6drepnet360",
+   "params": {
+    "arch": "6drepnet360_resnet50",
+    "crop": "fsa",
+    "input": "crop 'fsa' (detector crop behind the published 6DRepNet/6DRepNet360 BIWI results: FSA-Net TYY_create_db_biwi.py with image size 256): detector box + 0.4*w / 0.4*h each side, clipped, squashed to 256x256 (cv2 bilinear), RGB, Resize(256) + CenterCrop(224) (test.py), ImageNet mean/std; 6DRepNet360 has no inference/demo code, so this is its only official detector-box pipeline; output rotation matrix -> Euler (6DRepNet utils) -> \u00a70 yaw, pitch, roll (upstream yaw negated)",
+    "input_size": 224,
+    "paper": "Hempel et al., Toward Robust and Unconstrained Full Range of Rotation Head Pose Estimation, IEEE TIP 33:2377-2387, 2024",
+    "train_data": "300W-LP + CMU Panoptic (full rotation range)"
+   },
+   "primary": "weights",
+   "sha256": {
+    "weights": "3ee08f1e04b8d452a6c4a40926a6f38051894ae6d0aaa6d191fe6d8bc6e4f9c6"
+   },
+   "source": "https://cloud.ovgu.de/s/TewGC9TDLGgKkmS/download/6DRepNet360_Full-Rotation_300W_LP+Panoptic.pth (README 'Models' table of https://github.com/thohemp/6DRepNet360 @b06e4fed, row '6DRepNet360 Full Rotation: Fine-tuned on 300W-LP + Panoptic')",
+   "version": "1"
+  },
+  {
+   "dim": 512,
+   "dir": "adaface_ir101_wf12m",
+   "files": {
+    "weights": "model.safetensors"
+   },
+   "kind": "recognition",
+   "license": "NON-COMMERCIAL / ACADEMIC RESEARCH ONLY. The weights carry no licence of their own; model card: 'Please cite the orignal paper and follow the license of the training dataset.' Training data WebFace12M is a subset of WebFace260M, whose usage rules state: '1. This dataset and its subsets can only be used for academic research. 2. Applicants are not allowed to use this dataset and its subsets for any commercial purposes.' Code (CVLFace / AdaFace, vendored in faceauth/models/vendor/cvlface_iresnet.py): MIT. Commercial use requires permission from the data owners or own lawful training (RFP \u00a72).",
+   "model_json_sha256": "3679c980416673de94c2ebb10f3063c98e333616fc1208758373a1cfb32cf443",
+   "name": "adaface_ir101_wf12m",
+   "params": {
+    "align": "arcface5-112@1",
+    "arch": "cvlface_ir101",
+    "backbone": "IResNet-101 (AdaFace IR_101, 917 tensors, 65.2M parameters), 512-d raw output (BatchNorm1d affine=False), L2-normalised by the wrapper",
+    "fp16": true,
+    "input": "ArcFace norm_crop 112x112, RGB (config color_space RGB), (x/255-0.5)/0.5",
+    "loss": "AdaFace",
+    "precision_note": "fp16 autocast chosen by the E1 rule (reports/E1_recognition: min cos(fp16, fp32) 0.99993 over 62,000 images, max |delta acc| 0.03 pp); E1 itself ran with fp16=false in MODEL.json and measured both",
+    "published": "CVLFace cvlface/pretrained_models/README.md 'Face Recognition Performance Board', row IR101 / AdaFace / WebFace12M: AVG 92.13, LFW 99.82, CPLFW 94.57, CFP-FP 99.24, CALFW 96.12, AgeDB 98.00, IJB-B TAR@FAR=1e-4 96.46, IJB-C TAR@FAR=1e-4 97.72, TinyFace R1 72.42 / R5 74.81",
+    "train_data": "WebFace12M (same training data as kprpe_vitb_wf12m: isolates the ViT/KP-RPE architecture effect)"
+   },
+   "primary": "weights",
+   "sha256": {
+    "weights": "2ea535a43877bd3de8091903935c783ce335be66a9f8917fae9a7a18ae4bbf56"
+   },
+   "source": "https://huggingface.co/minchul/cvlface_adaface_ir101_webface12m (revision 54f602a0737bd1ee4a4e7e9fd089a485f397fefd) model.safetensors (260,980,552 B; sha256 equals the HF LFS oid). The repo's pretrained_model/model.pt (pickle, LFS sha256 e312d792...) was not downloaded.",
+   "version": "1"
+  },
+  {
+   "dir": "farl_wflw_448",
+   "files": {
+    "jit": "face_alignment.farl.wflw.main_ema_jit.pt"
+   },
+   "kind": "landmarks",
+   "license": "Code: MIT (facer (c) 2022 FacePerceiver; FaRL (c) Microsoft Corporation). Weights: published in the facer GitHub release with no separate weight licence (repository licence MIT). Training data: backbone pre-trained on LAION-Face 20M (web images from LAION-400M; LAION-Face id list CC-BY 4.0, images keep their original copyrights), fine-tuned on WFLW (WIDER FACE images, CC BY-NC-ND). RESTRICTION FLAG: fine-tuning data is non-commercial (NC-ND); commercial deployment of these weights needs legal clearance or retraining on licensed data.",
+   "model_json_sha256": "f6b1323328b03fec27fd9f2ece716c7fdae11e604ba54f37415e14ff5cd6d7d6",
+   "name": "farl_wflw_448",
+   "params": {
+    "backbone": "FaRL ViT-B/16 (LAION-Face20M), FPN from blocks 3/5/7/11; head mmseg UPerHead (TorchScript)",
+    "box_crop": "square side max(w,h) centred on box -> 0.8*448 px (FaRL WFLW protocol, HRNet center/scale box)",
+    "decode": "soft-argmax over the 112x112 sigmoid heatmap (FaRL heatmap2points) -> crop px -> inverse affine",
+    "heatmap_act": "sigmoid",
+    "heatmap_size": 112,
+    "input_size": 448,
+    "kps_crop": "similarity (least squares) of 5 kps onto facer standard points ([[196,226],[316,226],[256,286],[220,360.4],[292,360.4]]/256-1)*0.8, mapped to [0,447]",
+    "normalize": "RGB/255, then CLIP mean [0.48145466,0.4578275,0.40821073] std [0.26862954,0.26130258,0.27577711] inside the backbone",
+    "num_points": 98
+   },
+   "primary": "jit",
+   "sha256": {
+    "jit": "0179c9dcce372ae27484463a750dc007e7444574372b97b67fa3baf74511a280"
+   },
+   "source": "https://github.com/FacePerceiver/facer/releases/download/models-v1/face_alignment.farl.wflw.main_ema_jit.pt (facer commit ddd35c76ff840174b8a5403ad1c1255e37b8782b, config 'wflw/448'; FaRL https://github.com/FacePerceiver/FaRL)",
+   "version": "1"
+  },
+  {
+   "dim": 512,
+   "dir": "insightface_r100_glint360k",
+   "files": {
+    "onnx": "glintr100.onnx"
+   },
+   "kind": "recognition",
+   "license": "NON-COMMERCIAL RESEARCH ONLY. insightface model_zoo/README.md: 'ALL models are available for non-commercial research purposes only.' InsightFace README (License): 'The training data containing the annotation (and the models trained with these data) are available for non-commercial research purposes only.' Commercial licensing of the open-sourced recognition models: recognition-oss-pack@insightface.ai. Training data Glint360K (InsightFace Partial FC release, celebrity web images) falls under the same non-commercial policy.",
+   "model_json_sha256": "ea3c00f27ee149c131523626c7971d76fa2846599dc1a1a21d6bd80790eb75c5",
+   "name": "insightface_r100_glint360k",
+   "params": {
+    "align": "arcface5-112@1",
+    "arch": "insightface_onnx",
+    "backbone": "IResNet-100 (65.2M parameters in the ONNX initializers), 512-d",
+    "fp16": false,
+    "input": "ArcFace norm_crop 112x112, RGB, (x-127.5)/127.5, NCHW float32 (insightface ArcFaceONNX: no Sub/Mul in the first graph nodes -> mean=std=127.5, swapRB on BGR input = RGB)",
+    "input_mean": 127.5,
+    "input_std": 127.5,
+    "published": "No accuracy is published for antelopev2/glintr100.onnx itself. Reference rows (not proven to be the same checkpoint): insightface model_zoo/README.md 'List of models by various depth IResNet', R100 Glint360K: MR-ALL 90.659, African 89.488, Caucasian 94.285, South Asian 93.434, East Asian 72.528; arcface_torch README Glint360k r100 (2022 re-training, log glint360k_r100/training.log): MFR-ALL 89.52, IJB-C 1e-4 97.55, 1e-5 96.38, final-step verification flip accuracy LFW 99.78, CFP-FP 99.10, AgeDB-30 98.65 (step 332000).",
+    "runtime": "ONNX Runtime CUDA EP, fp32 weights/activations (CUDA EP default use_tf32=1 for convs), dynamic batch (input 'input.1' [None,3,112,112]; output declared [1,512] but follows the batch)",
+    "train_data": "Glint360K (360K identities, 17.1M images)"
+   },
+   "primary": "onnx",
+   "sha256": {
+    "onnx": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf"
+   },
+   "source": "InsightFace model-zoo pack antelopev2: https://github.com/deepinsight/insightface/releases/download/model-zoo/antelopev2.zip (360,662,982 B, sha256 8e182f14fc6e80b3bfa375b33eb6cff7ee05d8ef7633e738d1c89021dcf0c5c5, downloaded 2026-10-11), member antelopev2/glintr100.onnx (260,665,334 B) extracted unmodified.",
+   "version": "1"
+  },
+  {
+   "dim": 512,
+   "dir": "insightface_r50_wf600k",
+   "files": {
+    "onnx": "w600k_r50.onnx"
+   },
+   "kind": "recognition",
+   "license": "NON-COMMERCIAL RESEARCH ONLY. insightface model_zoo/README.md: 'ALL models are available for non-commercial research purposes only.' InsightFace README (License): 'The training data containing the annotation (and the models trained with these data) are available for non-commercial research purposes only.' ... 'For open-sourced face recognition models (e.g., buffalo_l package), please contact recognition-oss-pack@insightface.ai for licensing.' Training data WebFace (WebFace260M subset): academic research only, no commercial use. Commercial use requires a licence from InsightFace or own lawful training (RFP \u00a72).",
+   "model_json_sha256": "5d69316c363e62f2d405657257a87e6d9542545f12fb0a715f1da5d61ab0f7b7",
+   "name": "insightface_r50_wf600k",
+   "params": {
+    "align": "arcface5-112@1",
+    "arch": "insightface_onnx",
+    "backbone": "IResNet-50 (43.6M parameters in the ONNX initializers), 512-d",
+    "fp16": false,
+    "input": "ArcFace norm_crop 112x112, RGB, (x-127.5)/127.5, NCHW float32 (insightface ArcFaceONNX: no Sub/Mul in the first graph nodes -> mean=std=127.5, swapRB on BGR input = RGB)",
+    "input_mean": 127.5,
+    "input_std": 127.5,
+    "published": "insightface model_zoo/README.md 'Recognition accuracy of python library model packs', row buffalo_l: MR-ALL 91.25, African 90.29, Caucasian 94.70, South Asian 93.16, East Asian 74.96, LFW 99.83, CFP-FP 99.33, AgeDB-30 98.23, IJB-C(E4) 97.25",
+    "runtime": "ONNX Runtime CUDA EP, fp32 weights/activations (CUDA EP default use_tf32=1 for convs), dynamic batch (input 'input.1' [None,3,112,112]; output declared [1,512] but follows the batch)",
+    "train_data": "WebFace600K (InsightFace naming; the ~0.6M-identity WebFace12M identity set, see docs/INSIGHTFACE_SURVEY.md)"
+   },
+   "primary": "onnx",
+   "sha256": {
+    "onnx": "4c06341c33c2ca1f86781dab0e829f88ad5b64be9fba56e56bc9ebdefc619e43"
+   },
+   "source": "InsightFace model-zoo pack buffalo_l: https://github.com/deepinsight/insightface/releases/download/model-zoo/buffalo_l.zip (288,621,354 B, sha256 80ffe37d8a5940d59a7384c201a2a38d4741f2f3c51eef46ebb28218a7b0ca2f, downloaded 2026-10-11), member w600k_r50.onnx (174,383,860 B) extracted unmodified. Same file is reused byte-for-byte by the newer raccoon/cheetah packs (docs/INSIGHTFACE_SURVEY.md).",
+   "version": "1"
+  },
+  {
+   "dim": 512,
+   "dir": "kprpe_vitb_wf12m",
+   "files": {
+    "aligner": "aligner.safetensors",
+    "weights": "model.safetensors"
+   },
+   "kind": "recognition",
+   "license": "NON-COMMERCIAL / ACADEMIC RESEARCH ONLY. Weights carry no licence of their own; model cards (both repos): 'Please cite the orignal paper and follow the license of the training dataset.' Training data WebFace12M is a subset of WebFace260M, whose usage rules state: '1. This dataset and its subsets can only be used for academic research. 2. Applicants are not allowed to use this dataset and its subsets for any commercial purposes.' (face-benchmark.org download page). The DFA aligner card names no training dataset. Code (CVLFace, vendored in faceauth/models/vendor/cvlface_*.py): MIT. Commercial use requires permission from the data owners or own lawful training (RFP \u00a72).",
+   "model_json_sha256": "754c349514c7955be43e54f21b2d5731472c54e10d21b6c1b67fef4a2c0da129",
+   "name": "kprpe_vitb_wf12m",
+   "params": {
+    "align": "arcface5-112@1",
+    "arch": "cvlface_vit_base_kprpe",
+    "fp16": true,
+    "input": "ArcFace norm_crop 112x112, RGB, (x/255-0.5)/0.5",
+    "keypoints": "5 points predicted on the aligned crop by the bundled DFA aligner (mobilenet0.25, input 160, no padding), normalised [0,1]; = official CVLFace eval pipeline infer_aligner_keypoint_model_pipeline",
+    "loss": "AdaFace",
+    "notes": "model.safetensors is tensor-identical to pretrained_model/model.pt (sha256 04b4bee1...) and aligner.safetensors to pretrained_model/aligner.pt (sha256 c9564179...) of the KP-RPE repo (all 283 / 338 tensors equal); safetensors chosen to avoid pickle loading.",
+    "train_data": "WebFace12M"
+   },
+   "primary": "weights",
+   "sha256": {
+    "aligner": "80b6e922e4c76c10d5e24061fe47cd96112d18689bf5ae7e34af52e641c18c4a",
+    "weights": "99d16ed4aac0fdf0fcc82526b9b70703f3ec8c3041bf1bf44bd22751536e65db"
+   },
+   "source": "https://huggingface.co/minchul/cvlface_adaface_vit_base_kprpe_webface12m (revision daefd5012d369588bd214fbaf4cc6b1d286e7066) model.safetensors; aligner = https://huggingface.co/minchul/cvlface_DFA_mobilenet (revision 8317e6dda53d91e7074979923144c2cc08906a33) model.safetensors",
+   "version": "1"
+  },
+  {
+   "dir": "pad_rgbdir",
+   "files": {
+    "weights": "pad_rgbdir.pt"
+   },
+   "kind": "pad",
+   "license": "In-house weights; trained on renders of CelebA images -> treat as NON-COMMERCIAL / RESEARCH-ONLY (CelebA: non-commercial research and educational use only). Replace by weights trained on consented real-sensor data before any deployment.",
+   "model_json_sha256": "4dc1d58d1ba591b39e439ad0a44d07a0615d44e43245ea31df64be81be7dbd15",
+   "name": "pad_rgbdir",
+   "params": {
+    "calib_version": "gemini336-sim-v1",
+    "checks": {
+     "min_ir_median": 30.0,
+     "min_relief_mm": 3.0,
+     "min_shading_corr": 0.1,
+     "min_valid_ratio": 0.5
+    },
+    "fx": 385.0,
+    "input": {
+     "align": "faceauth.common.align.estimate_norm zoomed out by `zoom`",
+     "channels": [
+      "r",
+      "g",
+      "b",
+      "depth_rel",
+      "depth_valid",
+      "ir"
+     ],
+     "depth": "(d - median(face core)) / 100 mm clipped to [-1,1], invalid 0",
+     "rgb_ir": "(x/255 - 0.5)/0.25",
+     "size": 128,
+     "zoom": 1.6
+    },
+    "threshold": 0.9992309808731079,
+    "train": {
+     "batch": 128,
+     "dataset_manifest_sha256": "3a68b6d56752a8f2bc9bc072a6438ffc51579c8f7e1a2f5891fa36d24b644188",
+     "epochs": 20,
+     "log": [
+      {
+       "epoch": 0,
+       "sec": 57.4,
+       "train_loss": 0.5567663615712752,
+       "val_apcer05": 0.535,
+       "val_bpcer05": 0.0,
+       "val_loss": 1.8400616645812988
+      },
+      {
+       "epoch": 1,
+       "sec": 60.6,
+       "train_loss": 0.2319219088038573,
+       "val_apcer05": 0.0045,
+       "val_bpcer05": 0.007,
+       "val_loss": 0.03921293467283249
+      },
+      {
+       "epoch": 2,
+       "sec": 64.2,
+       "train_loss": 0.12780658771785405,
+       "val_apcer05": 0.00525,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.02735653705894947
+      },
+      {
+       "epoch": 3,
+       "sec": 68.1,
+       "train_loss": 0.08667833928185968,
+       "val_apcer05": 0.005,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.012877182103693485
+      },
+      {
+       "epoch": 4,
+       "sec": 60.2,
+       "train_loss": 0.07441869568533431,
+       "val_apcer05": 0.0005,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.004627672489732504
+      },
+      {
+       "epoch": 5,
+       "sec": 60.6,
+       "train_loss": 0.05234465771653236,
+       "val_apcer05": 0.00075,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.003712052945047617
+      },
+      {
+       "epoch": 6,
+       "sec": 57.5,
+       "train_loss": 0.04951722076377617,
+       "val_apcer05": 0.00025,
+       "val_bpcer05": 0.002,
+       "val_loss": 0.0055628567934036255
+      },
+      {
+       "epoch": 7,
+       "sec": 62.1,
+       "train_loss": 0.04206625060835041,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.0004402409540489316
+      },
+      {
+       "epoch": 8,
+       "sec": 58.9,
+       "train_loss": 0.04709961328831597,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.005,
+       "val_loss": 0.011704379692673683
+      },
+      {
+       "epoch": 9,
+       "sec": 62.1,
+       "train_loss": 0.03295319013667699,
+       "val_apcer05": 0.00025,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.0006923208711668849
+      },
+      {
+       "epoch": 10,
+       "sec": 55.7,
+       "train_loss": 0.02420403353216198,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.000336958299158141
+      },
+      {
+       "epoch": 11,
+       "sec": 59.6,
+       "train_loss": 0.01973145976938749,
+       "val_apcer05": 0.00075,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.0010501452488824725
+      },
+      {
+       "epoch": 12,
+       "sec": 54.0,
+       "train_loss": 0.022003120038649425,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.0002797912457026541
+      },
+      {
+       "epoch": 13,
+       "sec": 43.5,
+       "train_loss": 0.020411396346902713,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00041477548074908555
+      },
+      {
+       "epoch": 14,
+       "sec": 42.2,
+       "train_loss": 0.013437891435060943,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00011174895917065442
+      },
+      {
+       "epoch": 15,
+       "sec": 40.3,
+       "train_loss": 0.00985197386949156,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00011948221072088927
+      },
+      {
+       "epoch": 16,
+       "sec": 40.1,
+       "train_loss": 0.0094667945164614,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00016503458027727902
+      },
+      {
+       "epoch": 17,
+       "sec": 38.8,
+       "train_loss": 0.008759631958897583,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00011838499631267041
+      },
+      {
+       "epoch": 18,
+       "sec": 38.2,
+       "train_loss": 0.009739904425656185,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00010662570275599137
+      },
+      {
+       "epoch": 19,
+       "sec": 38.0,
+       "train_loss": 0.009455488074775368,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00011408435966586694
+      }
+     ],
+     "lr": 0.002,
+     "n_train": 20000,
+     "n_val": 5000,
+     "protocol": "seen",
+     "seed": 0,
+     "species": [
+      "print",
+      "replay",
+      "mask_rigid",
+      "mask_silicone"
+     ]
+    },
+    "val": {
+     "bona_fide_quantiles_0p5_5_50": {
+      "ir_median": [
+       133.498,
+       138.0,
+       144.0
+      ],
+      "relief_mm": [
+       3.947,
+       4.516,
+       5.704
+      ],
+      "shading_corr": [
+       0.32,
+       0.505,
+       0.713
+      ],
+      "valid_ratio": [
+       0.833,
+       0.891,
+       0.967
+      ]
+     },
+     "bpcer": 0.01,
+     "bpcer_checks_only": 0.001,
+     "check_fail_bona_fide": {
+      "ir_median": 0,
+      "relief_mm": 0,
+      "shading_corr": 1
+     },
+     "mask_rigid": {
+      "apcer": 0.0,
+      "n": 1000,
+      "nonresponse": 0
+     },
+     "mask_silicone": {
+      "apcer": 0.0,
+      "n": 1000,
+      "nonresponse": 0
+     },
+     "n_bona_fide": 1000,
+     "print": {
+      "apcer": 0.0,
+      "n": 1000,
+      "nonresponse": 0
+     },
+     "replay": {
+      "apcer": 0.0,
+      "n": 1000,
+      "nonresponse": 504
+     }
+    }
+   },
+   "primary": "weights",
+   "sha256": {
+    "weights": "7c05ad9abf62b793b66332d6f366ee1352242bec05e4ebd633c088d6a07a55ed"
+   },
+   "source": "Trained in-house on SYNTHETIC data (faceauth/sim + scripts/train_pad.py, protocol seen); not validated on any real sensor.",
+   "version": "1"
+  },
+  {
+   "dir": "pad_rgbdir_v2",
+   "files": {
+    "weights": "pad_rgbdir.pt"
+   },
+   "kind": "pad",
+   "license": "In-house weights; trained on renders of CelebA images -> treat as NON-COMMERCIAL / RESEARCH-ONLY (CelebA: non-commercial research and educational use only). Replace by weights trained on consented real-sensor data before any deployment.",
+   "model_json_sha256": "531cef5f48dc88c9070786a6349a872092fb6be17fdf9bea7386b7a36e8c5ef7",
+   "name": "pad_rgbdir",
+   "params": {
+    "calib_version": "gemini336-sim-v1",
+    "checks": {
+     "min_ir_median": 30.0,
+     "min_relief_mm": 3.0,
+     "min_shading_corr": 0.1,
+     "min_valid_ratio": 0.5
+    },
+    "fx": 385.0,
+    "input": {
+     "align": "faceauth.common.align.estimate_norm zoomed out by `zoom`",
+     "channels": [
+      "r",
+      "g",
+      "b",
+      "depth_rel",
+      "depth_valid",
+      "ir"
+     ],
+     "depth": "(d - median(face core)) / 100 mm clipped to [-1,1], invalid 0",
+     "rgb_ir": "(x/255 - 0.5)/0.25",
+     "size": 128,
+     "zoom": 1.6
+    },
+    "threshold": 0.9994763731956482,
+    "train": {
+     "batch": 128,
+     "dataset_manifest_sha256": "891fb4cc97e9f053935360792135360618b8cfeccd2434d29d38a25929bc9f4a",
+     "epochs": 20,
+     "log": [
+      {
+       "epoch": 0,
+       "sec": 34.3,
+       "train_loss": 0.5352132127131566,
+       "val_apcer05": 0.0005900865460267506,
+       "val_bpcer05": 0.18332022029897718,
+       "val_loss": 0.3180696368217468
+      },
+      {
+       "epoch": 1,
+       "sec": 33.5,
+       "train_loss": 0.2102192124296533,
+       "val_apcer05": 0.09303697875688434,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.1946326196193695
+      },
+      {
+       "epoch": 2,
+       "sec": 33.7,
+       "train_loss": 0.11013693128260646,
+       "val_apcer05": 0.008064516129032258,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.01769760251045227
+      },
+      {
+       "epoch": 3,
+       "sec": 34.0,
+       "train_loss": 0.07952889179036317,
+       "val_apcer05": 0.000983477576711251,
+       "val_bpcer05": 0.0055074744295830055,
+       "val_loss": 0.011717010289430618
+      },
+      {
+       "epoch": 4,
+       "sec": 33.8,
+       "train_loss": 0.057282037880861815,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.03304484657749803,
+       "val_loss": 0.07018865644931793
+      },
+      {
+       "epoch": 5,
+       "sec": 35.0,
+       "train_loss": 0.048334991315029344,
+       "val_apcer05": 0.0033438237608182536,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.006401584949344397
+      },
+      {
+       "epoch": 6,
+       "sec": 35.2,
+       "train_loss": 0.04346779775736614,
+       "val_apcer05": 0.0001966955153422502,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.004659388214349747
+      },
+      {
+       "epoch": 7,
+       "sec": 35.8,
+       "train_loss": 0.03267033178345439,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0007867820613690008,
+       "val_loss": 0.002171385334804654
+      },
+      {
+       "epoch": 8,
+       "sec": 34.9,
+       "train_loss": 0.028319325865451522,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0015735641227380016,
+       "val_loss": 0.0023535089567303658
+      },
+      {
+       "epoch": 9,
+       "sec": 35.4,
+       "train_loss": 0.02488134434593076,
+       "val_apcer05": 0.0003933910306845004,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.0013814229751005769
+      },
+      {
+       "epoch": 10,
+       "sec": 35.7,
+       "train_loss": 0.02122707748532037,
+       "val_apcer05": 0.0001966955153422502,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.0011093339417129755
+      },
+      {
+       "epoch": 11,
+       "sec": 34.8,
+       "train_loss": 0.015740048826244513,
+       "val_apcer05": 0.0001966955153422502,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00043473715777508914
+      },
+      {
+       "epoch": 12,
+       "sec": 36.1,
+       "train_loss": 0.01256601615354481,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00029004306998103857
+      },
+      {
+       "epoch": 13,
+       "sec": 35.5,
+       "train_loss": 0.01416903065344939,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00025263120187446475
+      },
+      {
+       "epoch": 14,
+       "sec": 36.9,
+       "train_loss": 0.013281219675624052,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.0001674241357250139
+      },
+      {
+       "epoch": 15,
+       "sec": 36.8,
+       "train_loss": 0.007469798704219687,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00020522535487543792
+      },
+      {
+       "epoch": 16,
+       "sec": 36.3,
+       "train_loss": 0.006798256807411631,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00020435884653124958
+      },
+      {
+       "epoch": 17,
+       "sec": 36.0,
+       "train_loss": 0.0072897097022655314,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00015242125664371997
+      },
+      {
+       "epoch": 18,
+       "sec": 35.9,
+       "train_loss": 0.008067815571920808,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00017264280177187175
+      },
+      {
+       "epoch": 19,
+       "sec": 37.0,
+       "train_loss": 0.00599981110738527,
+       "val_apcer05": 0.0,
+       "val_bpcer05": 0.0,
+       "val_loss": 0.00017660827143117785
+      }
+     ],
+     "lr": 0.002,
+     "n_train": 25960,
+     "n_val": 6355,
+     "protocol": "seen",
+     "seed": 0,
+     "species": [
+      "print",
+      "replay",
+      "mask_rigid",
+      "mask_silicone"
+     ]
+    },
+    "val": {
+     "bona_fide_quantiles_0p5_5_50": {
+      "ir_median": [
+       127.35,
+       134.0,
+       143.0
+      ],
+      "relief_mm": [
+       3.982,
+       4.557,
+       5.752
+      ],
+      "shading_corr": [
+       0.315,
+       0.497,
+       0.713
+      ],
+      "valid_ratio": [
+       0.751,
+       0.881,
+       0.966
+      ]
+     },
+     "bpcer": 0.00944138473642801,
+     "bpcer_checks_only": 0.0007867820613690008,
+     "check_fail_bona_fide": {
+      "ir_median": 0,
+      "relief_mm": 0,
+      "shading_corr": 1
+     },
+     "mask_rigid": {
+      "apcer": 0.0,
+      "n": 1271,
+      "nonresponse": 0
+     },
+     "mask_silicone": {
+      "apcer": 0.0,
+      "n": 1271,
+      "nonresponse": 0
+     },
+     "n_bona_fide": 1271,
+     "print": {
+      "apcer": 0.0,
+      "n": 1271,
+      "nonresponse": 0
+     },
+     "replay": {
+      "apcer": 0.0,
+      "n": 1271,
+      "nonresponse": 631
+     }
+    }
+   },
+   "primary": "weights",
+   "sha256": {
+    "weights": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18"
+   },
+   "source": "Trained in-house on SYNTHETIC data (faceauth/sim + scripts/train_pad.py, protocol seen); not validated on any real sensor.",
+   "version": "2"
+  },
+  {
+   "dir": "scrfd_34g",
+   "files": {
+    "onnx": "scrfd_34g_gnkps.onnx"
+   },
+   "kind": "detector",
+   "license": "RESTRICTED - treat as NON-COMMERCIAL / RESEARCH-ONLY until legal review. ModelScope model card and the immich HF mirror declare 'MIT License', but the model card also says the model and code come from InsightFace SCRFD and that the relevant licences must be respected. The weights were trained on WIDER FACE (CC BY-NC-ND 4.0: non-commercial, no derivatives). InsightFace policy: code MIT, models trained on their annotated training data are for non-commercial research purposes only. Commercial use needs written confirmation from the rights holders.",
+   "model_json_sha256": "3ca938d00abdd8492b44adf3b8238c26a01306c895afe1861782d9e61431735c",
+   "name": "scrfd_34g",
+   "params": {
+    "anchors_per_location": 2,
+    "det_thresh": 0.5,
+    "input": "1x3x640x640 float32 RGB, (x - 127.5) / 128, aspect-preserving resize into the top-left corner, zero (black) padding",
+    "input_size": 640,
+    "keypoints": 5,
+    "nms_iou": 0.4,
+    "outputs": [
+     "score_8",
+     "score_16",
+     "score_32",
+     "bbox_8",
+     "bbox_16",
+     "bbox_32",
+     "kps_8",
+     "kps_16",
+     "kps_32"
+    ],
+    "params_count": 9825410,
+    "published_widerface_val_vga": {
+     "by": "ModelScope model card (SCRFD_34G_GNKPS_v2)",
+     "easy": 96.17,
+     "hard": 84.88,
+     "medium": 95.19
+    },
+    "strides": [
+     8,
+     16,
+     32
+    ]
+   },
+   "primary": "onnx",
+   "sha256": {
+    "onnx": "aa19f0e7f4d120d4cf990086639ab74a0136adceaebd232e0dc4745e0cfd4257"
+   },
+   "source": "https://huggingface.co/immich-app/scrfd_34g_gnkps/resolve/32b5674a7e69b8d741ca6f6969476faab2257add/detection/model.onnx (ONNX export, pytorch 2.1, opset 11). Weights = SCRFD_34G_GNKPS_v2 released by Alibaba DAMO on ModelScope as iic/cv_resnet_facedetection_scrfd10gkps (the id says 10g but the default model was replaced by the 34G GN+kps v2 model, see github.com/modelscope/modelscope/issues/24), pytorch_model.bin sha256 8db579dd6947798a36e8ac2d94fb8c47369b1bcc979bbebd861070f6e91049b5. Verified: all 303 weight initializers of this ONNX equal that checkpoint (exactly or after BatchNorm folding). This is NOT the InsightFace SCRFD_34G release (that one has no keypoint head).",
+   "version": "1"
+  }
+ ]
+}

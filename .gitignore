@@ -1,4 +1,17 @@
-data/
+# data/ holds weights and datasets; only their metadata (sources, hashes, licences, signed registry) is tracked
+data/*
+!data/models/
+data/models/*
+!data/models/*/
+data/models/*/*
+!data/models/*/MODEL.json
+!data/models/registry.json
+!data/models/registry.json.sig
+!data/datasets/
+data/datasets/*
+!data/datasets/*/
+data/datasets/*/*
+!data/datasets/*/DATASET.json
 secrets/
 __pycache__/
 *.pyc

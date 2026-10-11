@@ -67,7 +67,8 @@ def world():
     pw = (ROOT / "secrets/db_api_password").read_text().strip()
     conn = psycopg.connect(DSN, password=pw, autocommit=True)
     kms = httpx.Client(base_url="http://kms:8003", headers={"Authorization": "Bearer " + (ROOT / "secrets/kms_token_api").read_text().strip()})
-    mv = conn.execute("SELECT name || '@' || version FROM model_versions WHERE name = 'kprpe_vitb_wf12m' AND active").fetchone()[0]
+    mv = conn.execute("SELECT name || '@' || version FROM model_versions WHERE name = %s AND active",
+                      (os.environ.get("FA_RECOG_MODEL", "kprpe_vitb_wf12m"),)).fetchone()[0]
     admin = {"Authorization": "Bearer " + (SECRETS / "admin_token").read_text().strip()}
     def withdraw_leftovers():   # the direct insert skips enrollment's duplicate check: never leave a second copy of A
         for (old,) in conn.execute("SELECT id FROM subjects WHERE account_id LIKE %s AND status <> 'revoked'",

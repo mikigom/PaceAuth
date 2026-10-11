@@ -1,0 +1,12 @@
+{
+ "created": "2026-10-11",
+ "question": "Is the -0.07 / -0.11 pp gap of insightface_r50_wf600k to the buffalo_l card (CFP-FP 99.33, AgeDB-30 98.23) caused by TF32 convolutions in the ONNX Runtime CUDA EP?",
+ "method": "same E1 protocol (flip, 10-fold) with onnxruntime CUDAExecutionProvider option use_tf32=1 (default, used by E1/E2) vs use_tf32=0; one-off script (input (x-127.5)/127.5 RGB NCHW, batch 128)",
+ "flip_accuracy_percent": {
+  "insightface_r50_wf600k tf32=1 cfp_fp": 99.257,
+  "insightface_r50_wf600k tf32=1 agedb_30": 98.117,
+  "insightface_r50_wf600k tf32=0 cfp_fp": 99.257,
+  "insightface_r50_wf600k tf32=0 agedb_30": 98.117
+ },
+ "answer": "identical to 3 decimals -> the gap is not a numerical-precision effect (likely a different evaluation setup behind the card)"
+}

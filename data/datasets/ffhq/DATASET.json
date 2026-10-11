@@ -1,0 +1,32 @@
+{
+  "name": "ffhq",
+  "source": "Flickr-Faces-HQ (Karras, Laine, Aila, NVIDIA, CVPR 2019; https://github.com/NVlabs/ffhq-dataset). images256/: 70,000 PNG 256x256 (downscaled from the official 1024x1024 aligned images) from the third-party HF mirror https://huggingface.co/datasets/pravsels/FFHQ_256 (revision fcb28f9e140dfcf914b8b2f129cbe9eebd94cd79, raw/shard_{1..14}_of_14.zip, sha256 = HF LFS oids, archives/SHA256SUMS_raw.txt). archives/ffhq-dataset-v2.json (official metadata: Flickr URL, author, per-image licence) and thumbnails128x128.zip are from the official release; LICENSE.txt is the official licence file.",
+  "license": "Dataset (JSON metadata, documentation, compilation): CC BY-NC-SA 4.0 by NVIDIA - NON-COMMERCIAL, share-alike, attribution. Individual images keep their Flickr licences (ffhq-dataset-v2.json counts over the 70,000 images: Attribution 34,874, Attribution-NonCommercial 29,158, Public Domain Mark 4,487, CC0 1,144, U.S. Government Work 337); LICENSE.txt: 'All of these licenses allow free use, redistribution, and adaptation for non-commercial purposes.' The 256px HF mirror carries no licence of its own.",
+  "files": {
+    "archives/ffhq-dataset-v2.json": "1be5c2d1a78196d45a9600558c04b46dffefa217b7c664d5be38ed28a4d9a0ee",
+    "archives/SHA256SUMS_raw.txt": "54c3c1436d91ca89975dd863428683895f715407bdb3e321d2c688af69b9235b",
+    "archives/thumbnails128x128.zip": "ef9fd4b39922cf599c6446e45b03b334824c6ce19b4b8bdf7aee6d06df355f3f",
+    "LICENSE.txt": "cbb12e18941e369ec5ecba1489e1dca74ece75e5ac1aaab12496b29944edad80",
+    "raw/shard_1_of_14.zip": "6c53e28e7d0240e57feb371378ca6af5309826d61421bbc02dc89987cdf489a5",
+    "raw/shard_2_of_14.zip": "411bbb79a01b08c0c9ec9df85f3877f3ea5a1373e86f7b33c5041c74210419fb",
+    "raw/shard_3_of_14.zip": "d636e1ee65ac36d389a68299483bef8aee359024cd17d5370a544bf853d84182",
+    "raw/shard_4_of_14.zip": "1f802ed4cda361e97729db1264f7ee7553dd2c4077026911bcda334008574eae",
+    "raw/shard_5_of_14.zip": "e2e36f0c577cc27aa0ee67bbd210cc45ea5246b8919ef21e6fe8cd3bf5025eba",
+    "raw/shard_6_of_14.zip": "b0951849840e4e490a9c85f72d405a698d0e6ff1a0de885be38d803d1b0f17c5",
+    "raw/shard_7_of_14.zip": "38c1e6a9d1d3885e31b59b197b4cfc965b1360f95072cf068fcdfadb04870902",
+    "raw/shard_8_of_14.zip": "e166710a7317bb6940d6b545f2a36ca1e7273f2ea250d80748aec4121584c752",
+    "raw/shard_9_of_14.zip": "7e10acbdbc7f4bcb592cc9d02f3f5271d7153c1d93044696aa6959446b2b970c",
+    "raw/shard_10_of_14.zip": "0a6cc52235eebb6a014f3822d21692510f6fc967169906199ba56fbc4e89c484",
+    "raw/shard_11_of_14.zip": "56f7927e55a188cdd324959af2e5027222b1fc8104bd73c88ec0f97748445e91",
+    "raw/shard_12_of_14.zip": "4ab2ada3fdb890877cbeec8b9d5a601166ad7e25f83a05941d0f60895aa8a9b7",
+    "raw/shard_13_of_14.zip": "99ec463276d80c781c7f4c4efce6b7d3168429161c36fdd379d6231278b70d99",
+    "raw/shard_14_of_14.zip": "ada6258b7008c320bc2098bf89025ef6fc268e219fd359795023d37e63698154"
+  },
+  "counts": {
+    "images": 70000,
+    "identities": "unlabelled (one subject per image assumed)",
+    "resolution_used": "256x256",
+    "used_by": "E2 gallery distractors (1 template each) and non-mated probes (seeded 50/50 split by image)"
+  },
+  "notes": "Non-celebrity Flickr photos: much less likely to overlap the recognizers' celebrity-based training identities than CelebA (overlap with WebFace/Glint cannot be excluded). Identity uniqueness is NOT guaranteed (the same person can appear in several images), so an FFHQ 'false positive' may occasionally be a true match. Faces are FFHQ-aligned (dlib 68 landmarks, 1024 crop) at 256 px; E2 re-detects them with SCRFD (largest face) and re-aligns to the ArcFace template. E2 usage: 369 images that match a CelebA identity centroid (4-model consensus cosine >= 0.45; celebrities) were dropped; probes and distractors are split by Flickr account (photo_url, 14,953 accounts for 70,000 images) so a person repeated within one account never sits on both sides; residual same-person pairs across accounts and many infants/children remain, so FFHQ is a secondary non-mated pool (reports/E2_1N). SCRFD-34G found a face in 69,989 / 70,000."
+}

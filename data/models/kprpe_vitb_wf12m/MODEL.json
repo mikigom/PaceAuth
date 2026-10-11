@@ -1,0 +1,23 @@
+{
+  "name": "kprpe_vitb_wf12m",
+  "version": "1",
+  "kind": "recognition",
+  "files": {"weights": "model.safetensors", "aligner": "aligner.safetensors"},
+  "sha256": {
+    "weights": "99d16ed4aac0fdf0fcc82526b9b70703f3ec8c3041bf1bf44bd22751536e65db",
+    "aligner": "80b6e922e4c76c10d5e24061fe47cd96112d18689bf5ae7e34af52e641c18c4a"
+  },
+  "dim": 512,
+  "source": "https://huggingface.co/minchul/cvlface_adaface_vit_base_kprpe_webface12m (revision daefd5012d369588bd214fbaf4cc6b1d286e7066) model.safetensors; aligner = https://huggingface.co/minchul/cvlface_DFA_mobilenet (revision 8317e6dda53d91e7074979923144c2cc08906a33) model.safetensors",
+  "license": "NON-COMMERCIAL / ACADEMIC RESEARCH ONLY. Weights carry no licence of their own; model cards (both repos): 'Please cite the orignal paper and follow the license of the training dataset.' Training data WebFace12M is a subset of WebFace260M, whose usage rules state: '1. This dataset and its subsets can only be used for academic research. 2. Applicants are not allowed to use this dataset and its subsets for any commercial purposes.' (face-benchmark.org download page). The DFA aligner card names no training dataset. Code (CVLFace, vendored in faceauth/models/vendor/cvlface_*.py): MIT. Commercial use requires permission from the data owners or own lawful training (RFP §2).",
+  "params": {
+    "arch": "cvlface_vit_base_kprpe",
+    "align": "arcface5-112@1",
+    "fp16": true,
+    "input": "ArcFace norm_crop 112x112, RGB, (x/255-0.5)/0.5",
+    "keypoints": "5 points predicted on the aligned crop by the bundled DFA aligner (mobilenet0.25, input 160, no padding), normalised [0,1]; = official CVLFace eval pipeline infer_aligner_keypoint_model_pipeline",
+    "loss": "AdaFace",
+    "train_data": "WebFace12M",
+    "notes": "model.safetensors is tensor-identical to pretrained_model/model.pt (sha256 04b4bee1...) and aligner.safetensors to pretrained_model/aligner.pt (sha256 c9564179...) of the KP-RPE repo (all 283 / 338 tensors equal); safetensors chosen to avoid pickle loading."
+  }
+}

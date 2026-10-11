@@ -1,0 +1,14 @@
+{
+  "name": "aflw2000",
+  "source": "http://www.cbsr.ia.ac.cn/users/xiangyuzhu/projects/3DDFA/Database/AFLW2000-3D.zip (3DDFA project page, Zhu et al., 'Face Alignment Across Large Poses: A 3D Solution', CVPR 2016); downloaded 2026-10-08",
+  "license": "RESEARCH-ONLY / NON-COMMERCIAL (flag). The 3DDFA page states no licence of its own. AFLW2000-3D = 3DMM fits of the first 2000 images of AFLW (TU Graz), which was distributed only under a signed agreement for non-commercial research; the original AFLW page (lrs.icg.tugraz.at/research/aflw/) is offline (404 on 2026-10-08), so its exact wording could not be re-read. Use for benchmarking only.",
+  "files": {
+    "AFLW2000-3D.zip": "252bc35274d65ff27b6e573aa96c2f4c116ad88452cc984fb882258c0ed6e2d8"
+  },
+  "counts": {
+    "images": 2000,
+    "eval_all_angles_within_99deg": 1969,
+    "excluded_any_angle_over_99deg": 31
+  },
+  "notes": "Only AFLW2000/image*.jpg + image*.mat were extracted (the zip's MATLAB Code/ folder was not). .mat: Pose_Para = [pitch, yaw, roll, tx, ty, tz, scale] (radians; 3DDFA convention: yaw > 0 = nose toward image LEFT, so §0 yaw = -yaw; pitch > 0 up and roll > 0 clockwise already match), pt2d = 21 AFLW landmarks with missing points coded as (-1, 452) (1718/2000 files have missing points; the official 6DRepNet/Hopenet crop takes min/max over them anyway), pt3d_68 = 68 fitted landmarks (x, y, z). Standard test list: all |angle| <= 99 deg (6DRepNet create_filename_list.py) -> 1969 images."
+}

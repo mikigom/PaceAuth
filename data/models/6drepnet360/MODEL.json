@@ -1,0 +1,21 @@
+{
+  "name": "6drepnet360",
+  "version": "1",
+  "kind": "headpose",
+  "files": {
+    "weights": "6DRepNet360_Full-Rotation_300W_LP+Panoptic.pth"
+  },
+  "sha256": {
+    "weights": "3ee08f1e04b8d452a6c4a40926a6f38051894ae6d0aaa6d191fe6d8bc6e4f9c6"
+  },
+  "source": "https://cloud.ovgu.de/s/TewGC9TDLGgKkmS/download/6DRepNet360_Full-Rotation_300W_LP+Panoptic.pth (README 'Models' table of https://github.com/thohemp/6DRepNet360 @b06e4fed, row '6DRepNet360 Full Rotation: Fine-tuned on 300W-LP + Panoptic')",
+  "license": "Code and weights: MIT (thohemp/6DRepNet360 LICENSE, Copyright (c) 2023 Thorsten Hempel; vendored inference code faceauth/models/vendor/sixdrepnet keeps the notice). The weights carry no separate licence. RESTRICTION FLAG - training data is research-only: 300W-LP (synthesised by 3DDFA from 300-W/iBUG images; iBUG 300-W: 'The data are provided for research purposes only. Commercial use (i.e., use in training commercial algorithms) is not allowed.'); CMU Panoptic Studio ('shared only for research purposes, and this cannot be used for any commercial purposes'). Commercial deployment of these weights is NOT cleared; needs legal review or retraining on licensed data (RFP §2).",
+  "params": {
+    "arch": "6drepnet360_resnet50",
+    "train_data": "300W-LP + CMU Panoptic (full rotation range)",
+    "paper": "Hempel et al., Toward Robust and Unconstrained Full Range of Rotation Head Pose Estimation, IEEE TIP 33:2377-2387, 2024",
+    "input": "crop 'fsa' (detector crop behind the published 6DRepNet/6DRepNet360 BIWI results: FSA-Net TYY_create_db_biwi.py with image size 256): detector box + 0.4*w / 0.4*h each side, clipped, squashed to 256x256 (cv2 bilinear), RGB, Resize(256) + CenterCrop(224) (test.py), ImageNet mean/std; 6DRepNet360 has no inference/demo code, so this is its only official detector-box pipeline; output rotation matrix -> Euler (6DRepNet utils) -> §0 yaw, pitch, roll (upstream yaw negated)",
+    "input_size": 224,
+    "crop": "fsa"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "farl_wflw_448",
+  "version": "1",
+  "kind": "landmarks",
+  "files": {"jit": "face_alignment.farl.wflw.main_ema_jit.pt"},
+  "sha256": {"jit": "0179c9dcce372ae27484463a750dc007e7444574372b97b67fa3baf74511a280"},
+  "source": "https://github.com/FacePerceiver/facer/releases/download/models-v1/face_alignment.farl.wflw.main_ema_jit.pt (facer commit ddd35c76ff840174b8a5403ad1c1255e37b8782b, config 'wflw/448'; FaRL https://github.com/FacePerceiver/FaRL)",
+  "license": "Code: MIT (facer (c) 2022 FacePerceiver; FaRL (c) Microsoft Corporation). Weights: published in the facer GitHub release with no separate weight licence (repository licence MIT). Training data: backbone pre-trained on LAION-Face 20M (web images from LAION-400M; LAION-Face id list CC-BY 4.0, images keep their original copyrights), fine-tuned on WFLW (WIDER FACE images, CC BY-NC-ND). RESTRICTION FLAG: fine-tuning data is non-commercial (NC-ND); commercial deployment of these weights needs legal clearance or retraining on licensed data.",
+  "params": {
+    "input_size": 448, "num_points": 98, "heatmap_size": 112, "heatmap_act": "sigmoid",
+    "normalize": "RGB/255, then CLIP mean [0.48145466,0.4578275,0.40821073] std [0.26862954,0.26130258,0.27577711] inside the backbone",
+    "kps_crop": "similarity (least squares) of 5 kps onto facer standard points ([[196,226],[316,226],[256,286],[220,360.4],[292,360.4]]/256-1)*0.8, mapped to [0,447]",
+    "box_crop": "square side max(w,h) centred on box -> 0.8*448 px (FaRL WFLW protocol, HRNet center/scale box)",
+    "decode": "soft-argmax over the 112x112 sigmoid heatmap (FaRL heatmap2points) -> crop px -> inverse affine",
+    "backbone": "FaRL ViT-B/16 (LAION-Face20M), FPN from blocks 3/5/7/11; head mmseg UPerHead (TorchScript)"
+  }
+}

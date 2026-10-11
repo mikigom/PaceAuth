@@ -1,0 +1,269 @@
+{
+ "name": "pad_rgbdir",
+ "version": "2",
+ "kind": "pad",
+ "files": {
+  "weights": "pad_rgbdir.pt"
+ },
+ "sha256": {
+  "weights": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18"
+ },
+ "source": "Trained in-house on SYNTHETIC data (faceauth/sim + scripts/train_pad.py, protocol seen); not validated on any real sensor.",
+ "license": "In-house weights; trained on renders of CelebA images -> treat as NON-COMMERCIAL / RESEARCH-ONLY (CelebA: non-commercial research and educational use only). Replace by weights trained on consented real-sensor data before any deployment.",
+ "params": {
+  "threshold": 0.9994763731956482,
+  "checks": {
+   "min_valid_ratio": 0.5,
+   "min_relief_mm": 3.0,
+   "min_ir_median": 30.0,
+   "min_shading_corr": 0.1
+  },
+  "fx": 385.0,
+  "calib_version": "gemini336-sim-v1",
+  "input": {
+   "size": 128,
+   "zoom": 1.6,
+   "channels": [
+    "r",
+    "g",
+    "b",
+    "depth_rel",
+    "depth_valid",
+    "ir"
+   ],
+   "align": "faceauth.common.align.estimate_norm zoomed out by `zoom`",
+   "depth": "(d - median(face core)) / 100 mm clipped to [-1,1], invalid 0",
+   "rgb_ir": "(x/255 - 0.5)/0.25"
+  },
+  "train": {
+   "protocol": "seen",
+   "species": [
+    "print",
+    "replay",
+    "mask_rigid",
+    "mask_silicone"
+   ],
+   "epochs": 20,
+   "batch": 128,
+   "lr": 0.002,
+   "seed": 0,
+   "dataset_manifest_sha256": "891fb4cc97e9f053935360792135360618b8cfeccd2434d29d38a25929bc9f4a",
+   "n_train": 25960,
+   "n_val": 6355,
+   "log": [
+    {
+     "epoch": 0,
+     "train_loss": 0.5352132127131566,
+     "val_loss": 0.3180696368217468,
+     "val_bpcer05": 0.18332022029897718,
+     "val_apcer05": 0.0005900865460267506,
+     "sec": 34.3
+    },
+    {
+     "epoch": 1,
+     "train_loss": 0.2102192124296533,
+     "val_loss": 0.1946326196193695,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.09303697875688434,
+     "sec": 33.5
+    },
+    {
+     "epoch": 2,
+     "train_loss": 0.11013693128260646,
+     "val_loss": 0.01769760251045227,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.008064516129032258,
+     "sec": 33.7
+    },
+    {
+     "epoch": 3,
+     "train_loss": 0.07952889179036317,
+     "val_loss": 0.011717010289430618,
+     "val_bpcer05": 0.0055074744295830055,
+     "val_apcer05": 0.000983477576711251,
+     "sec": 34.0
+    },
+    {
+     "epoch": 4,
+     "train_loss": 0.057282037880861815,
+     "val_loss": 0.07018865644931793,
+     "val_bpcer05": 0.03304484657749803,
+     "val_apcer05": 0.0,
+     "sec": 33.8
+    },
+    {
+     "epoch": 5,
+     "train_loss": 0.048334991315029344,
+     "val_loss": 0.006401584949344397,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0033438237608182536,
+     "sec": 35.0
+    },
+    {
+     "epoch": 6,
+     "train_loss": 0.04346779775736614,
+     "val_loss": 0.004659388214349747,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0001966955153422502,
+     "sec": 35.2
+    },
+    {
+     "epoch": 7,
+     "train_loss": 0.03267033178345439,
+     "val_loss": 0.002171385334804654,
+     "val_bpcer05": 0.0007867820613690008,
+     "val_apcer05": 0.0,
+     "sec": 35.8
+    },
+    {
+     "epoch": 8,
+     "train_loss": 0.028319325865451522,
+     "val_loss": 0.0023535089567303658,
+     "val_bpcer05": 0.0015735641227380016,
+     "val_apcer05": 0.0,
+     "sec": 34.9
+    },
+    {
+     "epoch": 9,
+     "train_loss": 0.02488134434593076,
+     "val_loss": 0.0013814229751005769,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0003933910306845004,
+     "sec": 35.4
+    },
+    {
+     "epoch": 10,
+     "train_loss": 0.02122707748532037,
+     "val_loss": 0.0011093339417129755,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0001966955153422502,
+     "sec": 35.7
+    },
+    {
+     "epoch": 11,
+     "train_loss": 0.015740048826244513,
+     "val_loss": 0.00043473715777508914,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0001966955153422502,
+     "sec": 34.8
+    },
+    {
+     "epoch": 12,
+     "train_loss": 0.01256601615354481,
+     "val_loss": 0.00029004306998103857,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 36.1
+    },
+    {
+     "epoch": 13,
+     "train_loss": 0.01416903065344939,
+     "val_loss": 0.00025263120187446475,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 35.5
+    },
+    {
+     "epoch": 14,
+     "train_loss": 0.013281219675624052,
+     "val_loss": 0.0001674241357250139,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 36.9
+    },
+    {
+     "epoch": 15,
+     "train_loss": 0.007469798704219687,
+     "val_loss": 0.00020522535487543792,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 36.8
+    },
+    {
+     "epoch": 16,
+     "train_loss": 0.006798256807411631,
+     "val_loss": 0.00020435884653124958,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 36.3
+    },
+    {
+     "epoch": 17,
+     "train_loss": 0.0072897097022655314,
+     "val_loss": 0.00015242125664371997,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 36.0
+    },
+    {
+     "epoch": 18,
+     "train_loss": 0.008067815571920808,
+     "val_loss": 0.00017264280177187175,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 35.9
+    },
+    {
+     "epoch": 19,
+     "train_loss": 0.00599981110738527,
+     "val_loss": 0.00017660827143117785,
+     "val_bpcer05": 0.0,
+     "val_apcer05": 0.0,
+     "sec": 37.0
+    }
+   ]
+  },
+  "val": {
+   "n_bona_fide": 1271,
+   "bpcer": 0.00944138473642801,
+   "bpcer_checks_only": 0.0007867820613690008,
+   "check_fail_bona_fide": {
+    "relief_mm": 0,
+    "ir_median": 0,
+    "shading_corr": 1
+   },
+   "bona_fide_quantiles_0p5_5_50": {
+    "valid_ratio": [
+     0.751,
+     0.881,
+     0.966
+    ],
+    "relief_mm": [
+     3.982,
+     4.557,
+     5.752
+    ],
+    "ir_median": [
+     127.35,
+     134.0,
+     143.0
+    ],
+    "shading_corr": [
+     0.315,
+     0.497,
+     0.713
+    ]
+   },
+   "mask_rigid": {
+    "n": 1271,
+    "nonresponse": 0,
+    "apcer": 0.0
+   },
+   "mask_silicone": {
+    "n": 1271,
+    "nonresponse": 0,
+    "apcer": 0.0
+   },
+   "print": {
+    "n": 1271,
+    "nonresponse": 0,
+    "apcer": 0.0
+   },
+   "replay": {
+    "n": 1271,
+    "nonresponse": 631,
+    "apcer": 0.0
+   }
+  }
+ }
+}

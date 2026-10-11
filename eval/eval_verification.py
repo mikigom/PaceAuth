@@ -233,6 +233,15 @@ def summary_md(res: dict) -> str:
             agree = f"min cos {c['min']:.5f}, max |Δacc| {dacc:.2f}pp"
         rt = "PyTorch" if r["backend"] == "torch" else "ONNX Runtime CUDA EP (fp32, TF32 conv)"
         L.append(f"| {m} | {rt} | {f32} | {f16} | {agree} | {'fp16' if r['model_json_fp16'] else 'fp32'} |")
+    for m, r in ev.items():
+        now = json.loads((Path(r["model_dir"]) / "MODEL.json").read_text())["params"]["fp16"]
+        if bool(now) != r["model_json_fp16"]:
+            L.append(f"- {m}: 이 측정 후 위 규칙에 따라 MODEL.json 정밀도를 {'fp16' if now else 'fp32'}로 변경 (E2는 변경 후 정밀도).")
+    tf = Path("reports/E1_recognition/tf32_check.json")
+    if tf.exists():
+        L.append("- ONNX 모델의 공개값 대비 작은 차이는 TF32 때문이 아니다: CUDA EP use_tf32=1/0의 flip 정확도가 소수 셋째 자리까지 "
+                 "같음 (" + ", ".join(f"{k} {v:.3f}" for k, v in json.loads(tf.read_text())["flip_accuracy_percent"].items()) +
+                 "; tf32_check.json).")
     L += ["", "- 정밀도 규칙: max |Δacc| <= 0.1pp 이고 min cos >= 0.999 이면 fp16 autocast 허용 (E2는 MODEL.json 정밀도로 측정).",
           f"- GPU 부하 (측정 전/후, 모든 사용자): " + "; ".join(f"{m}: {r['gpu_load_before_speed']} / {r['gpu_load_after_speed']}"
                                                      for m, r in ev.items())]
@@ -250,7 +259,12 @@ def main():
     ap.add_argument("--data", default="data/datasets/verification")
     ap.add_argument("--bins", nargs="+", default=list(BINS))
     ap.add_argument("--out", default="reports/E1_recognition")
+    ap.add_argument("--summary-only", action="store_true", help="rewrite summary.md from an existing results.json")
     a = ap.parse_args()
+    if a.summary_only:
+        res = json.loads((Path(a.out) / "results.json").read_text())
+        (Path(a.out) / "summary.md").write_text(summary_md(res))
+        return
     data = {b: load_bin(Path(a.data) / f"{b}.bin") for b in a.bins}
     res = {"experiment": "E1_recognition", "created": datetime.now(timezone.utc).isoformat(timespec="seconds"),
            "protocol": __doc__.split("\n\n")[1].strip(), "seeds": "none (deterministic protocol, no sampling)",

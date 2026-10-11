@@ -1,0 +1,20 @@
+{
+  "name": "insightface_vit_l_wf42m",
+  "version": "1",
+  "kind": "recognition",
+  "files": {"weights": "model.pt"},
+  "sha256": {"weights": null},
+  "dim": 512,
+  "source": "InsightFace arcface_torch model zoo (README 'Model Zoo': OneDrive https://1drv.ms/u/s!AswpsDO2toNKq0lWY69vN58GR6mw?e=p9Ov5d , Baidu https://pan.baidu.com/s/1CL-l4zWqsI1oDuEEYVhj-g code e8pw), row 'WF42M-PFC-0.3 VIT-L(384*64)', config configs/wf42m_pfc03_40epoch_64gpu_vit_l.py; supplied manually by the user (PENDING: sha256 null until model.pt is present and verified)",
+  "license": "NON-COMMERCIAL RESEARCH ONLY. arcface_torch README: 'The models are available for non-commercial research purposes only.' InsightFace README: 'The training data containing the annotation (and the models trained with these data) are available for non-commercial research purposes only.' (and since 2025-11-24: 'For open-sourced face recognition models ... please contact recognition-oss-pack@insightface.ai for licensing.'). Training data WebFace42M (WebFace260M subset): academic research only, no commercial use. Code (vendored faceauth/models/vendor/arcface_vit.py): MIT.",
+  "params": {
+    "arch": "insightface_vit_l_dp005_mask_005",
+    "align": "arcface5-112@1",
+    "fp16": true,
+    "input": "ArcFace norm_crop 112x112, RGB, (x/255-0.5)/0.5",
+    "loss": "CosFace, margin_list (1.0, 0.0, 0.4), Partial FC sample_rate 0.3",
+    "train_data": "WebFace42M (2,059,906 ids / 42,474,557 images)",
+    "published": "arcface_torch README: MFR-ALL 97.85, IJB-C TAR@FAR=1e-4 98.00, 1e-5 97.23 (no LFW/CFP-FP/AgeDB/CALFW/CPLFW numbers published)",
+    "notes": "Expected model.pt: plain torch state_dict (torch.save(backbone.module.state_dict())), 282 tensors, 255,686,912 parameters (~1.02 GB in fp32), feature.0.weight shape (768, 110592), no 'module.' prefix. fp16=true mirrors upstream, which hard-codes mixed precision around qkv/proj/MLP; confirm with eval/eval_verification.py once the weights are present."
+  }
+}

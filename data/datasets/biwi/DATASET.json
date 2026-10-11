@@ -1,0 +1,41 @@
+{
+  "name": "biwi",
+  "source": "Biwi Kinect Head Pose Database (G. Fanelli et al., 'Random Forests for Real Time 3D Face Analysis', IJCV 101(3), 2013; ETH Zurich). The original archive https://data.vision.ee.ethz.ch/cvl/gfanelli/kinect_head_pose_db.tgz returns HTTP 403 and the ETHZurich/biwi_kinect_head_pose HF dataset is only a loader script pointing to it (checked 2026-10-08). Obtained from the unofficial HuggingFace mirror https://huggingface.co/datasets/ZihanWang1029/BIWI (BIWI/BK-1.zip = sequences 01-10, BIWI/BK-2.zip = sequences 11-24; sha256 equal to the HF LFS object ids). The mirror's 'mit' tag is the uploader's and is NOT the dataset licence.",
+  "license": "NON-COMMERCIAL / RESEARCH-ONLY (flag): 'This database is made available for non-commercial use such as university research and education.' (BIWI readme, as quoted on the ETHZurich/biwi_kinect_head_pose dataset card). Cite Fanelli et al. IJCV 2013.",
+  "files": {
+    "BK-1.zip": "f5c8ec5db0f5276209b67f9dceba35d92594f9f306c18877c674c5f852ffdc6f",
+    "BK-2.zip": "60628453951ad387d1c6fb36b15721622cafdc06c19023c3dfc5d441e85b2ae4"
+  },
+  "counts": {
+    "sequences": 24,
+    "subjects": 20,
+    "frames": 15678,
+    "frames_per_sequence": {
+      "01": 499,
+      "02": 511,
+      "03": 730,
+      "04": 744,
+      "05": 946,
+      "06": 542,
+      "07": 745,
+      "08": 772,
+      "09": 882,
+      "10": 726,
+      "11": 572,
+      "12": 732,
+      "13": 485,
+      "14": 797,
+      "15": 654,
+      "16": 914,
+      "17": 395,
+      "18": 614,
+      "19": 502,
+      "20": 556,
+      "21": 634,
+      "22": 665,
+      "23": 569,
+      "24": 492
+    }
+  },
+  "notes": "Layout hpdb/<seq>/{depth.cal, rgb.cal, frame_NNNNN_rgb.png (640x480), frame_NNNNN_depth.bin (RLE int16 mm, depth camera, background already removed: ~15-20% valid pixels), frame_NNNNN_pose.txt (3x3 head->depth-camera rotation, then head centre mm)}; females.txt/males.txt (frame list + head centre) from the mirror. Not in the mirror: per-subject head template meshes (NN.obj), the db_annotations masks and the original readme. 20 subjects (F01-F06, M01-M14; F02, F03, F05, M01 recorded twice; mapping in faceauth/sim/biwi.py). No IR stream (Kinect v1 RGB + depth only). No timestamps; frames numbered from 3, a few gaps (seq 24: 131 missing numbers); nominal 30 fps. rgb.cal extrinsics map depth-camera to RGB-camera coordinates (X_rgb = R X_d + T, verified by edge alignment). Loader: faceauth/sim/biwi.py."
+}

@@ -1,0 +1,36 @@
+{
+  "name": "celeba",
+  "source": "CelebA (Liu, Luo, Wang, Tang, 'Deep Learning Face Attributes in the Wild', ICCV 2015; MMLAB, CUHK, http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html). In-the-wild images: the official 14-part archive Img/img_celeba.7z (parts dated 2022-05-31, 734,003,200 B each except the last) obtained via the third-party HF mirror https://huggingface.co/datasets/noname110/celeba (revision 438b96fa79375870b726cd408a3da1eda4f074c4; Google-Drive export zips CelebA-20240106T040341Z-0NN.zip, LFS sha256 listed in raw/hf_noname110.sha256; the mirror's 'apache-2.0' tag is not the dataset licence), extracted to img_celeba/ (202,599 JPEG). archives/img_align_celeba.zip -> img_align_celeba/. Anno/ (identity_CelebA.txt = the identity labels the authors release on request, list_landmarks_celeba.txt 5-point landmarks of the labelled face in the in-the-wild images, bbox, attributes), Eval/list_eval_partition.txt, README.txt (official).",
+  "license": "NON-COMMERCIAL RESEARCH ONLY, NO REDISTRIBUTION. Official agreement (project page, checked 2026-10-11): 'The CelebA dataset is available for non-commercial research purposes only.' 'All images of the CelebA dataset are obtained from the Internet which are not property of MMLAB' 'You agree not to reproduce, duplicate, copy, sell, trade, resell or exploit for any commercial purposes, any portion of the images and any portion of derived data.' 'You agree not to further copy, publish or distribute any portion of the CelebA dataset. Except, for internal use at a single site within the same organization it is allowed to make copies of the dataset.' 'The face identities are released upon request for research purposes only.' README.txt: 'Their use is RESTRICTED to non-commercial research and educational purposes.' Images are web photos of celebrities (third-party copyright).",
+  "files": {
+    "archives/img_celeba.7z/img_celeba.7z.001": "f78a0ffada823b89f9566aec2735614fcc553c83442a09975ed6bec13f017fc5",
+    "archives/img_celeba.7z/img_celeba.7z.002": "b00af0d6e4100c9f01f9b409e7b3f7d0528e0f34ff054c0ffda84c1023acfab8",
+    "archives/img_celeba.7z/img_celeba.7z.003": "064750ec821290e74675a6a5d27c768fb07522a02bc8f25e16f28359a1383d02",
+    "archives/img_celeba.7z/img_celeba.7z.004": "4e22185f7bb66176987f69eda093a12c655d491f725e3419edb579547e42594c",
+    "archives/img_celeba.7z/img_celeba.7z.005": "8c95354e98d4caf99cff6e8786afe06554d6bab18600f9af17e26bd5ed20d155",
+    "archives/img_celeba.7z/img_celeba.7z.006": "83c0e365c2a2d0ace7f9b5144fb5d8e99d8a6e09c429ac90896d47b43dc58243",
+    "archives/img_celeba.7z/img_celeba.7z.007": "b645981d181d65db66df92053ad995ee8b7b13e08bb47930ab7cc2949ff392c3",
+    "archives/img_celeba.7z/img_celeba.7z.008": "80a5e66c86aeabb4fcacfe6ee8d20e853b0eb4026ac664dc074fae2f15654d56",
+    "archives/img_celeba.7z/img_celeba.7z.009": "155429ae82fe6ddad486db2e9665072f222fc11f2ffcf85abd831ef45e3122f2",
+    "archives/img_celeba.7z/img_celeba.7z.010": "eef7d33ab09c85761086274b5ac6b3400ff9c2700822373a9a50b4d214a48c6d",
+    "archives/img_celeba.7z/img_celeba.7z.011": "184262c162087ac75748d3d2aaa316deff57c8384efc1a070ee7615ab2f11c30",
+    "archives/img_celeba.7z/img_celeba.7z.012": "5a656a0008fca81acfbf81e2d6102f80829b8ce1eb0a9c9521ea3945cfcb79ff",
+    "archives/img_celeba.7z/img_celeba.7z.013": "ae3dd467fec3a290d34096658bb1685081573b7bae2bdf711bf9983506592d43",
+    "archives/img_celeba.7z/img_celeba.7z.014": "87453166874f1cdd0c17e3ff74c37e12d8a3816ee4ce75da3abd334cdc4f8b48",
+    "archives/img_align_celeba.zip": "46fb89443c578308acf364d7d379fe1b9efb793042c0af734b6112e4fd3a8c74",
+    "Anno/identity_CelebA.txt": "c6143857c3e2630ac2da9f782e9c1232e5e59be993a9d44e8a7916c78a6158c0",
+    "Anno/list_attr_celeba.txt": "f0e5da289d5ccf75ffe8811132694922b60f2af59256ed362afa03fefba324d0",
+    "Anno/list_bbox_celeba.txt": "7487a82e57c4bb956c5445ae2df4a91ffa717e903c5fa22874ede0820c8ec41b",
+    "Anno/list_landmarks_align_celeba.txt": "6c02a87569907f6db2ba99019085697596730e8129f67a3d61659f198c48d43b",
+    "Anno/list_landmarks_celeba.txt": "239eb3da641f88994b25e8ca8c8edace4049b22ea9bb5e305577447d2bfd798c",
+    "Eval/list_eval_partition.txt": "fc955bcb3ef8fbdf7d5640d9a8693a8431b5f2ee291a5c1449a1549e7e073fe7"
+  },
+  "counts": {
+    "identities": 10177,
+    "images_in_the_wild": 202599,
+    "images_aligned": 202599,
+    "landmarks_per_image": 5,
+    "used_by": "E2 identity source (img_celeba, full detect -> align -> embed pipeline); E6 subset"
+  },
+  "notes": "IDENTITY-OVERLAP CAVEAT: CelebA identities are celebrities (CelebFaces); the recognizers' training sets (WebFace260M subsets WebFace12M/WebFace600K/WebFace42M, Glint360K: celebrity web images) are built from celebrity name lists, so many CelebA identities are very likely in the training data -> E2 numbers on CelebA are optimistic for unseen customers. Identity labels are known to contain noise (mislabelled / duplicate identities), which inflates both FNIR and FPIR slightly. Landmark annotations (image-left eye first) are used only to pick which detected face is the labelled one. Measured in E2 (2026-10-11): identity labels are substantially noisy for 1:N use - the 4-model consensus found 243 identity pairs with centroid cosine >= 0.45 (one person split over several ids; 235 ids dropped) and 3,608 of 180,832 CelebA probe images (2.0%) whose best other identity scored like a mate (dropped); see reports/E2_1N/cleaning.json. SCRFD-34G found the labelled face in 202,461 / 202,599 in-the-wild images."
+}

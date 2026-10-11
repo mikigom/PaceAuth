@@ -1,0 +1,21 @@
+{
+  "name": "6drepnet",
+  "version": "1",
+  "kind": "headpose",
+  "files": {
+    "weights": "6DRepNet_300W_LP_AFLW2000.pth"
+  },
+  "sha256": {
+    "weights": "9bdcd0e072df0d21e92288b40ea1d1b3cf7173c44728ab9c45c4d673f361e018"
+  },
+  "source": "https://cloud.ovgu.de/s/Q67RnLDy6JKLRWm/download/6DRepNet_300W_LP_AFLW2000.pth (default weights of the official pip package, https://github.com/thohemp/6DRepNet @464b2ba sixdrepnet/regressor.py); byte-identical to https://huggingface.co/osanseviero/6DRepNet_300W_LP_AFLW2000 model.pth (same sha256)",
+  "license": "Code and weights: MIT (thohemp/6DRepNet LICENSE, Copyright (c) 2022 Thorsten Hempel; vendored inference code faceauth/models/vendor/sixdrepnet keeps the notice). The weights carry no separate licence. RESTRICTION FLAG - training data is research-only: 300W-LP (synthesised by 3DDFA from 300-W/iBUG images; iBUG 300-W: 'The data are provided for research purposes only. Commercial use (i.e., use in training commercial algorithms) is not allowed.'). Commercial deployment of these weights is NOT cleared; needs legal review or retraining on licensed data (RFP §2).",
+  "params": {
+    "arch": "6drepnet_repvgg_b1g2",
+    "train_data": "300W-LP (yaw within +-99 deg)",
+    "paper": "Hempel et al., 6D Rotation Representation for Unconstrained Head Pose Estimation, ICIP 2022",
+    "input": "crop 'demo' (6DRepNet sixdrepnet/demo.py): detector box + int(0.2*h) left/right and int(0.2*w) top/bottom, RGB, Resize(224) shorter side + CenterCrop(224), ImageNet mean/std; output rotation matrix -> Euler (6DRepNet utils) -> §0 yaw, pitch, roll (upstream yaw negated)",
+    "input_size": 224,
+    "crop": "demo"
+  }
+}

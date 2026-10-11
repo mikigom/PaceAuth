@@ -1,0 +1,14 @@
+{
+  "name": "wflw",
+  "source": "Official page https://wywu.github.io/projects/LAB/WFLW.html (Wu et al., 'Look at Boundary', CVPR 2018). Images: Google Drive id 1hzBd48JIdWTJSsATBEB_eFVvPL1bx6UC (WFLW_images.tar.gz, fetched with gdown 2026-10-08). Annotations: https://wywu.github.io/projects/LAB/support/WFLW_annotations.tar.gz",
+  "license": "No licence is stated on the official WFLW page. The images are a subset of WIDER FACE, whose official page (http://shuoyang1213.me/WIDERFACE/) states 'Creative Common License (cc by-nc-nd)'. RESTRICTION FLAG: treat as NON-COMMERCIAL, NO-DERIVATIVES, research/evaluation use only; not usable for commercial training or product data.",
+  "files": {
+    "WFLW_images.tar.gz": "a53cb2fafff1c5a99fb0d42f767531bb19654a30012142c378e44e9ff8e9b76f",
+    "WFLW_annotations.tar.gz": "1459ae3bf24f12384da0a4caf16c16312b499abdafbd5cac2d965ebf855c8712"
+  },
+  "counts": {
+    "image_files": 6551, "train_faces": 7500, "train_images": 5316, "test_faces": 2500, "test_images": 2118,
+    "test_subsets": {"pose": 326, "expression": 314, "illumination": 698, "makeup": 206, "occlusion": 736, "blur": 773}
+  },
+  "notes": "Extracted to WFLW_images/ and WFLW_annotations/. Each face: 98 landmarks, detection rect, 6 attribute flags (list_98pt_rect_attr_{train,test}.txt); test subsets = faces with that flag = 1 (counts equal list_98pt_test/*.txt). FaRL/HRNet evaluate with HRNet's csv boxes (center/scale); that csv is only on OneDrive (login required since Microsoft's share-API change), Cloudstor (shut down) and Baidu, so eval/eval_wflw.py derives the identical box from the GT landmarks with the formula given in HRNet issue #3 (center=(floor(min)+ceil(max))/2, scale=max side/200). Landmark index semantics checked on GT: 60/64 outer/inner corner of the image-left eye, 68/72 inner/outer of the image-right eye, 96/97 pupils, 54 nose tip, 76/82 image-left/right outer mouth corners, contour 0 -> 32 image-left -> image-right."
+}
