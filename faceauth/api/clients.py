@@ -32,7 +32,9 @@ class Deps:
         self.engine_urls, self.search_urls, self.kms_url = engine_urls, search_urls, kms_url
         self.kms_auth = {"Authorization": f"Bearer {kms_token}"}
         self.admin_auth = {"Authorization": f"Bearer {admin_token}"}
-        self.http = httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=2.0))
+        # one pool for engine/search/KMS: the default 100 connections queued requests at ~50 sessions/s (E9)
+        self.http = httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=2.0),
+                                      limits=httpx.Limits(max_connections=1000, max_keepalive_connections=200))
 
     async def close(self):
         await self.http.aclose()

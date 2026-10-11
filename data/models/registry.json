@@ -1,5 +1,5 @@
 {
- "created_at": "2026-10-11T20:29:04.846227+00:00",
+ "created_at": "2026-10-11T21:12:03.452353+00:00",
  "format": 1,
  "models": [
   {
@@ -782,6 +782,55 @@
    },
    "source": "https://huggingface.co/immich-app/scrfd_34g_gnkps/resolve/32b5674a7e69b8d741ca6f6969476faab2257add/detection/model.onnx (ONNX export, pytorch 2.1, opset 11). Weights = SCRFD_34G_GNKPS_v2 released by Alibaba DAMO on ModelScope as iic/cv_resnet_facedetection_scrfd10gkps (the id says 10g but the default model was replaced by the 34G GN+kps v2 model, see github.com/modelscope/modelscope/issues/24), pytorch_model.bin sha256 8db579dd6947798a36e8ac2d94fb8c47369b1bcc979bbebd861070f6e91049b5. Verified: all 303 weight initializers of this ONNX equal that checkpoint (exactly or after BatchNorm folding). This is NOT the InsightFace SCRFD_34G release (that one has no keypoint head).",
    "version": "1"
+  },
+  {
+   "dir": "scrfd_34g_320",
+   "files": {
+    "onnx": "scrfd_34g_gnkps_320.onnx"
+   },
+   "kind": "detector",
+   "license": "RESTRICTED - treat as NON-COMMERCIAL / RESEARCH-ONLY until legal review. ModelScope model card and the immich HF mirror declare 'MIT License', but the model card also says the model and code come from InsightFace SCRFD and that the relevant licences must be respected. The weights were trained on WIDER FACE (CC BY-NC-ND 4.0: non-commercial, no derivatives). InsightFace policy: code MIT, models trained on their annotated training data are for non-commercial research purposes only. Commercial use needs written confirmation from the rights holders.",
+   "model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5",
+   "name": "scrfd_34g",
+   "params": {
+    "anchors_per_location": 2,
+    "derivation": "scripts/scrfd_resize.py",
+    "derived_from": "scrfd_34g@1 onnx sha256 aa19f0e7f4d120d4cf990086639ab74a0136adceaebd232e0dc4745e0cfd4257",
+    "det_thresh": 0.5,
+    "input": "1x3x320x320",
+    "input_size": 320,
+    "keypoints": 5,
+    "nms_iou": 0.4,
+    "outputs": [
+     "score_8",
+     "score_16",
+     "score_32",
+     "bbox_8",
+     "bbox_16",
+     "bbox_32",
+     "kps_8",
+     "kps_16",
+     "kps_32"
+    ],
+    "params_count": 9825410,
+    "published_widerface_val_vga": {
+     "by": "ModelScope model card (SCRFD_34G_GNKPS_v2)",
+     "easy": 96.17,
+     "hard": 84.88,
+     "medium": 95.19
+    },
+    "strides": [
+     8,
+     16,
+     32
+    ]
+   },
+   "primary": "onnx",
+   "sha256": {
+    "onnx": "56be898aa764bbb20c689295e258fdf138d9e0bfaa3c388fa859bc666bef245e"
+   },
+   "source": "https://huggingface.co/immich-app/scrfd_34g_gnkps/resolve/32b5674a7e69b8d741ca6f6969476faab2257add/detection/model.onnx (ONNX export, pytorch 2.1, opset 11). Weights = SCRFD_34G_GNKPS_v2 released by Alibaba DAMO on ModelScope as iic/cv_resnet_facedetection_scrfd10gkps (the id says 10g but the default model was replaced by the 34G GN+kps v2 model, see github.com/modelscope/modelscope/issues/24), pytorch_model.bin sha256 8db579dd6947798a36e8ac2d94fb8c47369b1bcc979bbebd861070f6e91049b5. Verified: all 303 weight initializers of this ONNX equal that checkpoint (exactly or after BatchNorm folding). This is NOT the InsightFace SCRFD_34G release (that one has no keypoint head).",
+   "version": "2"
   }
  ]
 }

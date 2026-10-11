@@ -64,6 +64,7 @@ class SCRFD:
                  sess_options=None):
         with open(os.path.join(model_dir, "MODEL.json")) as f:
             meta = json.load(f)
+        input_size = int(meta.get("params", {}).get("input_size", input_size))  # e.g. the 320 re-target (E9)
         path = os.path.join(model_dir, meta["files"]["onnx"])
         if _sha256(path) != meta["sha256"]["onnx"]:
             raise ValueError(f"sha256 mismatch for {path}")

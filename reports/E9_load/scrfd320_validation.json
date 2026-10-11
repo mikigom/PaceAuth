@@ -1,0 +1,66 @@
+{
+ "probes": {
+  "n": 360,
+  "face_count_agreement": 1.0,
+  "mean_faces_640": 1.0,
+  "mean_faces_320": 1.0,
+  "main_face_iou_p5": 0.9285838603973389,
+  "main_face_iou_median": 0.9620842933654785,
+  "kps_dev_iod_median": 0.027256960980594158,
+  "kps_dev_iod_p95": 0.05479863192886116
+ },
+ "multi_face": {
+  "n": 59,
+  "face_count_agreement": 1.0,
+  "mean_faces_640": 2.0,
+  "mean_faces_320": 2.0,
+  "main_face_iou_p5": 0.0,
+  "main_face_iou_median": 0.0,
+  "kps_dev_iod_median": 5.360394477844238,
+  "kps_dev_iod_p95": 8.299996185302733
+ },
+ "attack_print": {
+  "n": 60,
+  "face_count_agreement": 1.0,
+  "mean_faces_640": 1.0,
+  "mean_faces_320": 1.0,
+  "main_face_iou_p5": 0.9071707129478455,
+  "main_face_iou_median": 0.9558132886886597,
+  "kps_dev_iod_median": 0.029951492324471474,
+  "kps_dev_iod_p95": 0.05956553798168897
+ },
+ "attack_replay": {
+  "n": 60,
+  "face_count_agreement": 0.9666666666666667,
+  "mean_faces_640": 0.9666666666666667,
+  "mean_faces_320": 1.0,
+  "main_face_iou_p5": 0.9010121822357178,
+  "main_face_iou_median": 0.9527229070663452,
+  "kps_dev_iod_median": 0.038178591057658195,
+  "kps_dev_iod_p95": 0.0893117170780897
+ },
+ "attack_mask_rigid": {
+  "n": 60,
+  "face_count_agreement": 0.9833333333333333,
+  "mean_faces_640": 1.0,
+  "mean_faces_320": 0.9833333333333333,
+  "main_face_iou_p5": 0.8826352953910828,
+  "main_face_iou_median": 0.9374904036521912,
+  "kps_dev_iod_median": 0.030251918360590935,
+  "kps_dev_iod_p95": 0.04840922169387328
+ },
+ "raw_runs_per_s": {
+  "640_1thread": 204.86003914538998,
+  "320_1thread": 516.6679357941591,
+  "640_3threads": 304.86497272743725,
+  "320_3threads": 680.3219266686261
+ },
+ "recognition_embedding_agreement_ir101": {
+  "n": 300,
+  "cos_640_vs_320_kps": {
+   "min": 0.9248712062835693,
+   "p1": 0.9780886173248291,
+   "median": 0.9944941997528076
+  }
+ }
+}

@@ -65,6 +65,8 @@ class HeadPose:
         self.net = ARCHS[meta["params"]["arch"]]()
         self.net.load_state_dict(torch.load(d / meta["files"]["weights"], map_location="cpu", weights_only=True))
         self.net.eval().to(self.device)
+        self.mean = torch.tensor([0.485, 0.456, 0.406], device=self.device).view(1, 3, 1, 1)
+        self.std = torch.tensor([0.229, 0.224, 0.225], device=self.device).view(1, 3, 1, 1)
         self.crop = meta["params"].get("crop", "demo")
         if self.crop not in CROPS:
             raise ValueError(f"{d}: unknown params.crop {self.crop!r}")
@@ -80,6 +82,16 @@ class HeadPose:
     @torch.inference_mode()
     def predict_crops(self, crops_rgb, resize: int = 224) -> np.ndarray:
         """Resize(resize) + CenterCrop(224): 224 for 'demo' crops, 256 for 'fsa' crops and the AFLW2000 test crop."""
+        if resize == 256 and crops_rgb and all(c.shape == (256, 256, 3) and c.dtype == np.uint8 for c in crops_rgb):
+            # fsa crops are already 256x256: Resize(256) is the identity, so CenterCrop(224) + ToTensor + Normalize is
+            # an exact slice + scale; batched on the device instead of per-crop PIL (E9: 1.2 -> ~0.3 ms/face)
+            x = torch.from_numpy(np.ascontiguousarray(np.stack(crops_rgb)[:, 16:240, 16:240])).to(self.device)
+            x = (x.permute(0, 3, 1, 2).float() / 255 - self.mean) / self.std
+            out = [np.zeros((0, 3), np.float32)]
+            for i in range(0, len(x), self.batch_size):
+                pyr = torch.rad2deg(euler_from_rotmat(self.net(x[i:i + self.batch_size]))).cpu().numpy()
+                out.append(pyr[:, [1, 0, 2]] * UPSTREAM_TO_SPEC)
+            return np.concatenate(out).astype(np.float32)
         tf = transforms.Compose([transforms.Resize(resize), transforms.CenterCrop(224), transforms.ToTensor(),
                                  transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
         out = [np.zeros((0, 3), np.float32)]

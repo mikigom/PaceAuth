@@ -252,8 +252,9 @@ async def cmd_run_async(a):
         term = await free.get()
         try:
             await one(term, user, probe, rec, sched_t, t_start)
-        except Exception as e:  # noqa: BLE001 - count it, keep the load going
-            rec.append({"user": user["id"], "enrolled": user["enrolled"], "error": repr(e)[:200]})
+        except Exception as e:  # noqa: BLE001 - count it (incl. client-side failures), keep the load going
+            rec.append({"user": user["id"], "enrolled": user["enrolled"], "t": time.perf_counter() - t_start,
+                        "error": repr(e)[:200]})
         finally:
             free.put_nowait(term)
 

@@ -1,0 +1,64 @@
+{
+ "id": "E9_load",
+ "rate_target": 50.0,
+ "duration_s": 180.0,
+ "warmup_s": 20.0,
+ "wall_s": 200.5160234349314,
+ "devices": 3000,
+ "impostor_frac": 0.05,
+ "model_version": "adaface_ir101_wf12m@1",
+ "sessions_measured": 8867,
+ "throughput_per_s": 49.26111111111111,
+ "errors": 0,
+ "http_non_200": 0,
+ "wait_ms_p99": 8.532123826444153,
+ "session_ms": {
+  "p50": 13.042631093412638,
+  "p95": 29.595035687088952
+ },
+ "auth_ms": {
+  "p50": 371.4410930406302,
+  "p95": 732.3430815711615,
+  "p99": 887.7419993327932,
+  "max": 1267.6163699943572
+ },
+ "sign_ms_p95": 7.864984218031167,
+ "e2e_ms": {
+  "p50": 799.2054165302154,
+  "p95": 1160.864514574253,
+  "p99": 1317.0639914794203,
+  "composition": "333 ms capture window + terminal p95 90.2 ms/frame + signing + T_auth"
+ },
+ "targets": {
+  "p95_ms": 1500,
+  "p99_ms": 2500
+ },
+ "decisions": {
+  "genuine": {
+   "n": 8409,
+   "approved": 5633,
+   "reasons": {
+    "denied": 22,
+    "retry": 1339,
+    "not_recognized": 1415,
+    "ok": 5633
+   }
+  },
+  "impostor": {
+   "n": 458,
+   "approved": 0,
+   "reasons": {
+    "denied": 7,
+    "retry": 95,
+    "not_recognized": 356
+   }
+  }
+ },
+ "terminal_ms_per_frame": {
+  "n": 240,
+  "p50": 87.7815120620653,
+  "p95": 90.19535208353773,
+  "max": 94.23110517673194
+ },
+ "pass": true
+}

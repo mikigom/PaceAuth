@@ -11,10 +11,12 @@ only measures.
 """
 import asyncio
 import os
+import queue
 import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
+import cv2
 import msgpack
 import numpy as np
 import onnxruntime as ort
@@ -24,7 +26,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from faceauth.common.packet import decode_frame
 from faceauth.common.registry import active_entries, load_registry
 from faceauth.models.headpose import CROPS, HeadPose
-from faceauth.models.pad import PAD
+from faceauth.models.pad import PAD, face_features
 from faceauth.models.recog import Recognizer
 from faceauth.models.scrfd import SCRFD
 from faceauth.terminal.pipeline import face_crop_stats
@@ -39,6 +41,13 @@ BLUR_MIN, EXPOSURE = 40.0, (40.0, 220.0)
 DEPTH_MM, DEPTH_VALID, IR_RANGE = (350, 1000), 0.5, (20, 250)  # 40-80 cm use + margin; face-box medians
 AUTH_MAX_POSE = (25.0, 20.0)
 MAX_BATCH_FRAMES = 64
+# Per-replica parallelism (measured: one serial worker = ~90 frames/s, SCRFD 4.9 + PAD 2.3 ms/frame on the CPU-bound
+# path). Several SCRFD sessions = several CUDA streams + concurrent pre/post-processing; PAD physics on threads.
+DET_SESSIONS = int(os.environ.get("FA_ENGINE_DET_SESSIONS", "2"))   # SCRFD-34G tops out ~350 frames/s per A6000
+CPU_THREADS = int(os.environ.get("FA_ENGINE_CPU_THREADS", "6"))
+
+
+cv2.setNumThreads(1)  # frames are parallelised above; OpenCV's own pool would fight them on a 128-core host
 
 
 def _env_file(name):
@@ -63,10 +72,15 @@ class Models:
         prov = ([("TensorrtExecutionProvider", {"trt_fp16_enable": True, "trt_engine_cache_enable": True,
                                                 "trt_engine_cache_path": "/tmp/trt"})] if trt else []) \
             + ["CUDAExecutionProvider"]
-        self.det = SCRFD(entries[DETECTOR]["path"], providers=prov, sess_options=_session_options())
-        got = self.det.session.get_providers()
-        if got[0] != gpu:  # ORT silently falls back when an EP fails to load
-            raise RuntimeError(f"detector wants {gpu}, ORT gave {got}")
+        self.dets = queue.Queue()
+        for _ in range(DET_SESSIONS):
+            det = SCRFD(entries[DETECTOR]["path"], providers=prov, sess_options=_session_options())
+            got = det.session.get_providers()
+            if got[0] != gpu:  # ORT silently falls back when an EP fails to load
+                raise RuntimeError(f"detector wants {gpu}, ORT gave {got}")
+            self.dets.put(det)
+        self.det = det
+        self.pool = ThreadPoolExecutor(max(DET_SESSIONS, CPU_THREADS), thread_name_prefix="frame")
         self.pose = HeadPose(entries[POSE]["path"])
         self.rec = Recognizer(entries[recog_name]["path"])
         self.pad = PAD(entries[PAD_MODEL]["path"])
@@ -80,7 +94,11 @@ class Models:
         if isinstance(dec, str):
             return {"ok": False, "reasons": [dec], "n_faces": 0}, None
         rgb, depth, ir = dec
-        faces = self.det.detect(rgb, DET_THRESH)
+        det = self.dets.get()
+        try:
+            faces = det.detect(rgb, DET_THRESH)
+        finally:
+            self.dets.put(det)
         big = [f for f in faces if min(f["bbox"][2] - f["bbox"][0], f["bbox"][3] - f["bbox"][1]) >= OTHER_FACE_PX]
         out = {"n_faces": len(big), "bbox": None, "kps": None, "det_score": 0.0, "pose": None, "pad": None,
                "emb": None, "quality": {}}
@@ -116,15 +134,16 @@ class Models:
     def process(self, batch):
         """batch: [(mode, [decoded frame | error str])] -> per request, the list of per-frame answers."""
         flat = [(mode, d) for mode, frames in batch for d in frames]
-        res, faces = zip(*(self._frame(d) for _, d in flat)) if flat else ((), ())
+        res, faces = zip(*self.pool.map(self._frame, [d for _, d in flat])) if flat else ((), ())
         idx = [i for i, f in enumerate(faces) if f is not None]
         if idx:
             crop, resize = CROPS[self.pose.crop]
             fs = [faces[i] for i in idx]
             poses = self.pose.predict_crops([crop(r, f["bbox"]) for r, _, _, f in fs], resize)
             embs = self.rec.embed([r for r, _, _, _ in fs], [f["kps"] for _, _, _, f in fs])
-            pads = self.pad.predict([r for r, _, _, _ in fs], [d for _, d, _, _ in fs], [i for _, _, i, _ in fs],
-                                    [f["kps"] for _, _, _, f in fs])
+            p = self.pad
+            feats = list(self.pool.map(lambda x: face_features(x[0], x[1], x[2], x[3]["kps"], p.size, p.zoom, p.fx), fs))
+            pads = [p.decide(c, ph) for c, (_, ph) in zip(p.cnn(np.stack([x for x, _ in feats])), feats)]
             for j, i in enumerate(idx):
                 r = res[i]
                 r["pose"] = [float(v) for v in poses[j]]

@@ -123,3 +123,19 @@ def test_biwi_frame():
     u, v = np.rint(project(f["K_rgb"], f["head_center"])).astype(int)
     z = f["depth"][v - 3:v + 4, u - 3:u + 4]
     assert 20 < f["head_center"][2] - np.median(z[z > 0]) < 150  # registered face surface in front of head centre
+
+
+def test_fsa_fast_path_matches_pil_path():
+    """The batched fsa fast path equals the PIL Resize(256) + CenterCrop(224) + ToTensor + Normalize path."""
+    import torch
+    import faceauth.models.headpose as hpm
+    hp = hpm.HeadPose("data/models/6drepnet360", device="cuda" if torch.cuda.is_available() else "cpu")
+    rng = np.random.default_rng(0)
+    crops = [rng.integers(0, 256, (256, 256, 3), dtype=np.uint8) for _ in range(5)]
+    fast = hp.predict_crops(crops, 256)
+    tf = hpm.transforms.Compose([hpm.transforms.Resize(256), hpm.transforms.CenterCrop(224), hpm.transforms.ToTensor(),
+                                 hpm.transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+    with torch.inference_mode():
+        x = torch.stack([tf(hpm.Image.fromarray(c)) for c in crops]).to(hp.device)
+        ref = torch.rad2deg(hpm.euler_from_rotmat(hp.net(x))).cpu().numpy()[:, [1, 0, 2]] * hpm.UPSTREAM_TO_SPEC
+    assert np.allclose(fast, ref, atol=0.05), np.abs(fast - ref).max()   # deg; float noise only (pose MAE ~3 deg)

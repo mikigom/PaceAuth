@@ -7,6 +7,7 @@ x-engine: &engine
     user: "65534:65534"
     read_only: true
     tmpfs: [/tmp]
+    ulimits: { nofile: { soft: 65536, hard: 65536 } }   # E9: EMFILE at ~50 sessions/s with the 1024 default
     networks: [internal]
     dns_opt: ["timeout:1", "attempts:1"]
     restart: unless-stopped

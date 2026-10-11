@@ -15,6 +15,7 @@ x-api: &api
   user: "65534:65534"
   read_only: true
   tmpfs: [/tmp]                      # nothing else is writable: raw frames never touch a disk
+  ulimits: { nofile: { soft: 65536, hard: 65536 } }   # E9: EMFILE at ~50 sessions/s with the 1024 default
   networks: [internal]
   restart: unless-stopped
   volumes: ["./faceauth:/app/faceauth:ro"]
