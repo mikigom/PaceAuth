@@ -157,6 +157,73 @@
      "images": 3226,
      "note": "as wrapper_insightface_det_scale but letterbox padding 127.5 (normalised 0, like mmdet) instead of black"
     }
+   },
+   "widerface_val_wrapper_trt16": {
+    "ap": {
+     "easy": 0.9561923575065776,
+     "medium": 0.9462552372646158,
+     "hard": 0.8425002455714772
+    },
+    "faces": {
+     "easy": 7211,
+     "medium": 13319,
+     "hard": 31958
+    },
+    "images": 3226,
+    "seconds": 126.7,
+    "n_dets": 744829
+   },
+   "widerface_val_paper_trt16": {
+    "ap": {
+     "easy": 0.9615900727567425,
+     "medium": 0.9518978663566781,
+     "hard": 0.848788680910516
+    },
+    "faces": {
+     "easy": 7211,
+     "medium": 13319,
+     "hard": 31958
+    },
+    "images": 3226,
+    "seconds": 122.5,
+    "n_dets": 906759
+   },
+   "latency_trt16": {
+    "providers": [
+     "TensorrtExecutionProvider",
+     "CUDAExecutionProvider",
+     "CPUExecutionProvider"
+    ],
+    "gpu_state_before": "NVIDIA RTX A6000, 100 %, 32997 MiB, 49140 MiB",
+    "model_b1": {
+     "p50_ms": 25.628783041611314,
+     "p95_ms": 30.6216670316644,
+     "mean_ms": 24.17694607982412,
+     "n": 300,
+     "warmup": 30
+    },
+    "model_b16_loop": {
+     "p50_ms": 392.9212319198996,
+     "p95_ms": 439.78913228493184,
+     "mean_ms": 390.98487401846796,
+     "n": 50,
+     "warmup": 5
+    },
+    "detect_b1_vga": {
+     "p50_ms": 24.80596851091832,
+     "p95_ms": 30.61840374721214,
+     "mean_ms": 24.61267416831106,
+     "n": 300,
+     "warmup": 30
+    },
+    "detect_batch16_vga": {
+     "p50_ms": 402.3818230489269,
+     "p95_ms": 435.04460237454623,
+     "mean_ms": 392.99630496650934,
+     "n": 50,
+     "warmup": 5
+    },
+    "note": "model_* = session.run on a 1x3x640x640 blob incl. host<->device copies; detect_* = end to end (letterbox, run, decode, NMS) on 640x480 RGB at thresh 0.5; batch 16 = 16 sequential runs (static batch-1 export). GPU 5 is shared with other jobs, see gpu_state_before."
    }
   },
   "scrfd_10g_kps": {
