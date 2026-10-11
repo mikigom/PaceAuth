@@ -293,11 +293,10 @@ def _consent(c):
 async def _approve(conn, sess, device_id: str, subject_id, account_id: str, amr: list) -> str:
     """Approval row + token scoped to this device and action; exp = iat + 30 s. Face alone is amr ["face"]."""
     aid, iat = uuid.uuid4(), int(time.time())
-    if subject_id is not None:  # ponytail: approvals.subject_id is NOT NULL, so a fallback without a face
-        # enrollment is recorded in sessions + audit only (schema change requested in the report)
-        await conn.execute("INSERT INTO approvals (id, session_id, subject_id, device_id, action_id, amr, issued_at, "
-                           "expires_at) VALUES (%s, %s, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s))",
-                           (aid, sess["id"], subject_id, device_id, sess["action_id"], amr, iat, iat + APPROVAL_TTL))
+    await conn.execute("INSERT INTO approvals (id, session_id, subject_id, account_id, device_id, action_id, amr, "
+                       "issued_at, expires_at) VALUES (%s, %s, %s, %s, %s, %s, %s, to_timestamp(%s), to_timestamp(%s))",
+                       (aid, sess["id"], subject_id, account_id, device_id, sess["action_id"], amr, iat,
+                        iat + APPROVAL_TTL))
     return token.sign(C.cfg.approval_key, {"aid": str(aid), "sid": str(sess["id"]), "dev": device_id,
                                            "act": sess["action_id"], "acct": account_id, "amr": amr,
                                            "iat": iat, "exp": iat + APPROVAL_TTL})

@@ -270,6 +270,27 @@ def test_fail_closed(db, monkeypatch):
     assert r.reload.is_set()                                      # the primary lost/restored history: rebuild
 
 
+def test_failover_rewritten_history_rebuilds(db):
+    """Sync replication shows a commit on the primary before a standby has it: after a failover, events this replica
+    already applied can be gone and their ids reissued for other events (ids >= applied would be skipped)."""
+    conn, ro = db
+    fake, rng = FakeKMS(), np.random.default_rng(5)
+    kms = fake.client()
+    activate(conn, "1")
+    enroll(conn, kms, person(rng)[0])
+    r = Replica(ro, None, fake.client, "recog", gpu=False)
+    r.build()
+    enroll(conn, kms, person(rng)[0])
+    r.poll()
+    last = max_event(conn)
+    assert r.applied == last and not r.reload.is_set()
+    r.poll()                                                      # no new events, history intact: keep serving
+    assert not r.reload.is_set()
+    conn.execute("UPDATE template_events SET template_id = template_id + 100000 WHERE id = %s", (last,))
+    r.poll()                                                      # same id, different event: rebuild
+    assert r.reload.is_set()
+
+
 @pytest.mark.parametrize("gpu", [False, True])
 def test_http_service_end_to_end(db, gpu):
     import faiss

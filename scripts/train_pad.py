@@ -164,6 +164,54 @@ def cmd_gen(a):
     print(json.dumps(meta["counts"], indent=1), f"{time.time() - t0:.0f}s")
 
 
+# BIWI subject split. train/val: subjects whose sequences cannot complete the 9-direction enrollment; test holds
+# out every subject used for E2E/E8 (all complete-coverage sequences and the 4 two-session subjects).
+BIWI_SPLIT = {"train": ["01", "04", "08", "11", "12", "14", "17", "19", "20"], "val": ["23", "24"],
+              "test": ["02", "03", "05", "06", "07", "09", "10", "13", "15", "16", "18", "21", "22"]}
+
+
+def cmd_gen_biwi(a):
+    """Append pose-diverse renders (BIWI head rotation, |yaw|<=50, |pitch|<=40) to an existing pad_synth.
+    The CelebA aligned crops are near-frontal, so v1 learned 'live = frontal' and rejected turned heads."""
+    from faceauth.models.scrfd import SCRFD
+    from faceauth.sim import biwi
+    t0, det, tasks = time.time(), SCRFD(ROOT / "data/models/scrfd_34g"), []
+    for split, seqs in BIWI_SPLIT.items():
+        kinds = ["live"] + SPECIES + (["inject_live"] if split == "test" else [])
+        for f in biwi.iter_frames(ROOT / "data/datasets/biwi", seqs=seqs, register=False, step=a.step):
+            if abs(f["pose"][0]) > 50 or abs(f["pose"][1]) > 40:
+                continue
+            d = det.detect(f["rgb"])
+            if len(d) != 1:
+                continue
+            tasks.append(dict(img=str(ROOT / f"data/datasets/biwi/hpdb/{f['seq']}/frame_{f['frame']:05d}_rgb.png"),
+                              kps=d[0]["kps"].tolist(), group=f"biwi_{f['subject']}", src=f"biwi/{f['seq']}/{f['frame']}",
+                              split=split, profile=DEFAULT_PROFILE, kinds=kinds, uid=f"biwi{f['seq']}_{f['frame']:05d}",
+                              seed=a.seed * 10 ** 6 + 900000 + len(tasks)))
+    print(f"{len(tasks)} BIWI sources {time.time() - t0:.0f}s", flush=True)
+    rows, errors = [], []
+    with Pool(a.workers) as pool:
+        for r in pool.imap_unordered(_render, tasks, chunksize=4):
+            (errors if "error" in r[0] else rows).extend(r)
+    old = [json.loads(line) for line in open(DATA / "manifest.jsonl") if not json.loads(line)["src"].startswith("biwi/")]
+    with open(DATA / "manifest.jsonl", "w") as f:
+        for r in sorted(old + rows, key=lambda r: r["file"]):
+            f.write(json.dumps(r) + "\n")
+    meta = json.loads((DATA / "DATASET.json").read_text())
+    meta["version"] = "2"
+    meta["files"]["manifest.jsonl"] = hashlib.sha256((DATA / "manifest.jsonl").read_bytes()).hexdigest()
+    counts = {}
+    for r in rows:
+        k = f"{r['split']}/{r['profile']}/{r['kind']}"
+        counts[k] = counts.get(k, 0) + 1
+    meta["biwi"] = dict(split=BIWI_SPLIT, step=a.step, pose_limit_deg=[50, 40], counts=counts, failed_sources=len(errors),
+                        source="BIWI Kinect Head Pose RGB frames (data/datasets/biwi, research only); depth/IR rendered "
+                               "by SensorSim like the CelebA part, BIWI depth is not used",
+                        command="python scripts/train_pad.py gen_biwi " + " ".join(sys.argv[2:]))
+    (DATA / "DATASET.json").write_text(json.dumps(meta, indent=1))
+    print(json.dumps(counts, indent=1), f"errors {len(errors)}", f"{time.time() - t0:.0f}s")
+
+
 # ---------------------------------------------------------------------------------------------- train
 def load_rows(split, profile=DEFAULT_PROFILE, species=SPECIES):
     rows = [json.loads(line) for line in open(DATA / "manifest.jsonl")]
@@ -307,7 +355,7 @@ def cmd_train(a):
             best = vl
             torch.save(net.state_dict(), out / "pad_rgbdir.pt")
     meta = dict(
-        name="pad_rgbdir" if a.protocol == "seen" else f"pad_rgbdir_{a.protocol}", version="1", kind="pad",
+        name="pad_rgbdir" if a.protocol == "seen" else f"pad_rgbdir_{a.protocol}", version=a.version, kind="pad",
         files={"weights": "pad_rgbdir.pt"}, sha256={"weights": hashlib.sha256((out / "pad_rgbdir.pt").read_bytes()).hexdigest()},
         source="Trained in-house on SYNTHETIC data (faceauth/sim + scripts/train_pad.py, protocol "
                f"{a.protocol}); not validated on any real sensor.",
@@ -340,13 +388,18 @@ if __name__ == "__main__":
     g.add_argument("--per-id", type=int, default=2)
     g.add_argument("--seed", type=int, default=7)
     g.add_argument("--workers", type=int, default=48)
+    b = sub.add_parser("gen_biwi")
+    b.add_argument("--step", type=int, default=3)
+    b.add_argument("--seed", type=int, default=7)
+    b.add_argument("--workers", type=int, default=48)
     t = sub.add_parser("train")
     t.add_argument("--protocol", choices=list(PROTOCOLS), default="seen")
     t.add_argument("--out", default=str(ROOT / "data/models/pad_rgbdir"))
+    t.add_argument("--version", default="1", help="registry version written to MODEL.json")
     t.add_argument("--epochs", type=int, default=20)
     t.add_argument("--batch", type=int, default=128)
     t.add_argument("--lr", type=float, default=2e-3)
     t.add_argument("--seed", type=int, default=0)
     t.add_argument("--workers", type=int, default=16)
     a = ap.parse_args()
-    cmd_gen(a) if a.cmd == "gen" else cmd_train(a)
+    {"gen": cmd_gen, "gen_biwi": cmd_gen_biwi, "train": cmd_train}[a.cmd](a)

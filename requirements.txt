@@ -1,5 +1,7 @@
 # Pinned (RFP/Design: version-pinned, reproducible builds). torch 2.12.0+cu130 comes from the base image.
 onnxruntime-gpu==1.30.0
+# TensorRT 10.x: onnxruntime-gpu 1.30 TensorRT EP links libnvinfer.so.10 (11.x does not load)
+tensorrt-cu13==10.16.1.11
 faiss-gpu-cu12==1.14.1.post1
 opencv-python-headless==5.0.0.93
 scikit-image==0.26.0

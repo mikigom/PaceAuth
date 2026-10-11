@@ -110,6 +110,7 @@ class Replica:
         self.gallery = None            # written only by the maintenance thread (run/build/poll), under the lock
         self.model_version = None
         self.applied = 0
+        self.applied_sig = None        # (op, template_id) of event `applied`: detects ids lost and reissued by a failover
         self.last_ok = 0.0             # monotonic time of the last successful build/poll
         self.reload = threading.Event()
         self.jobs = queue.Queue()
@@ -158,6 +159,11 @@ class Replica:
             " (SELECT coalesce(max(id), 0) FROM template_events), pg_is_in_recovery()", (self.recog,)).fetchone()
         return (None if v is None else f"{self.recog}@{v}"), max_id, standby
 
+    @staticmethod
+    def _sig(conn, eid):
+        return tuple(conn.execute("SELECT op, template_id FROM template_events WHERE id = %s", (eid,)).fetchone() or ()) \
+            if eid else None
+
     def build(self):
         with self.lock:
             self.gallery = None        # 503 from here on; frees the old GPU index before the new one is built
@@ -188,8 +194,10 @@ class Replica:
             applied, n = self._apply_events(g, mv, applied)
             if n < POLL_LIMIT:
                 break
+        sig = self._sig(self._db(), applied)
         with self.lock:
             self.gallery, self.model_version, self.applied, self.last_ok = g, mv, applied, time.monotonic()
+            self.applied_sig = sig
             self.build_seconds = round(time.monotonic() - t0, 3)
         log.info("search index %s built: %d templates (%d skipped: KMS null), %d subjects, applied_event_id %d, %.1f s",
                  mv, g.ntotal, skipped, g.nsubjects, applied, self.build_seconds)
@@ -224,15 +232,19 @@ class Replica:
         active, max_id, standby = self._active(self._db())
         if max_id < applied and standby:
             return 0        # reconnected to a standby still replaying: wait (stale -> 503 after MAX_STALE_S)
-        if active != mv or max_id < applied:   # model (de)activated, or the primary lost/restored history
-            log.warning("search: active model %s (index %s), max event %d (applied %d) -> rebuild",
-                        active, mv, max_id, applied)
+        # Sync replication makes a commit visible on the primary before a standby has it: after a failover the
+        # events we applied may be gone and their ids reissued (an id >= applied would then be skipped forever).
+        lost = applied and self._sig(self._db(), applied) != self.applied_sig
+        if active != mv or max_id < applied or lost:   # model (de)activated, or the primary lost/restored history
+            log.warning("search: active model %s (index %s), max event %d (applied %d, history %s) -> rebuild",
+                        active, mv, max_id, applied, "rewritten" if lost else "ok")
             self.reload.set()
             return 0
         applied, n = self._apply_events(g, mv, applied)
+        sig = self._sig(self._db(), applied) if n else self.applied_sig
         with self.lock:
             if self.gallery is g:
-                self.applied, self.last_ok = applied, time.monotonic()
+                self.applied, self.applied_sig, self.last_ok = applied, sig, time.monotonic()
         return n
 
     def run(self, stop: threading.Event):

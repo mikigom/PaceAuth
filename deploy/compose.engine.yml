@@ -1,2 +1,34 @@
-# Owned by the engine contributor (see docs/IMPLEMENTATION.md §1).
-services: {}
+# Engine: central GPU inference (faceauth/engine/main.py, docs/IMPLEMENTATION.md §3). Internal network only.
+# Loads models only from the signed registry at the versions active in model_versions; refuses CPU-placed graphs.
+# SCRFD runs as a TensorRT fp16 engine built at start into tmpfs (never persisted: no unsigned artifact on disk).
+services:
+  engine:
+    image: faceauth:dev
+    user: "65534:65534"
+    read_only: true
+    tmpfs: [/tmp]
+    networks: [internal]
+    dns_opt: ["timeout:1", "attempts:1"]
+    restart: unless-stopped
+    volumes: ["./faceauth:/app/faceauth:ro", "./data/models:/app/data/models:ro"]
+    command: ["uvicorn", "faceauth.engine.main:app", "--host", "0.0.0.0", "--port", "8001", "--no-access-log",
+              "--no-server-header"]
+    environment:
+      HOME: /tmp
+      FA_DB_DSN: "host=db,db-standby1,db-standby2 dbname=faceauth user=faceauth_ro target_session_attrs=any connect_timeout=3"
+      FA_DB_PASSWORD_FILE: /run/secrets/db_ro_password
+      FA_RECOG_MODEL: ${FA_RECOG_MODEL:-kprpe_vitb_wf12m}
+      FA_MODELS_DIR: /app/data/models
+      FA_RELEASE_PUB: /run/secrets/release_pub
+      FA_ADMIN_TOKEN_FILE: /run/secrets/admin_token
+    secrets: [db_ro_password, release_pub, admin_token]
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, device_ids: ["5"], capabilities: [gpu] }]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8001/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 300s

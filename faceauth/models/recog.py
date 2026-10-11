@@ -10,9 +10,15 @@ Supported MODEL.json `params.arch`:
   cvlface_vit_base_kprpe            CVLFace KP-RPE ViT-B (AdaFace). KP-RPE also consumes 5 keypoints; like the official
                                     eval pipeline for pre-aligned images (InferAlignerKeypointModelPipeline) they are
                                     predicted on the aligned crop by the bundled DFA aligner (files.aligner).
-Both: crop = faceauth.common.align.norm_crop (ArcFace 112 template), RGB, (x/255 - 0.5) / 0.5.
-`params.fp16` (signed with MODEL.json) selects fp16 autocast; the DFA aligner always runs fp32.
-Weights are loaded without code execution (safetensors, or torch.load(weights_only=True)) and strictly
+  cvlface_ir101                     CVLFace AdaFace IR-101 (IResNet-101 as in the AdaFace repo), RGB.
+  insightface_onnx                  InsightFace model-zoo ArcFace ONNX (buffalo_l w600k_r50, antelopev2 glintr100), run by
+                                    ONNX Runtime CUDA EP in fp32 (TF32 convs, ORT default), files.onnx; input
+                                    (x - params.input_mean) / params.input_std (insightface ArcFaceONNX: 127.5 / 127.5
+                                    when the graph has no Sub/Mul preprocessing), dynamic batch. Construction fails
+                                    instead of silently falling back to CPU (session.disable_cpu_ep_fallback).
+All: crop = faceauth.common.align.norm_crop (ArcFace 112 template), RGB; torch archs (x/255 - 0.5) / 0.5.
+`params.fp16` (signed with MODEL.json) selects fp16 autocast for torch archs; the DFA aligner always runs fp32.
+Weights are loaded without code execution (safetensors, or torch.load(weights_only=True), or ONNX) and strictly
 (0 missing / 0 unexpected keys). File hashes are verified by the registry before load (§7), not here.
 """
 import json
@@ -33,6 +39,23 @@ def _state_dict(path: Path, prefix: str = "") -> dict:
     return {k[len(prefix):]: v for k, v in sd.items() if k.startswith(prefix)}
 
 
+def _ort_session(path: Path, device: torch.device):
+    import onnxruntime as ort
+    so = ort.SessionOptions()
+    so.log_severity_level = 3  # zoo exports declare output (1, 512) with a dynamic batch: ORT warns on every run
+    if device.type == "cuda":
+        ort.preload_dlls()  # faceauth:dev: cuDNN is only on the loader path via the nvidia pip packages
+        so.add_session_config_entry("session.disable_cpu_ep_fallback", "1")  # a CPU-placed node fails the load
+        want = [("CUDAExecutionProvider", {"device_id": device.index or 0})]
+    else:
+        want = ["CPUExecutionProvider"]
+    sess = ort.InferenceSession(str(path), so, providers=want)
+    name = want[0][0] if isinstance(want[0], tuple) else want[0]
+    if sess.get_providers()[0] != name:  # ORT silently falls back when an EP fails to load
+        raise RuntimeError(f"{path}: wanted {name}, ONNX Runtime gave {sess.get_providers()}")
+    return sess
+
+
 class Recognizer:
     def __init__(self, model_dir, device="cuda", batch_size: int = 128):
         d = Path(model_dir)
@@ -42,6 +65,16 @@ class Recognizer:
         p, files = meta["params"], meta["files"]
         self.version, self.dim, self.align = f"{meta['name']}@{meta['version']}", int(meta["dim"]), p["align"]
         self.fp16, self.batch_size, self.device = bool(p["fp16"]), batch_size, torch.device(device)
+        self.backend, self.sess = "torch", None
+        if p["arch"] == "insightface_onnx":
+            self.backend, self.fp16 = "onnx", False
+            self.sess = _ort_session(d / files["onnx"], self.device)
+            self.providers = self.sess.get_providers()
+            self.input_name = self.sess.get_inputs()[0].name
+            self.mean, self.std = float(p["input_mean"]), float(p["input_std"])
+            if self.sess.get_outputs()[0].shape[-1] != self.dim:
+                raise ValueError(f"{d}: output {self.sess.get_outputs()[0].shape} does not match dim {self.dim}")
+            return
         if p["arch"] == "insightface_vit_l_dp005_mask_005":
             from faceauth.models.vendor.arcface_vit import vit_l_dp005_mask_005
             self.net, self.aligner = vit_l_dp005_mask_005(self.dim), None
@@ -53,6 +86,10 @@ class Recognizer:
             self.net.load_state_dict(_state_dict(d / files["weights"], "model.net."))
             self.aligner.load_state_dict(_state_dict(d / files["aligner"], "model.net."))
             self.aligner.eval().to(self.device)
+        elif p["arch"] == "cvlface_ir101":
+            from faceauth.models.vendor.cvlface_iresnet import ir_101
+            self.net, self.aligner = ir_101(self.dim), None
+            self.net.load_state_dict(_state_dict(d / files["weights"], "model.net."))
         else:
             raise ValueError(f"{d}: unknown arch {p['arch']!r}")
         self.net.eval().to(self.device)
@@ -64,6 +101,11 @@ class Recognizer:
         if crops.ndim != 4 or crops.shape[1:] != (112, 112, 3) or crops.dtype != np.uint8:
             raise ValueError(f"expected (n,112,112,3) uint8, got {crops.shape} {crops.dtype}")
         out = [np.zeros((0, self.dim), np.float32)]
+        if self.sess is not None:
+            for i in range(0, len(crops), self.batch_size):
+                x = (crops[i:i + self.batch_size].transpose(0, 3, 1, 2).astype(np.float32) - self.mean) / self.std
+                out.append(self.sess.run(None, {self.input_name: x})[0].astype(np.float32))
+            return np.concatenate(out)
         for i in range(0, len(crops), self.batch_size):
             x = torch.from_numpy(np.ascontiguousarray(crops[i:i + self.batch_size])).to(self.device)
             x = (x.permute(0, 3, 1, 2).float() / 255 - 0.5) / 0.5
@@ -94,7 +136,8 @@ if __name__ == "__main__":  # python -m faceauth.models.recog <model_dir> [--wri
     d = Path(a.model_dir)
     meta = json.loads((d / "MODEL.json").read_text())
     rec = Recognizer(d, device="cuda" if torch.cuda.is_available() else "cpu")  # raises on missing/unexpected keys
-    print(f"{rec.version}: strict load OK (0 missing / 0 unexpected keys), dim {rec.dim}")
+    print(f"{rec.version}: " + (f"ONNX session OK on {rec.providers}" if rec.sess is not None else
+                                "strict load OK (0 missing / 0 unexpected keys)") + f", dim {rec.dim}")
     for k, f in meta["files"].items():
         with open(d / f, "rb") as fh:
             h = hashlib.file_digest(fh, "sha256").hexdigest()

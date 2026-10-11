@@ -63,10 +63,11 @@ CREATE TABLE sessions (
 );
 CREATE INDEX sessions_device_time ON sessions (device_id, created_at);
 
-CREATE TABLE approvals (
+CREATE TABLE approvals (                        -- every approval, biometric or not (fallback: no subject)
   id               uuid PRIMARY KEY,
   session_id       uuid NOT NULL UNIQUE REFERENCES sessions (id),
-  subject_id       uuid NOT NULL REFERENCES subjects (id),
+  subject_id       uuid REFERENCES subjects (id),
+  account_id       text NOT NULL,
   device_id        text NOT NULL,
   action_id        text NOT NULL,
   amr              text[] NOT NULL,             -- {face} | {face,otp} | {pin} ...; face alone is never "mfa"

@@ -568,6 +568,8 @@ def test_non_biometric_fallback(dev):
     assert body["decision"] == "approved", body
     p = token.verify(serialization.load_pem_public_key((S / "approval.pub").read_bytes()), body["approval_token"])
     assert p["amr"] == ["pin"] and p["acct"] == acct and p["dev"] == dev.id and p["exp"] - p["iat"] == 30
+    # the approval ledger records non-biometric approvals too (no subject)
+    assert q1("SELECT subject_id IS NULL, account_id, amr FROM approvals WHERE id = %s", p["aid"]) == (True, acct, ["pin"])
     again = dev.post("/v1/fallback", json={"session_id": s["session_id"],
                                            "assertion": assertion(acct, s["challenge"], "pin")})
     assert again.json() == {"decision": "rejected", "reason": "session"}

@@ -21,6 +21,7 @@ from faceauth.common.align import ARCFACE_DST
 from faceauth.models.recog import Recognizer
 from faceauth.models.vendor.arcface_vit import vit_l_dp005_mask_005
 from faceauth.models.vendor.cvlface_dfa import DFALandmarks
+from faceauth.models.vendor.cvlface_iresnet import ir_101
 from faceauth.models.vendor.cvlface_kprpe import vit_base_kprpe
 
 DEV = "cuda" if torch.cuda.is_available() else "cpu"
@@ -28,12 +29,17 @@ ROOT = Path(__file__).resolve().parents[1]
 LFW = ROOT / "data/datasets/verification/lfw.bin"
 
 
-@pytest.mark.parametrize("arch", ["insightface_vit_l_dp005_mask_005", "cvlface_vit_base_kprpe"])
+@pytest.mark.parametrize("arch", ["insightface_vit_l_dp005_mask_005", "cvlface_vit_base_kprpe", "cvlface_ir101"])
 def test_random_init_loader_and_embed(tmp_path, arch):
     torch.manual_seed(0)
     if arch == "insightface_vit_l_dp005_mask_005":
         torch.save(vit_l_dp005_mask_005().state_dict(), tmp_path / "model.pt")
         files = {"weights": "model.pt"}
+    elif arch == "cvlface_ir101":  # HF layout: "model.net." prefix, 917 tensors
+        sd = {"model.net." + k: v for k, v in ir_101().state_dict().items()}
+        assert len(sd) == 917
+        save_file(sd, tmp_path / "model.safetensors")
+        files = {"weights": "model.safetensors"}
     else:  # same key layout as the HF safetensors ("model.net." prefix)
         save_file({"model.net." + k: v for k, v in vit_base_kprpe().state_dict().items()}, tmp_path / "model.safetensors")
         save_file({"model.net." + k: v for k, v in DFALandmarks().state_dict().items()}, tmp_path / "aligner.safetensors")
@@ -93,7 +99,44 @@ def test_metrics():
     assert t["n_impostor"] == 300 and t["far"] <= 1e-3 and t["tar_ci95"][0] <= t["tar"] <= t["tar_ci95"][1]
 
 
-@pytest.mark.parametrize("name", ["kprpe_vitb_wf12m", "insightface_vit_l_wf42m"])
+def test_strict_load_rejects_wrong_keys(tmp_path):
+    sd = {"model.net." + k: v for k, v in ir_101().state_dict().items()}
+    sd.pop("model.net.output_layer.3.weight")
+    save_file(sd, tmp_path / "model.safetensors")
+    meta = {"name": "t", "version": "0", "kind": "recognition", "files": {"weights": "model.safetensors"}, "sha256": {},
+            "dim": 512, "params": {"arch": "cvlface_ir101", "align": "arcface5-112@1", "fp16": False}}
+    (tmp_path / "MODEL.json").write_text(json.dumps(meta))
+    with pytest.raises(RuntimeError, match="Missing key"):
+        Recognizer(tmp_path, device="cpu")
+
+
+def test_onnx_branch(tmp_path):
+    """insightface_onnx: (x - mean) / std RGB NCHW preprocessing, dynamic batch, provider check (tiny exported net)."""
+    torch.manual_seed(0)
+    net = torch.nn.Sequential(torch.nn.Conv2d(3, 8, 3, 2, 1), torch.nn.PReLU(8), torch.nn.Flatten(),
+                              torch.nn.Linear(8 * 56 * 56, 512)).eval()
+    torch.onnx.export(net, torch.zeros(1, 3, 112, 112), tmp_path / "m.onnx", input_names=["input.1"],
+                      dynamic_axes={"input.1": {0: "None"}}, opset_version=17, dynamo=False)
+    meta = {"name": "t", "version": "0", "kind": "recognition", "files": {"onnx": "m.onnx"}, "sha256": {}, "dim": 512,
+            "params": {"arch": "insightface_onnx", "align": "arcface5-112@1", "fp16": False,
+                       "input_mean": 127.5, "input_std": 127.5}}
+    (tmp_path / "MODEL.json").write_text(json.dumps(meta))
+    rec = Recognizer(tmp_path, device=DEV, batch_size=2)
+    assert rec.backend == "onnx" and rec.providers[0] == ("CUDAExecutionProvider" if DEV == "cuda" else "CPUExecutionProvider")
+    crops = np.random.default_rng(0).integers(0, 256, (5, 112, 112, 3), dtype=np.uint8)
+    with torch.no_grad():
+        ref = net(torch.from_numpy((crops.transpose(0, 3, 1, 2).astype(np.float32) - 127.5) / 127.5)).numpy()
+    np.testing.assert_allclose(rec.features(crops), ref, rtol=2e-3, atol=2e-3)  # 3 batches (2, 2, 1); TF32 convs on GPU
+    e = rec.embed_aligned(crops)
+    np.testing.assert_allclose(np.linalg.norm(e, axis=1), 1, atol=1e-5)
+    assert rec.embed([], []).shape == (0, 512)
+
+
+REAL = ["kprpe_vitb_wf12m", "insightface_vit_l_wf42m", "insightface_r50_wf600k", "insightface_r100_glint360k",
+        "adaface_ir101_wf12m"]
+
+
+@pytest.mark.parametrize("name", REAL)
 def test_real_weights_lfw_fold1(name):
     d = ROOT / "data/models" / name
     files = json.loads((d / "MODEL.json").read_text())["files"].values()
@@ -101,8 +144,16 @@ def test_real_weights_lfw_fold1(name):
         pytest.skip("weights or lfw.bin not present")
     imgs, issame = load_bin(LFW)
     rec = Recognizer(d, device=DEV)
+    if rec.backend == "onnx" and DEV == "cuda":
+        assert rec.providers[0] == "CUDAExecutionProvider"
     e = rec.embed_aligned(imgs[:1200])  # LFW fold 1: 300 genuine + 300 impostor pairs
+    assert e.shape == (1200, 512) and e.dtype == np.float32
+    np.testing.assert_allclose(np.linalg.norm(e, axis=1), 1, atol=1e-4)
     assert kfold_accuracy(e.astype(np.float64), issame[:600])[0] > 99.0
+    # flip sanity: a face and its mirror image are the same identity (RGB order / normalisation errors break this)
+    ef = rec.embed_aligned(np.ascontiguousarray(imgs[:200, :, ::-1]))
+    flip_cos, imp_cos = np.sum(e[:200] * ef, 1), np.sum(e[0::2] * e[1::2], 1)[~issame[:600]]
+    assert np.median(flip_cos) > 0.8 and np.median(flip_cos) > np.quantile(imp_cos, 0.99)
     # a face scaled 2x and shifted inside a larger canvas is re-aligned by embed() via its keypoints
     big = np.zeros((400, 500, 3), np.uint8)
     big[100:324, 150:374] = cv2.resize(imgs[0], (224, 224), interpolation=cv2.INTER_CUBIC)

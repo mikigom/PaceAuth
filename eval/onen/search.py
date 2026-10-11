@@ -3,8 +3,9 @@ production GpuIndexFlatIP), gallery streamed in chunks so ~4M x 512 templates fi
 per-subject aggregation (subject score = max over its templates, IMPLEMENTATION.md §4).
 
     s = Searcher()                                   # one faiss GPU resource, bounded temp memory
-    D, I, hist = s.knn(gallery, probes, k, hist_rows) # top-k templates per probe (+ impostor histogram)
+    D, I = s.knn(gallery, probes, k)                 # top-k templates per probe
     sc, sid = subject_topk(D, I, tpl_subject, ks)    # top-ks subjects per probe, descending
+    h = s.hist(probes, gallery)                      # histogram (metrics.HIST_*) of ALL probe x template scores
 """
 import faiss
 import faiss.contrib.torch_utils  # noqa: F401  (faiss.knn_gpu accepts torch CUDA tensors: one upload per chunk)
@@ -14,9 +15,16 @@ import torch
 from eval.onen.metrics import HIST_BINS, HIST_W
 
 
+def _finite(x, what):
+    x = np.ascontiguousarray(x, np.float32)
+    if not np.isfinite(x).all():  # NaN rows (failure to acquire) would come back as garbage neighbours / bins
+        raise ValueError(f"{what} contain non-finite rows; drop failed images before searching")
+    return x
+
+
 class Searcher:
-    def __init__(self, chunk=1_000_000, qbatch=16384, hist_tile=128, temp_mem=512 << 20, device="cuda"):
-        self.chunk, self.qbatch, self.hist_tile, self.dev = chunk, qbatch, hist_tile, torch.device(device)
+    def __init__(self, chunk=1_000_000, qbatch=16384, temp_mem=512 << 20, device="cuda"):
+        self.chunk, self.qbatch, self.dev = chunk, qbatch, torch.device(device)
         self.res = None
         if self.dev.type == "cuda":
             self.res = faiss.StandardGpuResources()
@@ -28,29 +36,37 @@ class Searcher:
         D, I = faiss.knn(xq.numpy(), xb.numpy(), k, metric=faiss.METRIC_INNER_PRODUCT)  # CPU fallback (tests)
         return torch.from_numpy(D), torch.from_numpy(I)
 
-    def knn(self, gallery: np.ndarray, probes: np.ndarray, k: int, hist_rows=None):
-        """-> D (P,k) float32 descending, I (P,k) int64 gallery rows (-1 = none), hist (HIST_BINS,) int64 of
-        ALL scores of probes[hist_rows] against the whole gallery (or None)."""
+    def knn(self, gallery: np.ndarray, probes: np.ndarray, k: int):
+        """-> D (P,k) float32 descending, I (P,k) int64 gallery rows (-1 = none)."""
+        gallery, probes = _finite(gallery, "gallery"), _finite(probes, "probes")
         P, T = len(probes), len(gallery)
         D = np.full((P, k), -np.inf, np.float32)
         I = np.full((P, k), -1, np.int64)
-        hist = torch.zeros(HIST_BINS, dtype=torch.int64, device=self.dev) if hist_rows is not None else None
-        hrows = np.flatnonzero(hist_rows) if hist_rows is not None else np.zeros(0, int)
         for c0 in range(0, T, self.chunk):
-            xb = torch.from_numpy(np.ascontiguousarray(gallery[c0:c0 + self.chunk], np.float32)).to(self.dev)
+            xb = torch.from_numpy(gallery[c0:c0 + self.chunk]).to(self.dev)
             kk = min(k, len(xb))
             for q0 in range(0, P, self.qbatch):
-                xq = torch.from_numpy(np.ascontiguousarray(probes[q0:q0 + self.qbatch], np.float32)).to(self.dev)
+                xq = torch.from_numpy(probes[q0:q0 + self.qbatch]).to(self.dev)
                 d, i = self._knn(xq, xb, kk)
                 d, i = d.cpu().numpy(), i.cpu().numpy()
                 i = np.where(i >= 0, i + c0, -1)
-                D[q0:q0 + len(xq)], I[q0:q0 + len(xq)] = merge_topk([(D[q0:q0 + len(xq)], I[q0:q0 + len(xq)]), (d, i)], k)
-            for h0 in range(0, len(hrows), self.hist_tile):
-                xq = torch.from_numpy(np.ascontiguousarray(probes[hrows[h0:h0 + self.hist_tile]], np.float32)).to(self.dev)
-                b = ((xq @ xb.T + 1) / HIST_W).floor_().clamp_(0, HIST_BINS - 1).to(torch.int32)
-                hist += torch.bincount(b.flatten(), minlength=HIST_BINS)
+                q = slice(q0, q0 + len(xq))
+                D[q], I[q] = merge_topk([(D[q], I[q]), (d, i)], k)
             del xb
-        return D, I, (hist.cpu().numpy() if hist is not None else None)
+        return D, I
+
+    def hist(self, probes: np.ndarray, gallery: np.ndarray, tile: int = 256) -> np.ndarray:
+        """(HIST_BINS,) int64 counts of every probe x gallery inner product, bin = floor((s + 1) / HIST_W)."""
+        probes, gallery = _finite(probes, "probes"), _finite(gallery, "gallery")
+        h = torch.zeros(HIST_BINS, dtype=torch.int64, device=self.dev)
+        for c0 in range(0, len(gallery), self.chunk):
+            xb = torch.from_numpy(gallery[c0:c0 + self.chunk]).to(self.dev)
+            for q0 in range(0, len(probes), tile):
+                xq = torch.from_numpy(probes[q0:q0 + tile]).to(self.dev)
+                b = ((xq @ xb.T + 1) / HIST_W).floor_().clamp_(0, HIST_BINS - 1).to(torch.int32)
+                h += torch.bincount(b.flatten(), minlength=HIST_BINS)
+            del xb
+        return h.cpu().numpy()
 
 
 def merge_topk(parts, k):

@@ -216,14 +216,21 @@ class ImpostorTail:
                 "gpd_shape": float(self.c), "gpd_scale": float(self.scale), "fit_check": rows}
 
 
-def fnir_model(s_true, t, n_templates, tail: ImpostorTail, margin=0.0):
-    """FNIR ~= 1 - mean_j [s_j >= t] * (1 - p(s_j - margin))^n: the mate's score s_j must clear t and beat
-    every one of n impostor templates by `margin`. s_true = exact mate score per mated search (-inf = FTA)."""
+def fpir_mix(t, comps) -> float:
+    """Model FPIR at threshold t for a gallery mixing template sources: comps = [(ImpostorTail, n_templates)];
+    FPIR = 1 - prod_s (1 - p_s(t))^n_s (independent comparisons; upper-bound-like, see fpir_model)."""
+    return float(-np.expm1(sum(n * np.log1p(-np.asarray(tl.p(t), np.float64)) for tl, n in comps)))
+
+
+def fnir_model(s_true, t, comps, margin=0.0):
+    """FNIR ~= 1 - mean_j [s_j >= t] * prod_s (1 - p_s(s_j - margin))^n_s: the mate's score s_j must clear t and beat
+    every impostor template by `margin` (rank-1 + margin rule). s_true = exact mate score per mated search."""
     s = np.asarray(s_true, np.float64)
     ok = np.isfinite(s) & (s >= t)
     q = np.zeros(len(s))
-    q[ok] = np.exp(n_templates * np.log1p(-tail.p(s[ok] - margin)))
-    return float(1 - q.mean())
+    if ok.any():
+        q[ok] = np.exp(sum(n * np.log1p(-np.asarray(tl.p(s[ok] - margin), np.float64)) for tl, n in comps))
+    return float(1 - q.mean()) if len(s) else float("nan")
 
 
 def extrapolate(tail: ImpostorTail, s_true, n_templates, target_fpir=1e-6, margins=(0.0,)) -> dict:
@@ -232,4 +239,4 @@ def extrapolate(tail: ImpostorTail, s_true, n_templates, target_fpir=1e-6, margi
     return {"label": "MODEL-BASED EXTRAPOLATION (independent comparisons + GPD impostor tail), NOT A MEASUREMENT",
             "n_templates": int(n_templates), "target_fpir": target_fpir, "p_per_comparison": p_star,
             "p_star_below_empirical_resolution": bool(p_star * tail.n < 1), "threshold": t,
-            "fnir": {str(m): fnir_model(s_true, t, n_templates, tail, m) for m in margins}}
+            "fnir": {str(m): fnir_model(s_true, t, [(tail, n_templates)], m) for m in margins}}

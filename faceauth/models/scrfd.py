@@ -60,15 +60,16 @@ def _sha256(path: str) -> str:
 
 
 class SCRFD:
-    def __init__(self, model_dir, providers=("CUDAExecutionProvider", "CPUExecutionProvider"), input_size=640):
+    def __init__(self, model_dir, providers=("CUDAExecutionProvider", "CPUExecutionProvider"), input_size=640,
+                 sess_options=None):
         with open(os.path.join(model_dir, "MODEL.json")) as f:
             meta = json.load(f)
         path = os.path.join(model_dir, meta["files"]["onnx"])
         if _sha256(path) != meta["sha256"]["onnx"]:
             raise ValueError(f"sha256 mismatch for {path}")
-        if "CUDAExecutionProvider" in providers:
+        if "CUDAExecutionProvider" in str(providers):
             ort.preload_dlls()  # faceauth:dev: cuDNN is only on the loader path via the nvidia pip packages
-        self.session = ort.InferenceSession(path, providers=list(providers))
+        self.session = ort.InferenceSession(path, sess_options=sess_options, providers=list(providers))
         inp = self.session.get_inputs()[0]
         outs = self.session.get_outputs()
         if len(outs) != 9 or len(outs[0].shape) != 2:
