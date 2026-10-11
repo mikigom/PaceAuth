@@ -15,10 +15,10 @@
  "fps": 10.0,
  "timeout_s": 60.0,
  "max_attempts": 2,
- "success_rate": 0.85,
+ "success_rate": 0.9,
  "success_ci95": [
-  0.621073173454686,
-  0.9679290628145363
+  0.6830172859809177,
+  0.9876514728297052
  ],
  "by_group": {
   "complete_coverage": {
@@ -28,11 +28,11 @@
     "M07"
    ],
    "trials": 15,
-   "success": 12,
-   "success_rate": 0.8,
+   "success": 13,
+   "success_rate": 0.8666666666666667,
    "success_ci95": [
-    0.5191088661931469,
-    0.9566879948941633
+    0.5953973033966279,
+    0.9834240865599164
    ]
   },
   "coverage_limited": {
@@ -52,11 +52,11 @@
   "F02": [],
   "F03": [],
   "F05": [
-   false,
    true,
    false,
    true,
-   false
+   false,
+   true
   ],
   "F06": [],
   "M01": [
@@ -83,26 +83,27 @@
   ],
   "M09": []
  },
- "first_attempt_success_rate": 0.65,
+ "first_attempt_success_rate": 0.85,
  "abandoned_timeout": 0,
- "retries": 7,
+ "retries": 3,
  "time_s": {
-  "p50": 13.20329792094417,
-  "p95": 27.035794771695507,
-  "max": 28.370846130931753
+  "p50": 12.47013204244431,
+  "p95": 21.54723143481647,
+  "max": 35.4444986699149
  },
- "server_s_p95": 0.43265096938703207,
+ "server_s_p95": 0.40407556896097957,
  "failure_reasons": {
-  "rejected:retry": 10
+  "rejected:denied": 4,
+  "rejected:retry": 1
  },
  "min_cos": {
-  "p1": 0.728660409450531,
-  "p5": 0.7346325993537903,
-  "p50": 0.8220095038414001
+  "p1": 0.665722713470459,
+  "p5": 0.6884828865528106,
+  "p50": 0.8027927279472351
  },
  "targets": {
   "success_rate": 0.99,
   "time_p95_s": 20.0
  },
- "wall_s": 505.28766989707947
+ "wall_s": 390.358359336853
 }
