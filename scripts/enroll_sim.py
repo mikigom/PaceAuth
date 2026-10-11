@@ -3,7 +3,8 @@ retries reported too).
 
 No hardware and no live people, so a prompt-following simulated user stands in front of the kiosk. It reacts to the
 guide's prompt after a reaction delay and turns its head toward the target at a per-trial angular speed (with
-jitter). At every terminal analysis tick it shows the REAL BIWI frame of the same person whose ground-truth pose is
+jitter), correcting per axis from the terminal's estimated pose (what a kiosk pose indicator shows). At every
+terminal analysis tick it shows the REAL BIWI frame of the same person whose ground-truth pose is
 closest to its current head pose; SensorSim renders the RGB-D-IR triplet (fresh sensor noise per tick). The real
 terminal pipeline + Guide run on every tick, and the bundle goes through the real API (PAD, server-side pose
 coverage, same-person, duplicate checks). After each trial the enrollment is withdrawn (DELETE /v1/subjects/{id}/face)
@@ -36,6 +37,9 @@ from faceauth.terminal.guide import TARGETS, Guide  # noqa: E402
 
 GATEWAY, ENGINE = "https://gateway:8443", "http://engine:8001"
 HELD_OUT = ["02", "03", "05", "06", "07", "09", "10", "13", "15", "16", "18", "21", "22"]  # train_pad BIWI test split
+# Fixed before the run: subjects whose recordings contain all 9 guidance directions (GT pose scan). The others (F02,
+# M01, M04) cannot show some directions at all, so they are reported separately as recording-coverage limited.
+COMPLETE = {"F03", "F05", "F06", "M03", "M07", "M09"}
 TIMEOUT_S, MAX_ATTEMPTS = 60.0, 2
 
 
@@ -81,18 +85,20 @@ def capture(sim, pipe, pool, scenes, rng, speed, react, fps, guide, trace=None):
     from faceauth.terminal.pipeline import wire_frame
     head = rng.normal(0, 3, 2).astype(np.float32)                       # starts roughly frontal
     poses = np.stack([p for p, _, _ in pool])
-    target, since, tick = None, 0.0, 0
+    lo, hi = poses.min(0), poses.max(0)
+    target, since, tick, corr = None, 0.0, 0, np.zeros(2, np.float32)
     while not (guide.done or guide.timed_out):
         t = tick / fps
         cur = guide.current()
         if cur != target:
-            target, since = cur, t
+            target, since, corr = cur, t, np.zeros(2, np.float32)
         if target is not None and t - since >= react:                  # reacts, then turns toward the target
-            goal = np.asarray(TARGETS[target], np.float32)
+            goal = np.asarray(TARGETS[target], np.float32) + corr      # corr: follows the on-screen pose feedback
             step = goal - head
             dist = float(np.linalg.norm(step))
-            head = head + step * min(1.0, speed / fps / max(dist, 1e-6)) + rng.normal(0, 0.7, 2).astype(np.float32)
-        near = np.argsort(np.linalg.norm(poses - head, axis=1))[:3]      # closest real frames of this person
+            head = np.clip(head + step * min(1.0, speed / fps / max(dist, 1e-6)) + rng.normal(0, 0.7, 2), lo, hi)
+            head = head.astype(np.float32)
+        near = np.argsort(np.linalg.norm(poses - head, axis=1))[:5]      # closest real frames of this person
         i = int(rng.choice(near))
         if trace is not None:
             trace[tick] = pool[i][2]
@@ -105,7 +111,11 @@ def capture(sim, pipe, pool, scenes, rng, speed, react, fps, guide, trace=None):
         else:
             o = sim.capture([scenes[i]], rng)
             enc, rgb = wire_frame(o["rgb"], o["depth"], o["ir"])
-            pipe.feed(guide, rgb, (tick, enc), t=t)
+            r, _ = pipe.feed(guide, rgb, (tick, enc), t=t)
+            if target is not None and r["pose"] is not None and t - since >= react:
+                # the kiosk shows where the head is vs the target; the person corrects per axis (integral feedback)
+                corr = np.clip(corr + 0.15 * (np.asarray(TARGETS[target], np.float32) - np.asarray(r["pose"][:2], np.float32)),
+                               -20.0, 20.0).astype(np.float32)
         tick += 1
     return guide.done, tick / fps, guide.frames(), tick
 
@@ -162,6 +172,21 @@ def trials(job):
     return out
 
 
+def withdraw(patterns):
+    """Withdraw every live enrollment whose account matches a LIKE pattern (leftovers of interrupted runs and the demo
+    would otherwise be flagged as duplicates of these subjects -> pending_review)."""
+    import psycopg
+    client = register("e8-admin")
+    admin = {"Authorization": "Bearer " + (SECRETS / "admin_token").read_text().strip()}
+    with psycopg.connect("host=db,db-standby1,db-standby2 dbname=faceauth user=faceauth_api target_session_attrs=read-write",
+                         password=(ROOT / "secrets/db_api_password").read_text().strip()) as conn:
+        ids = [r[0] for p in patterns for r in conn.execute(
+            "SELECT id FROM subjects WHERE account_id LIKE %s AND status <> 'revoked'", (p,)).fetchall()]
+    for sid in ids:
+        client.http.delete(f"/v1/subjects/{sid}/face", headers=admin, extensions={"sni_hostname": "gateway"}).raise_for_status()
+    return len(ids)
+
+
 def cp_ci(x, n, alpha=0.05):
     """Clopper-Pearson interval of a binomial rate."""
     from scipy.stats import beta
@@ -175,7 +200,10 @@ def main():
     ap.add_argument("--workers", type=int, default=9)
     ap.add_argument("--fps", type=float, default=10.0, help="terminal analysis rate (frames analysed per second)")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--withdraw", nargs="*", default=["e8-%", "acct-f05%"],
+                    help="account LIKE patterns withdrawn before the run (leftovers would be duplicates)")
     a = ap.parse_args()
+    print("withdrawn leftovers:", withdraw(a.withdraw), flush=True)
     from faceauth.sim.biwi import SUBJECTS
     subj = {}
     for s in HELD_OUT:
@@ -184,13 +212,20 @@ def main():
     t0 = time.time()
     with Pool(min(a.workers, len(jobs))) as pool:
         recs = [r for rs in pool.map(trials, jobs) for r in rs]
+    by_group = {}
+    for name, sel in (("complete_coverage", [r for r in recs if r["subject"] in COMPLETE]),
+                      ("coverage_limited", [r for r in recs if r["subject"] not in COMPLETE])):
+        k = sum(r["success"] for r in sel)
+        by_group[name] = {"subjects": sorted({r["subject"] for r in sel}), "trials": len(sel), "success": k,
+                          "success_rate": k / len(sel) if sel else None, "success_ci95": cp_ci(k, len(sel)) if sel else None}
     ok = [r for r in recs if r["success"]]
     first = [r for r in recs if r["attempts"][0].get("status") == "active"]
     times = np.array([r["time_s"] for r in ok])
     res = {
         "id": "E8_enrollment", "subjects": sorted(subj), "trials": len(recs), "fps": a.fps, "timeout_s": TIMEOUT_S,
         "max_attempts": MAX_ATTEMPTS,
-        "success_rate": len(ok) / len(recs), "success_ci95": cp_ci(len(ok), len(recs)),
+        "success_rate": len(ok) / len(recs), "success_ci95": cp_ci(len(ok), len(recs)), "by_group": by_group,
+        "per_subject": {sub: [r["success"] for r in recs if r["subject"] == sub] for sub in sorted(subj)},
         "first_attempt_success_rate": len(first) / len(recs),
         "abandoned_timeout": sum(not any(x["captured"] for x in r["attempts"]) for r in recs),
         "retries": sum(len(r["attempts"]) - 1 for r in recs),

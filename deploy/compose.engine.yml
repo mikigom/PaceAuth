@@ -1,8 +1,8 @@
 # Engine: central GPU inference (faceauth/engine/main.py, docs/IMPLEMENTATION.md §3). Internal network only.
 # Loads models only from the signed registry at the versions active in model_versions; refuses CPU-placed graphs.
 # SCRFD runs as a TensorRT fp16 engine built at start into tmpfs (never persisted: no unsigned artifact on disk).
-services:
-  engine:
+# Two replicas on GPU 5 (Design §6: GPU inference replicated); the API spreads requests and fails over between them.
+x-engine: &engine
     image: faceauth:dev
     user: "65534:65534"
     read_only: true
@@ -32,3 +32,9 @@ services:
       timeout: 3s
       retries: 3
       start_period: 300s
+
+services:
+  engine-1:
+    <<: *engine
+    networks: { internal: { aliases: [engine] } }   # scripts/tests address one replica as "engine"
+  engine-2: *engine

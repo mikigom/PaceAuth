@@ -27,7 +27,7 @@ x-api: &api
     FA_KMS_URL: http://kms:8003
     FA_KMS_TOKEN_FILE: /run/secrets/kms_token_api
     FA_SEARCH_URLS: http://search-1:8002,http://search-2:8002
-    FA_ENGINE_URLS: http://engine:8001
+    FA_ENGINE_URLS: http://engine-1:8001,http://engine-2:8001
     FA_RECOG_MODEL: ${FA_RECOG_MODEL:-kprpe_vitb_wf12m}
     # Placeholders until E2 fixes them on the validation split (cosine similarity of L2-normalised embeddings).
     FA_T_ID: ${FA_T_ID:-0.45}

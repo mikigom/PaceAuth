@@ -188,8 +188,17 @@ def main():
     ap.add_argument("--latency", action="store_true")
     ap.add_argument("--limit", type=int, default=0, help="debug: first N images only (AP then not comparable)")
     ap.add_argument("--out", default="reports/E3_detection/results.json")
+    ap.add_argument("--trt", action="store_true", help="TensorRT fp16 engine exactly as deployed by faceauth/engine")
     args = ap.parse_args()
-    det = SCRFD(args.model_dir)
+    if args.trt:
+        from faceauth.engine.main import _session_options
+        det = SCRFD(args.model_dir, providers=[("TensorrtExecutionProvider", {
+            "trt_fp16_enable": True, "trt_engine_cache_enable": True, "trt_engine_cache_path": "/tmp/trt"}),
+            "CUDAExecutionProvider"], sess_options=_session_options())
+        assert det.session.get_providers()[0] == "TensorrtExecutionProvider", det.session.get_providers()
+    else:
+        det = SCRFD(args.model_dir)
+    suffix = "_trt16" if args.trt else ""
     with open(os.path.join(args.model_dir, "MODEL.json")) as f:
         meta = json.load(f)
     gt = load_gt()
@@ -209,15 +218,16 @@ def main():
         preds, secs = run_protocol(det, gt, p, args.limit)
         r = wider_ap(preds, gt if not args.limit else gt[:args.limit])
         r.update(images=len(preds), seconds=round(secs, 1), n_dets=int(sum(len(v) for v in preds.values())))
-        entry[f"widerface_val_{p}"] = r
+        entry[f"widerface_val_{p}{suffix}"] = r
         print(meta["name"], p, {k: round(v * 100, 2) for k, v in r["ap"].items()}, f"{len(preds)} images", flush=True)
         if not args.limit:
-            raw = f"reports/raw/E3_detection/{meta['name']}_{p}.npz"
+            raw = f"reports/raw/E3_detection/{meta['name']}_{p}{suffix}.npz"
             os.makedirs(os.path.dirname(raw), exist_ok=True)
             np.savez_compressed(raw, **{f"{e}/{n}": v for (e, n), v in preds.items()})
     if args.latency:
-        entry["latency_cuda_ep"] = latency(det, gt)
-        print(json.dumps(entry["latency_cuda_ep"], indent=1))
+        key = "latency_trt16" if args.trt else "latency_cuda_ep"
+        entry[key] = latency(det, gt)
+        print(json.dumps(entry[key], indent=1))
     if not args.limit:
         os.makedirs(os.path.dirname(args.out), exist_ok=True)
         with open(args.out, "w") as f:
