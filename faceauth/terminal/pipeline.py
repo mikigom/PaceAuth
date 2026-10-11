@@ -14,7 +14,9 @@ from faceauth.common.packet import decode_frame, encode_frame
 MIN_FACE_PX = 60.0            # bbox short side; ~80 cm away with the 640x480 sim profile
 BLUR_MIN = 40.0               # Laplacian variance of the face crop resized to 112x112 grey
 EXPOSURE = (40.0, 220.0)      # mean grey level of that crop
-EAR_MIN = 0.12                # eye aspect ratio from WFLW-98 landmarks (both eyes), open ~0.2-0.35
+EAR_MIN = 0.06                # eye aspect ratio (WFLW-98, smaller eye): only clearly closed eyes. 0.12 rejected open
+                              # narrow eyes (measured 0.09-0.19 frontal on BIWI subjects): a fairness problem
+EAR_MIN_PITCH = -8.0          # looking down foreshortens the lids (EAR 0.07-0.12 while open): no eye check below this
 AUTH_MAX_POSE = (20.0, 15.0)  # |yaw|, |pitch| accepted for authentication frames
 RELEASE_PUB = Path(__file__).resolve().parents[2] / "secrets" / "release.pub"
 # WFLW-98 eyes: (corner, corner), (upper, lower) lid pairs; image-left eye 60-67, image-right eye 68-75
@@ -101,7 +103,7 @@ class Pipeline:
             r["reasons"].append("blur")
         if not self.exposure[0] <= q["brightness"] <= self.exposure[1]:
             r["reasons"].append("exposure")
-        if q["ear"] < self.ear_min:
+        if q["ear"] < self.ear_min and r["pose"][1] >= EAR_MIN_PITCH:
             r["reasons"].append("eyes_closed")
         r["ok"] = not r["reasons"]
         r["score"] = r["det_score"] * min(1.0, q["blur"] / (3 * self.blur_min))  # ranks frames; saturates when sharp

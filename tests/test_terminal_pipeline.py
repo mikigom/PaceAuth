@@ -167,3 +167,9 @@ def test_load_refuses_unsigned_or_foreign_registry(tmp_path, monkeypatch):
     (tmp_path / "registry.json.sig").unlink()
     with pytest.raises(RegistryError, match="unreadable"):
         Pipeline.load(tmp_path, "cpu", release_pub=pub)
+
+
+def test_eye_check_spares_narrow_open_eyes_and_downward_gaze():
+    assert _pipe(ear=0.09).analyze(TEXTURE)["ok"]                                   # narrow but open eyes pass
+    assert "eyes_closed" in _pipe(ear=0.03).analyze(TEXTURE)["reasons"]               # clearly closed eyes do not
+    assert _pipe(ear=0.03, pose=(0.0, -15.0, 0.0)).analyze(TEXTURE)["ok"]             # looking down: no eye check
