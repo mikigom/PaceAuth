@@ -1,2 +1,39 @@
-# Owned by the search contributor (see docs/IMPLEMENTATION.md §1).
-services: {}
+# Owned by the search contributor (see docs/IMPLEMENTATION.md §1, §4).
+# search-1/search-2: FAISS exact 1:N replicas (faceauth/search/app.py). Each holds the whole gallery on GPU 5
+# (1M subjects x 4 x 512 float32 = 8.2 GB, + ~0.8 GB CUDA context / faiss temp). Internal network only.
+# A rebuild (start, POST /v1/admin/reload, model activation) answers 503 until ready: reload one replica at a time.
+# Needs db + kms from deploy/compose.platform.yml (not declared as depends_on: the replicas retry until both answer).
+x-search: &search
+  image: faceauth:dev
+  user: "65534:65534"
+  read_only: true
+  tmpfs: [/tmp]                      # nothing else is writable; templates exist only in memory
+  networks: [internal]
+  restart: unless-stopped
+  volumes: ["./faceauth:/app/faceauth:ro"]
+  command: ["uvicorn", "faceauth.search.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8002",
+            "--no-access-log", "--no-server-header"]
+  environment:
+    HOME: /tmp
+    FA_DB_DSN: >-
+      host=db,db-standby1,db-standby2 dbname=faceauth user=faceauth_ro target_session_attrs=any
+      connect_timeout=3 keepalives_idle=5 keepalives_interval=2 keepalives_count=3 tcp_user_timeout=10000
+    FA_DB_PASSWORD_FILE: /run/secrets/db_ro_password
+    FA_KMS_URL: http://kms:8003
+    FA_KMS_TOKEN_FILE: /run/secrets/kms_token_search
+    FA_RECOG_MODEL: ${FA_RECOG_MODEL:-kprpe_vitb_wf12m}
+  secrets: [kms_token_search, db_ro_password]
+  deploy:
+    resources:
+      reservations:
+        devices: [{ driver: nvidia, device_ids: ["5"], capabilities: [gpu] }]
+  healthcheck:
+    test: ["CMD", "python", "-c", "import json,sys,urllib.request as u; sys.exit(0 if json.load(u.urlopen('http://127.0.0.1:8002/v1/status', timeout=2))['ready'] else 1)"]
+    interval: 5s
+    timeout: 3s
+    retries: 3
+    start_period: 900s               # a 1M-subject build (KMS decrypt of 4M templates) must fit the 15 min RTO
+
+services:
+  search-1: *search
+  search-2: *search

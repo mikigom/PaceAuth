@@ -1,2 +1,97 @@
-# Owned by the api contributor (see docs/IMPLEMENTATION.md §1).
-services: {}
+# Owned by the api contributor (see docs/IMPLEMENTATION.md §1, docs/API.md).
+# api-1/api-2: central API (faceauth/api), reachable only on the internal network; device traffic is accepted
+# only via the gateway (FA_TRUSTED_PROXIES). gateway: nginx mTLS on 8443 (edge + internal).
+# Paths are relative to the project directory (the repo root, where docker-compose.yml lives).
+#
+# Profile "apitest" (never started by default) = a self-contained test stack: postgres with deploy/db/faceauth.sql
+# (alias db) + contract fakes for engine/search/KMS (tests/test_api_fakes.py). Use ONLY with these two files:
+#   docker compose -p fa-api -f docker-compose.yml -f deploy/compose.api.yml --profile apitest up -d
+#   docker compose -p fa-api -f docker-compose.yml -f deploy/compose.api.yml --profile apitest run --rm \
+#       -u "$(id -u):$(id -g)" -e HOME=/tmp tester python -m pytest -q -p no:cacheprovider tests/test_api_flow.py
+#   docker compose -p fa-api -f docker-compose.yml -f deploy/compose.api.yml --profile apitest down -v
+
+x-api: &api
+  image: faceauth:dev
+  user: "65534:65534"
+  read_only: true
+  tmpfs: [/tmp]                      # nothing else is writable: raw frames never touch a disk
+  networks: [internal]
+  restart: unless-stopped
+  volumes: ["./faceauth:/app/faceauth:ro"]
+  command: ["uvicorn", "faceauth.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--no-proxy-headers",
+            "--timeout-keep-alive", "75", "--no-server-header"]
+  environment:
+    HOME: /tmp
+    FA_DB_DSN: "host=db,db-standby1,db-standby2 dbname=faceauth user=faceauth_api target_session_attrs=read-write connect_timeout=3"
+    FA_DB_PASSWORD_FILE: /run/secrets/db_api_password
+    FA_KMS_URL: http://kms:8003
+    FA_KMS_TOKEN_FILE: /run/secrets/kms_token_api
+    FA_SEARCH_URLS: http://search-1:8002,http://search-2:8002
+    FA_ENGINE_URLS: http://engine:8001
+    FA_RECOG_MODEL: ${FA_RECOG_MODEL:-kprpe_vitb_wf12m}
+    # Placeholders until E2 fixes them on the validation split (cosine similarity of L2-normalised embeddings).
+    FA_T_ID: ${FA_T_ID:-0.45}
+    FA_MARGIN: ${FA_MARGIN:-0.05}
+    FA_T_DUP: ${FA_T_DUP:-0.40}
+    FA_T_SAME: ${FA_T_SAME:-0.50}
+    FA_CONSENT_VERSION: ${FA_CONSENT_VERSION:-v1}
+    FA_HIGH_RISK_ACTIONS: ${FA_HIGH_RISK_ACTIONS:-transfer_high,account_change}
+    FA_ENROLL_MIN_DIRS: ${FA_ENROLL_MIN_DIRS:-9}
+    FA_TRUSTED_PROXIES: gateway
+  secrets: [approval_key, approval_pub, account_pub, admin_token, kms_token_api, db_api_password]
+  healthcheck:
+    test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/healthz"]
+    interval: 5s
+    timeout: 3s
+    retries: 3
+
+services:
+  api-1: *api
+  api-2: *api
+
+  gateway:
+    image: nginx:alpine
+    entrypoint: ["nginx", "-g", "daemon off;"]   # skip the image's config-rewriting entrypoint scripts
+    read_only: true
+    tmpfs: [/var/cache/nginx, /run]               # body/proxy temp + pid: memory only
+    volumes: ["./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro"]
+    secrets: [gateway_crt, gateway_key, ca_crt]
+    networks: [edge, internal]
+    ulimits: { nofile: { soft: 65536, hard: 65536 } }   # worker_connections 4096 x workers
+    depends_on: [api-1, api-2]
+    restart: unless-stopped
+    # terminals outside Docker: publish e.g. "29443:8443" in an override (not published by default)
+
+  # ---------------------------------------------------------------- profile apitest only
+  api-testdb:
+    image: postgres:16-alpine
+    profiles: [apitest]
+    environment:
+      POSTGRES_USER: faceauth_api
+      POSTGRES_DB: faceauth
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_api_password
+    secrets: [db_api_password]
+    volumes: ["./deploy/db/faceauth.sql:/docker-entrypoint-initdb.d/10-faceauth.sql:ro"]
+    tmpfs: [/var/lib/postgresql/data]
+    networks: { internal: { aliases: [db] } }
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U faceauth_api -d faceauth"]
+      interval: 2s
+      retries: 30
+
+  api-fakes:
+    image: faceauth:dev
+    profiles: [apitest]
+    user: "65534:65534"
+    read_only: true
+    tmpfs: [/tmp]
+    working_dir: /app
+    volumes: [".:/app:ro"]
+    command: ["python", "-m", "tests.test_api_fakes"]
+    environment:
+      HOME: /tmp
+      FA_RECOG_MODEL: ${FA_RECOG_MODEL:-kprpe_vitb_wf12m}
+      FAKE_DB_DSN: "host=db dbname=faceauth user=faceauth_api"
+      FA_SECRETS_DIR: /run/secrets
+    secrets: [db_api_password, kms_token_api, kms_token_search]
+    networks: { internal: { aliases: [engine, search-1, search-2, kms] } }

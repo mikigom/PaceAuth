@@ -1,0 +1,13 @@
+{
+ "n_faces": 48,
+ "n_faces_all_gt_inside_image": 47,
+ "facer_commit": "ddd35c7",
+ "mean_px": 0.7346052527427673,
+ "p99_px": 1.406218409538269,
+ "max_px": 338.93145751953125,
+ "mean_px_inside": 0.167342871427536,
+ "max_px_inside": 4.649330139160156,
+ "mean_dist_over_io_pct": 0.625915109408748,
+ "nme_io_pct_ours": 4.562983242750648,
+ "nme_io_pct_pyfacer": 4.920592096933868
+}

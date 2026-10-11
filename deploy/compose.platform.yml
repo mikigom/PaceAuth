@@ -1,2 +1,89 @@
 # Owned by the platform contributor (see docs/IMPLEMENTATION.md §1).
-services: {}
+# HA Postgres (1 primary + 2 standbys, every commit waits for >= 1 standby flush) and the KMS.
+# Operations / failover / rebuild: docs/OPERATIONS.md, scripts/failover.sh. Paths are relative to the repo root.
+x-pg: &pg
+  image: postgres:16-alpine
+  user: postgres
+  entrypoint: ["/etc/faceauth-db/node.sh"]
+  read_only: true
+  tmpfs: ["/tmp", "/var/run/postgresql"]
+  shm_size: 256mb
+  stop_grace_period: 30s
+  restart: unless-stopped
+  networks: [internal]
+  dns_opt: ["timeout:1", "attempts:1"]   # a stopped peer's name must fail fast (walreceiver, multi-host DSNs)
+  secrets: [db_postgres_password, db_api_password, db_ro_password, db_kms_password, db_repl_password]
+  healthcheck:
+    test: ["CMD", "pg_isready", "-q", "-h", "/var/run/postgresql"]
+    interval: 2s
+    timeout: 2s
+    retries: 5
+    start_period: 300s
+
+x-pg-env: &pg-env
+  PGDATA: /var/lib/postgresql/data/pgdata
+  POSTGRES_PASSWORD_FILE: /run/secrets/db_postgres_password
+  POSTGRES_INITDB_ARGS: --data-checksums
+  FA_PG_PRIMARY: db            # clone source for an empty standby (failover.sh rebuild overrides it)
+
+services:
+  db:
+    <<: *pg
+    command: [postgres, -c, config_file=/etc/faceauth-db/postgresql.conf, -c, cluster_name=db]
+    environment:
+      <<: *pg-env
+      FA_PG_INIT: "1"
+      FA_PG_PEERS: db-standby1 db-standby2
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./deploy/db:/etc/faceauth-db:ro
+      - ./deploy/db/init-primary.sh:/docker-entrypoint-initdb.d/10-init-primary.sh:ro
+
+  db-standby1:
+    <<: *pg
+    command: [postgres, -c, config_file=/etc/faceauth-db/postgresql.conf, -c, cluster_name=db_standby1]
+    environment:
+      <<: *pg-env
+    volumes:
+      - db-standby1-data:/var/lib/postgresql/data
+      - ./deploy/db:/etc/faceauth-db:ro
+      - ./deploy/db/init-primary.sh:/docker-entrypoint-initdb.d/10-init-primary.sh:ro
+
+  db-standby2:
+    <<: *pg
+    command: [postgres, -c, config_file=/etc/faceauth-db/postgresql.conf, -c, cluster_name=db_standby2]
+    environment:
+      <<: *pg-env
+    volumes:
+      - db-standby2-data:/var/lib/postgresql/data
+      - ./deploy/db:/etc/faceauth-db:ro
+      - ./deploy/db/init-primary.sh:/docker-entrypoint-initdb.d/10-init-primary.sh:ro
+
+  kms:
+    image: faceauth:dev
+    user: "65534:65534"
+    command: [uvicorn, "faceauth.kms.main:app_from_env", --factory, --host, 0.0.0.0, --port, "8003",
+              --workers, "4", --no-access-log]
+    read_only: true
+    tmpfs: ["/tmp"]
+    restart: unless-stopped
+    networks: [internal]
+    dns_opt: ["timeout:1", "attempts:1"]
+    volumes: ["./faceauth:/app/faceauth:ro"]
+    secrets: [kms_master_key, kms_token_api, kms_token_search, db_kms_password]
+    environment:
+      FA_KMS_DB_DSN: >-
+        host=db,db-standby1,db-standby2 dbname=kms user=kms target_session_attrs=read-write
+        connect_timeout=3 keepalives_idle=5 keepalives_interval=2 keepalives_count=3
+      FA_KMS_DB_PASSWORD_FILE: /run/secrets/db_kms_password
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8003/healthz', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  db-data: {}
+  db-standby1-data: {}
+  db-standby2-data: {}

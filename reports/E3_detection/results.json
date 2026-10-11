@@ -1,0 +1,234 @@
+{
+ "dataset": {
+  "name": "widerface",
+  "split": "val",
+  "images": 3226,
+  "license": "CC BY-NC-ND 4.0 (stated on the official homepage and the HF dataset card): NON-COMMERCIAL, no derivatives, attribution (Yang, Luo, Loy, Tang, 'WIDER FACE: A Face Detection Benchmark', CVPR 2016). Images come from the WIDER dataset (Internet photos; image copyright stays with the original owners). Use only for research/benchmarking.",
+  "gt_sha256": {
+   "eval_tools/wider_face_val.mat": "1dfe6a9853950f9dde256b5e8bb75d8f272e6bc02a15ae1968f5a9b883f458cb",
+   "eval_tools/wider_easy_val.mat": "c2fb672d16f75653eb89fb8bc437a7d060896a71cd7a65c1a5a3e4479024099c",
+   "eval_tools/wider_medium_val.mat": "4a031970bc132cef5cfacd05068aabcf4fe15d4a31a1e9f4f00eb134fdf449c1",
+   "eval_tools/wider_hard_val.mat": "bb1af19dc5bc4dd9517dd8ae8096326c68175f2c3411763bdd4f23fa98638b78"
+  }
+ },
+ "protocols": {
+  "paper": "SCRFD tools/test_widerface.py --mode 0 (VGA, single scale), mmdet test pipeline: keep-ratio resize so the long side is 640 (round half up), normalise, zero-pad to 640x640 in normalised space, score > 0.02, boxes clipped to the resized image, NMS IoU 0.45 without +1, no max_per_img",
+  "wrapper": "SCRFD.detect(img, thresh=0.02) exactly as deployed: InsightFace letterbox (int() sizes, black padding before normalisation), no clipping, NMS IoU 0.4 with +1"
+ },
+ "models": {
+  "scrfd_34g": {
+   "model": {
+    "name": "scrfd_34g",
+    "version": "1",
+    "sha256": {
+     "onnx": "aa19f0e7f4d120d4cf990086639ab74a0136adceaebd232e0dc4745e0cfd4257"
+    },
+    "source": "https://huggingface.co/immich-app/scrfd_34g_gnkps/resolve/32b5674a7e69b8d741ca6f6969476faab2257add/detection/model.onnx (ONNX export, pytorch 2.1, opset 11). Weights = SCRFD_34G_GNKPS_v2 released by Alibaba DAMO on ModelScope as iic/cv_resnet_facedetection_scrfd10gkps (the id says 10g but the default model was replaced by the 34G GN+kps v2 model, see github.com/modelscope/modelscope/issues/24), pytorch_model.bin sha256 8db579dd6947798a36e8ac2d94fb8c47369b1bcc979bbebd861070f6e91049b5. Verified: all 303 weight initializers of this ONNX equal that checkpoint (exactly or after BatchNorm folding). This is NOT the InsightFace SCRFD_34G release (that one has no keypoint head).",
+    "license": "RESTRICTED - treat as NON-COMMERCIAL / RESEARCH-ONLY until legal review. ModelScope model card and the immich HF mirror declare 'MIT License', but the model card also says the model and code come from InsightFace SCRFD and that the relevant licences must be respected. The weights were trained on WIDER FACE (CC BY-NC-ND 4.0: non-commercial, no derivatives). InsightFace policy: code MIT, models trained on their annotated training data are for non-commercial research purposes only. Commercial use needs written confirmation from the rights holders."
+   },
+   "published": {
+    "easy": 96.17,
+    "medium": 95.19,
+    "hard": 84.88,
+    "by": "ModelScope model card (SCRFD_34G_GNKPS_v2)"
+   },
+   "widerface_val_paper": {
+    "ap": {
+     "easy": 0.9616586598842306,
+     "medium": 0.9518862733581969,
+     "hard": 0.8487940816559847
+    },
+    "faces": {
+     "easy": 7211,
+     "medium": 13319,
+     "hard": 31958
+    },
+    "images": 3226,
+    "seconds": 159.4,
+    "n_dets": 906589
+   },
+   "widerface_val_wrapper": {
+    "ap": {
+     "easy": 0.9561087669310476,
+     "medium": 0.9461096201674319,
+     "hard": 0.84233460250405
+    },
+    "faces": {
+     "easy": 7211,
+     "medium": 13319,
+     "hard": 31958
+    },
+    "images": 3226,
+    "seconds": 211.0,
+    "n_dets": 744374
+   },
+   "latency_cuda_ep": {
+    "providers": [
+     "CUDAExecutionProvider",
+     "CPUExecutionProvider"
+    ],
+    "gpu_state_before": "NVIDIA RTX A6000, 100 %, 15244 MiB, 49140 MiB",
+    "model_b1": {
+     "p50_ms": 30.561994528397918,
+     "p95_ms": 47.0577719155699,
+     "mean_ms": 32.612476374488324,
+     "n": 300,
+     "warmup": 30
+    },
+    "model_b16_loop": {
+     "p50_ms": 483.576949685812,
+     "p95_ms": 724.5030874270014,
+     "mean_ms": 522.7137996256351,
+     "n": 50,
+     "warmup": 5
+    },
+    "detect_b1_vga": {
+     "p50_ms": 32.84897992853075,
+     "p95_ms": 49.04966244939715,
+     "mean_ms": 34.24585657116646,
+     "n": 300,
+     "warmup": 30
+    },
+    "detect_batch16_vga": {
+     "p50_ms": 598.3128671068698,
+     "p95_ms": 768.8818748691119,
+     "mean_ms": 600.4525568475947,
+     "n": 50,
+     "warmup": 5
+    },
+    "note": "model_* = session.run on a 1x3x640x640 blob incl. host<->device copies; detect_* = end to end (letterbox, run, decode, NMS) on 640x480 RGB at thresh 0.5; batch 16 = 16 sequential runs (static batch-1 export). GPU 5 is shared with other jobs, see gpu_state_before."
+   },
+   "ablations": {
+    "wrapper_insightface_det_scale": {
+     "ap": {
+      "easy": 0.9543626716993153,
+      "medium": 0.9441917040460923,
+      "hard": 0.8297892510416927
+     },
+     "faces": {
+      "easy": 7211,
+      "medium": 13319,
+      "hard": 31958
+     },
+     "images": 3226,
+     "seconds": 204.1,
+     "n_dets": 744383,
+     "note": "wrapper path with InsightFace's single det_scale = new_h/h for both axes (before the per-axis scale fix), NMS 0.4 +1, black padding"
+    },
+    "wrapper_insightface_det_scale_nms0.45": {
+     "ap": {
+      "easy": 0.954613259454695,
+      "medium": 0.9446214888940789,
+      "hard": 0.8308315896297163
+     },
+     "faces": {
+      "easy": 7211,
+      "medium": 13319,
+      "hard": 31958
+     },
+     "images": 3226,
+     "note": "as wrapper_insightface_det_scale but nms_thresh=0.45 (offset 1)"
+    },
+    "wrapper_insightface_det_scale_nms0.45_offset0": {
+     "ap": {
+      "easy": 0.9545810787715467,
+      "medium": 0.9446013233582137,
+      "hard": 0.8314137080176959
+     },
+     "faces": {
+      "easy": 7211,
+      "medium": 13319,
+      "hard": 31958
+     },
+     "images": 3226,
+     "note": "as wrapper_insightface_det_scale but mmcv-style NMS (IoU 0.45, offset 0)"
+    },
+    "wrapper_insightface_det_scale_graypad": {
+     "ap": {
+      "easy": 0.9556429420860372,
+      "medium": 0.9453331205310431,
+      "hard": 0.8315361775139446
+     },
+     "faces": {
+      "easy": 7211,
+      "medium": 13319,
+      "hard": 31958
+     },
+     "images": 3226,
+     "note": "as wrapper_insightface_det_scale but letterbox padding 127.5 (normalised 0, like mmdet) instead of black"
+    }
+   }
+  },
+  "scrfd_10g_kps": {
+   "model": {
+    "name": "scrfd_10g_kps",
+    "version": "1",
+    "sha256": {
+     "onnx": "5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91"
+    },
+    "source": "Official InsightFace model pack buffalo_l: https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip (zip sha256 80ffe37d8a5940d59a7384c201a2a38d4741f2f3c51eef46ebb28218a7b0ca2f), member det_10g.onnx = SCRFD-10GF with 5 keypoints (InsightFace model_zoo README: buffalo_l detection model SCRFD-10GF; 4,225,835 params = SCRFD_10G_KPS 4.23M).",
+    "license": "NON-COMMERCIAL RESEARCH ONLY (InsightFace: 'The training data containing the annotation (and the models trained with these data) are available for non-commercial research purposes only'; commercial licensing via recognition-oss-pack@insightface.ai). Training data WIDER FACE is CC BY-NC-ND 4.0."
+   },
+   "published": {
+    "easy": 95.4,
+    "medium": 94.01,
+    "hard": 82.8,
+    "by": "InsightFace detection/scrfd README (SCRFD_10G_KPS)"
+   },
+   "widerface_val_paper": {
+    "ap": {
+     "easy": 0.9539583559427302,
+     "medium": 0.9400845984832629,
+     "hard": 0.8279206401333341
+    },
+    "faces": {
+     "easy": 7211,
+     "medium": 13319,
+     "hard": 31958
+    },
+    "images": 3226,
+    "seconds": 121.1,
+    "n_dets": 980840
+   },
+   "widerface_val_wrapper": {
+    "ap": {
+     "easy": 0.9495206805155209,
+     "medium": 0.9361960524719384,
+     "hard": 0.8224524520818023
+    },
+    "faces": {
+     "easy": 7211,
+     "medium": 13319,
+     "hard": 31958
+    },
+    "images": 3226,
+    "seconds": 89.0,
+    "n_dets": 848107
+   },
+   "ablations": {
+    "wrapper_insightface_det_scale": {
+     "ap": {
+      "easy": 0.9484565809920205,
+      "medium": 0.9346127537733024,
+      "hard": 0.8127633290848669
+     },
+     "faces": {
+      "easy": 7211,
+      "medium": 13319,
+      "hard": 31958
+     },
+     "images": 3226,
+     "seconds": 82.8,
+     "n_dets": 848114,
+     "note": "wrapper path with InsightFace's single det_scale = new_h/h for both axes (before the per-axis scale fix), NMS 0.4 +1, black padding"
+    }
+   }
+  }
+ },
+ "checks": {
+  "ap_implementation_vs_reference": "eval_widerface.wider_ap vs SCRFD mmdet/core/evaluation/widerface.py (np.float/np.int patched, serial pool) on the same scrfd_34g paper predictions (3226 images): identical to 4 decimals, easy/medium/hard 96.1659/95.1886/84.8794",
+  "onnx_vs_modelscope_checkpoint": "all 303 weight initializers of scrfd_34g_gnkps.onnx equal tensors of ModelScope iic/cv_resnet_facedetection_scrfd10gkps pytorch_model.bin (exactly or after BatchNorm folding, rtol 1e-4); the 2 remaining initializers are GroupNorm export constants (ones/zeros)",
+  "batch_dynamic_reexport_experiment": "5 constant edits (3 shared GN Reshape shapes [1,..]->[0,..], 2 neck Resize sizes->scales) make the graph batch-dynamic; batch16 vs 16x batch1 outputs max abs diff 0.0027 (CUDA EP, TF32); session.run p50 194.9 ms (b16) vs 220.5 ms (16x b1), i.e. ~1.13x, measured while GPU 5 was at 100% util from another job; not shipped",
+  "tensorrt_ep": "not obtained: faceauth:dev has no libnvinfer.so.10 (TRT EP falls back to CUDA EP with 'libnvinfer.so.10: cannot open shared object file'); with tensorrt-cu13-libs 10.16.1.11 (4.3 GB) installed at runtime, the fp16 engine build ran >20 min and hit 'Requested amount of GPU memory (38912 bytes) could not be allocated' while GPU 5 was shared (~48 GB used by other jobs); aborted"
+ }
+}

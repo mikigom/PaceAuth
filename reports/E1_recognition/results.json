@@ -1,0 +1,453 @@
+{
+ "experiment": "E1_recognition",
+ "created": "2026-10-08T09:29:12+00:00",
+ "protocol": "docker run --rm --gpus '\"device=5\"' --shm-size 16g -u $(id -u):$(id -g) -e HOME=/tmp         -v /fdisk2/Codes/jhseo/faceauth:/app -w /app faceauth:dev python eval/eval_verification.py",
+ "seeds": "none (deterministic protocol, no sampling)",
+ "env": {
+  "gpu": "NVIDIA RTX A6000",
+  "torch": "2.12.0+cu130",
+  "cudnn_allow_tf32": true,
+  "matmul_allow_tf32": false
+ },
+ "datasets": {
+  "lfw": {
+   "file": "data/datasets/verification/lfw.bin",
+   "sha256": "2cdf0242947ad8287a96f84b5908bb2332879050c959c4a9a23a5cc6bcea112c",
+   "images": 12000,
+   "pairs": 6000,
+   "genuine": 3000,
+   "impostor": 3000
+  },
+  "cfp_fp": {
+   "file": "data/datasets/verification/cfp_fp.bin",
+   "sha256": "a8754ddf9729a014438d00908a1dc2fe2dbdfb59db9d19a714251c2f814a94ad",
+   "images": 14000,
+   "pairs": 7000,
+   "genuine": 3500,
+   "impostor": 3500
+  },
+  "agedb_30": {
+   "file": "data/datasets/verification/agedb_30.bin",
+   "sha256": "1af672c0ea829b95951b12628687956fe54263614b60b0ec5af9cdfdc4480b30",
+   "images": 12000,
+   "pairs": 6000,
+   "genuine": 3000,
+   "impostor": 3000
+  },
+  "calfw": {
+   "file": "data/datasets/verification/calfw.bin",
+   "sha256": "f643466e875865670a91d6d836dcd0af7ac41730f279ba13de1ed5ae6546c4db",
+   "images": 12000,
+   "pairs": 6000,
+   "genuine": 3000,
+   "impostor": 3000
+  },
+  "cplfw": {
+   "file": "data/datasets/verification/cplfw.bin",
+   "sha256": "2d18b80537ef3dce1ba163d8829c5994d1408d4c2a84eee499bba5563d8da2fc",
+   "images": 12000,
+   "pairs": 6000,
+   "genuine": 3000,
+   "impostor": 3000
+  }
+ },
+ "published": {
+  "kprpe_vitb_wf12m": {
+   "source": "CVLFace README 'Face Recognition Performance Board', row ViT KPRPE / AdaFace / WebFace12M (github.com/mk-minchul/CVLface, cvlface/pretrained_models/README.md)",
+   "acc": {
+    "lfw": 99.82,
+    "cfp_fp": 99.3,
+    "agedb_30": 98.1,
+    "calfw": 95.93,
+    "cplfw": 95.65
+   }
+  },
+  "insightface_vit_l_wf42m": {
+   "source": "arcface_torch README publishes only MFR-ALL 97.85, IJB-C TAR@1e-4 98.00 / 1e-5 97.23 for WF42M-PFC-0.3 ViT-L; no numbers for these five sets",
+   "acc": {}
+  }
+ },
+ "models": {
+  "kprpe_vitb_wf12m": {
+   "status": "evaluated",
+   "version": "kprpe_vitb_wf12m@1",
+   "model_dir": "data/models/kprpe_vitb_wf12m",
+   "strict_load": "0 missing / 0 unexpected keys",
+   "sha256": {
+    "weights": "99d16ed4aac0fdf0fcc82526b9b70703f3ec8c3041bf1bf44bd22751536e65db",
+    "aligner": "80b6e922e4c76c10d5e24061fe47cd96112d18689bf5ae7e34af52e641c18c4a"
+   },
+   "sha256_in_model_json": {
+    "weights": "99d16ed4aac0fdf0fcc82526b9b70703f3ec8c3041bf1bf44bd22751536e65db",
+    "aligner": "80b6e922e4c76c10d5e24061fe47cd96112d18689bf5ae7e34af52e641c18c4a"
+   },
+   "metrics": {
+    "fp32": {
+     "lfw": {
+      "acc_flip": 99.81666666666665,
+      "std_flip": 0.2409472049133498,
+      "tar_far1e-3_flip": {
+       "tar": 99.7,
+       "tar_ci95": [
+        99.43079568813202,
+        99.84208674857058
+       ],
+       "thr_cos": 0.1835388366428275,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      },
+      "acc_noflip": 99.81666666666665,
+      "std_noflip": 0.2409472049133498,
+      "tar_far1e-3_noflip": {
+       "tar": 99.7,
+       "tar_ci95": [
+        99.43079568813202,
+        99.84208674857058
+       ],
+       "thr_cos": 0.18405509070814935,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      }
+     },
+     "cfp_fp": {
+      "acc_flip": 99.3,
+      "std_flip": 0.3285714285714264,
+      "tar_far1e-3_flip": {
+       "tar": 98.71428571428571,
+       "tar_ci95": [
+        98.28404836547006,
+        99.03770663048005
+       ],
+       "thr_cos": 0.18768251226957178,
+       "far": 0.0008571428571428571,
+       "n_genuine": 3500,
+       "n_impostor": 3500
+      },
+      "acc_noflip": 99.27142857142857,
+      "std_noflip": 0.38038648444840906,
+      "tar_far1e-3_noflip": {
+       "tar": 98.65714285714286,
+       "tar_ci95": [
+        98.21896781674685,
+        98.9886267627857
+       ],
+       "thr_cos": 0.18279660690606325,
+       "far": 0.0008571428571428571,
+       "n_genuine": 3500,
+       "n_impostor": 3500
+      }
+     },
+     "agedb_30": {
+      "acc_flip": 98.10000000000001,
+      "std_flip": 0.7272474743090472,
+      "tar_far1e-3_flip": {
+       "tar": 95.46666666666667,
+       "tar_ci95": [
+        94.66230198313006,
+        96.1547413727803
+       ],
+       "thr_cos": 0.23469650171596002,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      },
+      "acc_noflip": 98.03333333333333,
+      "std_noflip": 0.7738791177495924,
+      "tar_far1e-3_noflip": {
+       "tar": 95.46666666666667,
+       "tar_ci95": [
+        94.66230198313006,
+        96.1547413727803
+       ],
+       "thr_cos": 0.2331213595148518,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      }
+     },
+     "calfw": {
+      "acc_flip": 95.93333333333331,
+      "std_flip": 1.1333333333333346,
+      "tar_far1e-3_flip": {
+       "tar": 92.2,
+       "tar_ci95": [
+        91.18550703425198,
+        93.10655813333048
+       ],
+       "thr_cos": 0.2213298525621188,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      },
+      "acc_noflip": 96.0,
+      "std_noflip": 1.120515754264777,
+      "tar_far1e-3_noflip": {
+       "tar": 92.2,
+       "tar_ci95": [
+        91.18550703425198,
+        93.10655813333048
+       ],
+       "thr_cos": 0.22297002510348618,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      }
+     },
+     "cplfw": {
+      "acc_flip": 95.64999999999999,
+      "std_flip": 0.8281505499203223,
+      "tar_far1e-3_flip": {
+       "tar": 90.66666666666667,
+       "tar_ci95": [
+        89.57307727572167,
+        91.65624302795182
+       ],
+       "thr_cos": 0.2197177002743651,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      },
+      "acc_noflip": 95.66666666666667,
+      "std_noflip": 0.7817359599705715,
+      "tar_far1e-3_noflip": {
+       "tar": 90.66666666666667,
+       "tar_ci95": [
+        89.57307727572167,
+        91.65624302795182
+       ],
+       "thr_cos": 0.2116273580390296,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      }
+     }
+    },
+    "fp16": {
+     "lfw": {
+      "acc_flip": 99.81666666666665,
+      "std_flip": 0.2409472049133498,
+      "tar_far1e-3_flip": {
+       "tar": 99.7,
+       "tar_ci95": [
+        99.43079568813202,
+        99.84208674857058
+       ],
+       "thr_cos": 0.18361146666577893,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      },
+      "acc_noflip": 99.81666666666665,
+      "std_noflip": 0.2409472049133498,
+      "tar_far1e-3_noflip": {
+       "tar": 99.7,
+       "tar_ci95": [
+        99.43079568813202,
+        99.84208674857058
+       ],
+       "thr_cos": 0.18408710543448475,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      }
+     },
+     "cfp_fp": {
+      "acc_flip": 99.3,
+      "std_flip": 0.3285714285714264,
+      "tar_far1e-3_flip": {
+       "tar": 98.71428571428571,
+       "tar_ci95": [
+        98.28404836547006,
+        99.03770663048005
+       ],
+       "thr_cos": 0.18773750819660717,
+       "far": 0.0008571428571428571,
+       "n_genuine": 3500,
+       "n_impostor": 3500
+      },
+      "acc_noflip": 99.24285714285716,
+      "std_noflip": 0.35021859063232147,
+      "tar_far1e-3_noflip": {
+       "tar": 98.65714285714286,
+       "tar_ci95": [
+        98.21896781674685,
+        98.9886267627857
+       ],
+       "thr_cos": 0.18275692051651002,
+       "far": 0.0008571428571428571,
+       "n_genuine": 3500,
+       "n_impostor": 3500
+      }
+     },
+     "agedb_30": {
+      "acc_flip": 98.06666666666666,
+      "std_flip": 0.7272474743090473,
+      "tar_far1e-3_flip": {
+       "tar": 95.46666666666667,
+       "tar_ci95": [
+        94.66230198313006,
+        96.1547413727803
+       ],
+       "thr_cos": 0.2349327719661185,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      },
+      "acc_noflip": 98.03333333333333,
+      "std_noflip": 0.7738791177495924,
+      "tar_far1e-3_noflip": {
+       "tar": 95.46666666666667,
+       "tar_ci95": [
+        94.66230198313006,
+        96.1547413727803
+       ],
+       "thr_cos": 0.2332063314352471,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      }
+     },
+     "calfw": {
+      "acc_flip": 95.93333333333331,
+      "std_flip": 1.1333333333333346,
+      "tar_far1e-3_flip": {
+       "tar": 92.2,
+       "tar_ci95": [
+        91.18550703425198,
+        93.10655813333048
+       ],
+       "thr_cos": 0.2212827960071274,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      },
+      "acc_noflip": 96.01666666666667,
+      "std_noflip": 1.1412712210513347,
+      "tar_far1e-3_noflip": {
+       "tar": 92.2,
+       "tar_ci95": [
+        91.18550703425198,
+        93.10655813333048
+       ],
+       "thr_cos": 0.22301916796028248,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      }
+     },
+     "cplfw": {
+      "acc_flip": 95.64999999999999,
+      "std_flip": 0.8281505499203223,
+      "tar_far1e-3_flip": {
+       "tar": 90.66666666666667,
+       "tar_ci95": [
+        89.57307727572167,
+        91.65624302795182
+       ],
+       "thr_cos": 0.21977438468128951,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      },
+      "acc_noflip": 95.61666666666667,
+      "std_noflip": 0.8063980268935308,
+      "tar_far1e-3_noflip": {
+       "tar": 90.66666666666667,
+       "tar_ci95": [
+        89.57307727572167,
+        91.65624302795182
+       ],
+       "thr_cos": 0.21170703787810194,
+       "far": 0.001,
+       "n_genuine": 3000,
+       "n_impostor": 3000
+      }
+     }
+    }
+   },
+   "speed": [
+    {
+     "precision": "fp32",
+     "batch": 1,
+     "iters": 200,
+     "ms_median": 23.201215430162847,
+     "ms_p95": 31.343733752146363,
+     "ms_min": 17.52591598778963,
+     "img_per_s": 43.10119023764356,
+     "img_per_s_best": 57.058358644233124,
+     "peak_mem_mb": 472.87890625
+    },
+    {
+     "precision": "fp16",
+     "batch": 1,
+     "iters": 200,
+     "ms_median": 26.355723850429058,
+     "ms_p95": 30.73600686620921,
+     "ms_min": 20.153657998889685,
+     "img_per_s": 37.94242213475463,
+     "img_per_s_best": 49.618783848326316,
+     "peak_mem_mb": 555.1513671875
+    },
+    {
+     "precision": "fp32",
+     "batch": 32,
+     "iters": 50,
+     "ms_median": 212.72883494384587,
+     "ms_p95": 304.2414846131578,
+     "ms_min": 98.05104904808104,
+     "img_per_s": 150.42624573413875,
+     "img_per_s_best": 326.3606081798089,
+     "peak_mem_mb": 1191.49365234375
+    },
+    {
+     "precision": "fp16",
+     "batch": 32,
+     "iters": 50,
+     "ms_median": 109.11391803529114,
+     "ms_p95": 155.2482761326246,
+     "ms_min": 51.51964304968715,
+     "img_per_s": 293.27147788470137,
+     "img_per_s_best": 621.1223157959034,
+     "peak_mem_mb": 885.72802734375
+    },
+    {
+     "precision": "fp32",
+     "batch": 128,
+     "iters": 20,
+     "ms_median": 821.4159763883799,
+     "ms_p95": 1157.913277600892,
+     "ms_min": 414.3210439942777,
+     "img_per_s": 155.82847628894834,
+     "img_per_s_best": 308.9391713392377,
+     "peak_mem_mb": 3416.90576171875
+    },
+    {
+     "precision": "fp16",
+     "batch": 128,
+     "iters": 20,
+     "ms_median": 390.1099490467459,
+     "ms_p95": 569.9371074326336,
+     "ms_min": 175.34286715090275,
+     "img_per_s": 328.1126264858784,
+     "img_per_s_best": 729.9983288732312,
+     "peak_mem_mb": 2190.90576171875
+    }
+   ],
+   "fp16_vs_fp32_cos": {
+    "n_images": 62000,
+    "mean": 0.9999976116490167,
+    "min": 0.9998294512711928,
+    "p0.1": 0.9999873360563845
+   },
+   "gpu_load_before_speed": "100 %, 19078 MiB",
+   "gpu_load_after_speed": "100 %, 19078 MiB"
+  },
+  "insightface_vit_l_wf42m": {
+   "status": "pending",
+   "reason": "weight file(s) not present: ['model.pt']",
+   "model_dir": "data/models/insightface_vit_l_wf42m"
+  }
+ }
+}
