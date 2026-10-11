@@ -200,6 +200,8 @@ def main():
     ap.add_argument("--workers", type=int, default=9)
     ap.add_argument("--fps", type=float, default=10.0, help="terminal analysis rate (frames analysed per second)")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--subjects", nargs="*", help="only these BIWI subjects (e.g. a regression check)")
+    ap.add_argument("--out", default="reports/E8_enrollment/results.json")
     ap.add_argument("--withdraw", nargs="*", default=["e8-%", "acct-f05%"],
                     help="account LIKE patterns withdrawn before the run (leftovers would be duplicates)")
     a = ap.parse_args()
@@ -208,7 +210,8 @@ def main():
     subj = {}
     for s in HELD_OUT:
         subj.setdefault(SUBJECTS[s], []).append(s)
-    jobs = [(name, seqs, a.trials, a.fps, a.seed, i) for i, (name, seqs) in enumerate(sorted(subj.items()))]
+    jobs = [(name, seqs, a.trials, a.fps, a.seed, i) for i, (name, seqs) in enumerate(sorted(subj.items()))
+            if not a.subjects or name in a.subjects]
     t0 = time.time()
     with Pool(min(a.workers, len(jobs))) as pool:
         recs = [r for rs in pool.map(trials, jobs) for r in rs]
@@ -242,9 +245,9 @@ def main():
             if x.get("status") != "active":
                 key = f"{x.get('status') or 'capture_timeout'}:{x.get('reason') or ''}"
                 res["failure_reasons"][key] = res["failure_reasons"].get(key, 0) + 1
-    out = ROOT / "reports/E8_enrollment"
-    out.mkdir(parents=True, exist_ok=True)
-    (out / "results.json").write_text(json.dumps(res, indent=1))
+    out = ROOT / a.out
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(res, indent=1))
     raw = ROOT / "reports/raw/E8"
     raw.mkdir(parents=True, exist_ok=True)
     (raw / "trials.json").write_text(json.dumps(recs, indent=1, default=str))

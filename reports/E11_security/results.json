@@ -110,9 +110,9 @@
   "status": 503,
   "detail": "{\"detail\":\"reload refused: active pad_rgbdir@2: model_versions.sha256 differs from the signed registry\"}",
   "still_serving": {
-   "detector": "scrfd_34g@1+trt16",
+   "detector": "scrfd_34g@2+trt16",
    "pose": "6drepnet360@1",
-   "recog": "kprpe_vitb_wf12m@1",
+   "recog": "adaface_ir101_wf12m@1",
    "align": "arcface5-112@1",
    "pad": "pad_rgbdir@2",
    "quality": "q@1"

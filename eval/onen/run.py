@@ -60,12 +60,12 @@ def _now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def detector(ep="cuda"):
+def detector(ep="cuda", model_dir="data/models/scrfd_34g"):
     """SCRFD-34G on CUDA EP (fp32 reference; default) or TensorRT fp16 (engine build took > 20 min on the shared GPU)."""
     from faceauth.models.scrfd import SCRFD
     (WORK / "trt").mkdir(parents=True, exist_ok=True)  # ORT falls back to CUDA EP if the cache dir is missing
     want = TRT if ep == "trt" else ["CUDAExecutionProvider"]
-    det = SCRFD("data/models/scrfd_34g", providers=want)
+    det = SCRFD(model_dir, providers=want)
     got = det.session.get_providers()[0]
     if got != ("TensorrtExecutionProvider" if ep == "trt" else "CUDAExecutionProvider"):  # ORT silently falls back
         raise RuntimeError(f"SCRFD wants {ep}, ORT gave {det.session.get_providers()}")
@@ -297,8 +297,9 @@ def cmd_embed(a):
         raise SystemExit(3)
 
 
-def gather(model, t, stores=STORES, suffix="") -> np.ndarray:
-    """Protocol rows -> (n, dim) embeddings from the per-dataset stores (all rows must have one)."""
+def gather(model, t, stores=STORES, suffix="", allow_missing=False) -> np.ndarray:
+    """Protocol rows -> (n, dim) embeddings from the per-dataset stores (all rows must have one unless allow_missing:
+    then rows without one are NaN)."""
     dim = json.loads((Path("data/models") / model / "MODEL.json").read_text())["dim"]
     E = np.full((len(t), dim), np.nan, np.float32)
     for name in stores:
@@ -312,7 +313,7 @@ def gather(model, t, stores=STORES, suffix="") -> np.ndarray:
         emb = np.memmap(WORK / "emb" / model / f"{name}{suffix}.f32", np.float32, "r").reshape(len(paths), dim)
         o = np.argsort(idx)
         E[rows[o]] = emb[idx[o]]
-    if not np.isfinite(E).all():
+    if not allow_missing and not np.isfinite(E).all():
         raise ValueError(f"{model}: {(~np.isfinite(E).all(1)).sum()} protocol images without an embedding")
     return E
 
@@ -557,6 +558,10 @@ def cmd_e6_align(a):
     t = load_protocol()
     sub = e6_rows(t)
     paths = sorted(sub.path)
+    if a.variant == "scrfd320":   # deployed server detector (scrfd_34g@2, 320 input): re-detect -> its own 5 kps
+        embed.align(paths, WORK / "crops" / "celeba_scrfd320", det=detector(a.ep, "data/models/scrfd_34g_320"),
+                    hints=datasets.hints("celeba"), shard=2048, part=a.part, workers=a.workers)
+        return
     src_paths, _, det = embed.load_store(WORK / "crops" / "celeba")
     kps = det["kps"][pd.Index(src_paths).get_indexer(paths)]
     # bf16: ~1.7x faster, WFLW NME unchanged to 0.01 (FaRLLandmarks docstring / reports/E5_landmarks)
@@ -574,7 +579,7 @@ def cmd_e6_embed(a):
     from faceauth.models.recog import Recognizer
     for m in a.models:
         rec = Recognizer(Path("data/models") / m, device="cuda", batch_size=a.batch)
-        embed.embed(WORK / "crops" / "celeba_farl", rec, WORK / "emb" / m / "celeba_farl.f32")
+        embed.embed(WORK / "crops" / f"celeba_{a.variant}", rec, WORK / "emb" / m / f"celeba_{a.variant}.f32")
 
 
 def tar_at_far(gen, imp_hist, fars=(1e-3, 1e-4, 1e-5, 1e-6)) -> list:
@@ -596,19 +601,26 @@ def tar_at_far(gen, imp_hist, fars=(1e-3, 1e-4, 1e-5, 1e-6)) -> list:
 def cmd_e6_evaluate(a):
     from eval.onen.search import Searcher, subject_topk, template_table
     t = load_protocol()
-    sub = e6_rows(t).reset_index(drop=True)
+    sub_all = e6_rows(t).reset_index(drop=True)
     s = Searcher()
     res = {"experiment": "E6_alignment", "created": _now(), "subset": E6, "protocol": PROTO["name"],
            "protocol_sha256": _sha(proto_dir() / "images.csv.gz"),
-           "alignments": {"scrfd": "SCRFD-34G 5 kps (ORT CUDA EP fp32) -> norm_crop 112 (deployed engine path)",
+           "alignments": {"scrfd": "SCRFD-34G 5 kps (ORT CUDA EP fp32, 640 input) -> norm_crop 112",
                           "farl": "FaRL ViT-B/16 448 WFLW-98 from the same SCRFD kps (refine=1 as the terminal; bf16) -> "
-                                  "kps5_from_wflw98 -> norm_crop 112"},
-           "counts": {r: int((sub.role == r).sum()) for r in ("template", "mated", "nonmated")}, "models": {}}
-    role = sub.role.to_numpy()
+                                  "kps5_from_wflw98 -> norm_crop 112",
+                          "scrfd320": "SCRFD-34G re-targeted to 320 input (scrfd_34g@2, deployed server detector) "
+                                      "5 kps -> norm_crop 112"},
+           "variant": a.variant,
+           "counts": {r: int((sub_all.role == r).sum()) for r in ("template", "mated", "nonmated")}, "models": {}}
     for m in a.models:
-        res["models"][m] = {}
+        # paired: images where the variant found no face are dropped for BOTH alignments (counted below)
+        ok = np.isfinite(gather(m, sub_all, stores=("celeba",), suffix=f"_{a.variant}", allow_missing=True)).all(1)
+        sub = sub_all[ok].reset_index(drop=True)
+        role = sub.role.to_numpy()
+        res["models"][m] = {"images_without_face_in_variant": int((~ok).sum()),
+                            "by_role": {r: int(((sub_all.role == r) & ~ok).sum()) for r in ("template", "mated", "nonmated")}}
         hits = {}
-        for al, suffix in (("scrfd", ""), ("farl", "_farl")):
+        for al, suffix in (("scrfd", ""), (a.variant, f"_{a.variant}")):
             E = gather(m, sub, stores=("celeba",), suffix=suffix)
             gm = role == "template"
             subjects = np.unique(sub.subject[gm])
@@ -635,15 +647,16 @@ def cmd_e6_evaluate(a):
         # paired comparison on the same mated probes (each alignment at its own threshold for the FPIR target)
         res["models"][m]["paired_mcnemar"] = {}
         for f, h1 in hits["scrfd"].items():
-            h2 = hits["farl"][f]
+            h2 = hits[a.variant][f]
             b, c = int((h1 & ~h2).sum()), int((~h1 & h2).sum())
             res["models"][m]["paired_mcnemar"][str(f)] = {
-                "hit_scrfd_only": b, "hit_farl_only": c,
+                "hit_scrfd_only": b, f"hit_{a.variant}_only": c,
                 "p_exact": float(binomtest(b, b + c).pvalue) if b + c else 1.0}
-    a_json = WORK / "crops" / "celeba_farl" / "align.json"
-    res["farl_align"] = json.loads(a_json.read_text()) if a_json.exists() else None
+    a_json = WORK / "crops" / f"celeba_{a.variant}" / "align.json"
+    res[f"{a.variant}_align"] = json.loads(a_json.read_text()) if a_json.exists() else None
     REPORT_E6.mkdir(parents=True, exist_ok=True)
-    (REPORT_E6 / "results.json").write_text(json.dumps(res, indent=1, default=_json) + "\n")
+    out = "results.json" if a.variant == "farl" else f"results_{a.variant}.json"
+    (REPORT_E6 / out).write_text(json.dumps(res, indent=1, default=_json) + "\n")
 
 
 # ------------------------------------------------------------------------------------------------ CLI
@@ -661,6 +674,7 @@ def main(argv=None):
     ap.add_argument("--reverse", action="store_true", help="align: walk datasets/shards from the end (extra workers)")
     ap.add_argument("--init", action="store_true", help="align/digiface: only create the stores (before parallel parts)")
     ap.add_argument("--batch", type=int, default=256)
+    ap.add_argument("--variant", choices=["farl", "scrfd320"], default="farl", help="e6-*: alignment compared to SCRFD")
     ap.add_argument("--boot", type=int, default=1000)
     ap.add_argument("--boot-small", type=int, default=200)
     a = ap.parse_args(argv)
