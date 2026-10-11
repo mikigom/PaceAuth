@@ -1,0 +1,78 @@
+{
+ "single_photo": {
+  "frontal_probe": {
+   "n": 157,
+   "min": 0.53,
+   "p5": 0.66,
+   "median": 0.733,
+   "below_0.60": 0.0064,
+   "below_0.617": 0.0127
+  },
+  "turned_probe": {
+   "n": 28,
+   "min": 0.626,
+   "p5": 0.66,
+   "median": 0.705,
+   "below_0.60": 0.0,
+   "below_0.617": 0.0
+  },
+  "best_impostor_over_20_subjects": 0.232
+ },
+ "frontal": {
+  "frontal_probe": {
+   "n": 157,
+   "min": 0.534,
+   "p5": 0.655,
+   "median": 0.762,
+   "below_0.60": 0.0064,
+   "below_0.617": 0.0064
+  },
+  "turned_probe": {
+   "n": 28,
+   "min": 0.632,
+   "p5": 0.676,
+   "median": 0.742,
+   "below_0.60": 0.0,
+   "below_0.617": 0.0
+  },
+  "best_impostor_over_20_subjects": 0.239
+ },
+ "4slot": {
+  "frontal_probe": {
+   "n": 157,
+   "min": 0.537,
+   "p5": 0.678,
+   "median": 0.777,
+   "below_0.60": 0.0064,
+   "below_0.617": 0.0064
+  },
+  "turned_probe": {
+   "n": 28,
+   "min": 0.655,
+   "p5": 0.714,
+   "median": 0.763,
+   "below_0.60": 0.0,
+   "below_0.617": 0.0
+  },
+  "best_impostor_over_20_subjects": 0.239
+ },
+ "9dir": {
+  "frontal_probe": {
+   "n": 157,
+   "min": 0.535,
+   "p5": 0.666,
+   "median": 0.77,
+   "below_0.60": 0.0064,
+   "below_0.617": 0.0064
+  },
+  "turned_probe": {
+   "n": 28,
+   "min": 0.632,
+   "p5": 0.698,
+   "median": 0.747,
+   "below_0.60": 0.0,
+   "below_0.617": 0.0
+  },
+  "best_impostor_over_20_subjects": 0.239
+ }
+}
