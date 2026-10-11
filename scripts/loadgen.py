@@ -75,11 +75,50 @@ def _render(task):
     return [encode_frame(f["rgb"], f["depth"], f["ir"]) for f in frames]
 
 
-def analyze(http, frames):
-    r = http.post(f"{ENGINE}/v1/analyze", content=msgpack.packb({"mode": "enroll", "frames": frames}),
+def analyze(http, frames, mode="enroll"):
+    r = http.post(f"{ENGINE}/v1/analyze", content=msgpack.packb({"mode": mode, "frames": frames}),
                   headers={"Content-Type": "application/msgpack"}, timeout=120)
     r.raise_for_status()
     return msgpack.unpackb(r.content, raw=False)
+
+
+def templates_from(http, photos, mv):
+    """Rendered photos (3 frames each) -> (templates: one per photo whose 3 frames are ok + live, align version).
+    mv = active recognition model version: vectors of another version are never stored (Design §7)."""
+    tpl, align = [], None
+    for p in photos:
+        if not p:
+            continue
+        an = analyze(http, p)
+        if an["versions"]["recog"] != mv:
+            raise SystemExit(f"engine recognizer {an['versions']['recog']} != active {mv}")
+        align = an["versions"]["align"]
+        good = [f for f in an["frames"] if f["ok"] and f["pad"] and f["pad"]["live"] and f["emb"]]
+        if len(good) == len(p):
+            e = np.mean([np.frombuffer(f["emb"], "<f4") for f in good], 0)
+            tpl.append((e / np.linalg.norm(e)).astype("<f4"))
+    return tpl, align
+
+
+def insert_user(conn, kms, mv, align, account, tpl) -> uuid.UUID:
+    """Enrollment write path without the capture (load/security tests): subject + KMS-encrypted templates + 'add'
+    events under lock 7001, one transaction. Idempotent per account."""
+    sid = uuid.uuid5(NS, account)
+    cts = msgpack.unpackb(kms.post("/v1/encrypt", headers={"Content-Type": "application/msgpack"},
+                                   content=msgpack.packb({"subject_id": str(sid), "items": [t.tobytes() for t in tpl]})).content)["items"]
+    with conn.transaction():
+        conn.execute("INSERT INTO subjects (id, account_id, status, consent_version, consent_at) VALUES "
+                     "(%s, %s, 'active', 'v1', now()) ON CONFLICT DO NOTHING", (sid, account))
+        if conn.execute("SELECT count(*) FROM templates WHERE subject_id = %s AND active", (sid,)).fetchone()[0] == 0:
+            tids = [conn.execute("INSERT INTO templates (subject_id, template_version, slot, model_version, "
+                                 "align_version, calib_version, ciphertext) VALUES (%s, 1, %s, %s, %s, %s, %s) "
+                                 "RETURNING id", (sid, i, mv, align, CALIB_VERSION, c)).fetchone()[0]
+                    for i, c in enumerate(cts)]
+            conn.execute("SELECT pg_advisory_xact_lock(7001)")
+            for t in tids:
+                conn.execute("INSERT INTO template_events (op, template_id, subject_id, model_version) "
+                             "VALUES ('add', %s, %s, %s)", (t, sid, mv))
+    return sid
 
 
 def cmd_setup(a):
@@ -120,36 +159,13 @@ def cmd_setup(a):
                     users.append({"id": f"imp-{cid}", "enrolled": False, "probes": probes})
                     stats["impostors"] += 1
                 continue
-            tpl = []
-            for p in photos[:4]:
-                if not p:
-                    continue
-                an = analyze(http, p)
-                good = [f for f in an["frames"] if f["ok"] and f["pad"] and f["pad"]["live"] and f["emb"]]
-                if len(good) == 3:
-                    e = np.mean([np.frombuffer(f["emb"], "<f4") for f in good], 0)
-                    tpl.append((e / np.linalg.norm(e)).astype("<f4"))
+            tpl, align = templates_from(http, photos[:4], mv)
             probes = [p for p in photos[4:] if p]
             if len(tpl) < 2 or not probes:
                 stats["dropped"] += 1
                 continue
-            assert an["versions"]["recog"] == mv, (an["versions"], mv)
             account = f"loadtest-{cid}"
-            sid = uuid.uuid5(NS, account)
-            cts = msgpack.unpackb(kms.post("/v1/encrypt", headers={"Content-Type": "application/msgpack"},
-                                           content=msgpack.packb({"subject_id": str(sid), "items": [t.tobytes() for t in tpl]})).content)["items"]
-            with conn.transaction():
-                conn.execute("INSERT INTO subjects (id, account_id, status, consent_version, consent_at) VALUES "
-                             "(%s, %s, 'active', 'v1', now()) ON CONFLICT DO NOTHING", (sid, account))
-                if conn.execute("SELECT count(*) FROM templates WHERE subject_id = %s AND active", (sid,)).fetchone()[0] == 0:
-                    tids = [conn.execute("INSERT INTO templates (subject_id, template_version, slot, model_version, "
-                                         "align_version, calib_version, ciphertext) VALUES (%s, 1, %s, %s, %s, %s, %s) "
-                                         "RETURNING id", (sid, i, mv, an["versions"]["align"], CALIB_VERSION, c)).fetchone()[0]
-                            for i, c in enumerate(cts)]
-                    conn.execute("SELECT pg_advisory_xact_lock(7001)")
-                    for t in tids:
-                        conn.execute("INSERT INTO template_events (op, template_id, subject_id, model_version) "
-                                     "VALUES ('add', %s, %s, %s)", (t, sid, mv))
+            insert_user(conn, kms, mv, align, account, tpl)
             users.append({"id": account, "enrolled": True, "probes": probes})
             stats["enrolled"] += 1
     print(stats, f"{time.time() - t0:.0f}s", flush=True)

@@ -1,0 +1,148 @@
+{
+ "genuine": {
+  "decision": "approved",
+  "reason": "ok",
+  "internal": "ok"
+ },
+ "attack_print": {
+  "n": 5,
+  "approved": 0,
+  "internal": [
+   "quality:blur,pose_out_of_range",
+   "quality:pose_out_of_range"
+  ]
+ },
+ "attack_replay": {
+  "n": 5,
+  "approved": 0,
+  "internal": [
+   "pad_fail",
+   "quality:blur,depth_invalid,pose_out_of_range,small_face",
+   "quality:blur,pose_out_of_range",
+   "quality:depth_invalid",
+   "quality:small_face"
+  ]
+ },
+ "attack_mask_rigid": {
+  "n": 5,
+  "approved": 0,
+  "internal": [
+   "pad_fail",
+   "quality:blur"
+  ]
+ },
+ "attack_mask_silicone": {
+  "n": 5,
+  "approved": 0,
+  "internal": [
+   "pad_fail",
+   "quality:blur",
+   "quality:blur,pose_out_of_range",
+   "quality:pose_out_of_range"
+  ]
+ },
+ "impostor": {
+  "decision": "rejected",
+  "reason": "not_recognized",
+  "internal": "no_match"
+ },
+ "multi_face": {
+  "decision": "rejected",
+  "reason": "retry",
+  "internal": "quality:multi_face"
+ },
+ "missing_depth": {
+  "decision": "rejected",
+  "reason": "denied",
+  "internal": "missing_modality"
+ },
+ "missing_ir": {
+  "decision": "rejected",
+  "reason": "denied",
+  "internal": "missing_modality"
+ },
+ "missing_depth+ir": {
+  "decision": "rejected",
+  "reason": "denied",
+  "internal": "missing_modality"
+ },
+ "rgb_injection_absent": {
+  "decision": "rejected",
+  "internal": "missing_modality"
+ },
+ "rgb_injection_zero": {
+  "decision": "rejected",
+  "internal": "quality:depth_invalid,ir_invalid"
+ },
+ "rgb_injection_luma": {
+  "decision": "rejected",
+  "internal": "quality:depth_invalid"
+ },
+ "desync": {
+  "decision": "rejected",
+  "internal": "unsynchronized"
+ },
+ "attacker_key": {
+  "decision": "rejected",
+  "internal": "bad_signature"
+ },
+ "tampered_frame": {
+  "decision": "rejected",
+  "internal": "hash_mismatch"
+ },
+ "packet_replay": {
+  "first": "approved",
+  "replay": {
+   "decision": "rejected",
+   "reason": "session"
+  }
+ },
+ "perfect_injection_with_device_key": {
+  "decision": "approved",
+  "internal": "ok",
+  "note": "expected approved: PAD cannot detect a perfect digital injection; needs sensor attestation"
+ },
+ "step_up": {
+  "first": "step_up",
+  "completed": "approved"
+ },
+ "model_tamper_reload": {
+  "status": 503,
+  "detail": "{\"detail\":\"reload refused: active pad_rgbdir@2: model_versions.sha256 differs from the signed registry\"}",
+  "still_serving": {
+   "detector": "scrfd_34g@1+trt16",
+   "pose": "6drepnet360@1",
+   "recog": "kprpe_vitb_wf12m@1",
+   "align": "arcface5-112@1",
+   "pad": "pad_rgbdir@2",
+   "quality": "q@1"
+  }
+ },
+ "withdrawal": {
+  "delete": {
+   "revoked": true,
+   "templates_deleted": 4,
+   "index_removed": true,
+   "key_destroyed": true
+  },
+  "auth_after": "rejected",
+  "internal": "no_match",
+  "templates_left": 0
+ },
+ "device_lockout": {
+  "sequence": [
+   "rejected",
+   "rejected",
+   "rejected",
+   "rejected",
+   "rejected",
+   "rejected",
+   "rejected",
+   "rejected",
+   "rejected",
+   "rejected",
+   429,
+   429
+  ]
+ }
+}
