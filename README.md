@@ -7,7 +7,7 @@
 
 ```
 terminal (sim)  --mTLS-->  gateway (nginx, TLS1.3, client cert)  -->  api-1 / api-2 (FastAPI, policy, audit)
-                                                                         |-> engine (GPU: SCRFD-34G TRT, 6DRepNet360, PAD, KP-RPE ViT-B)
+                                                                         |-> engine-1 / engine-2 (GPU: SCRFD-34G TRT, 6DRepNet360, PAD v2, AdaFace IR101)
                                                                          |-> search-1 / search-2 (GPU: FAISS exact IP, 1M x 4)
                                                                          |-> kms (subject keys, crypto-shredding)
                                                                          |-> db / db-standby1 / db-standby2 (Postgres, ANY 1 sync)

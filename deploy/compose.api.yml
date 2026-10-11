@@ -95,4 +95,4 @@ services:
       FAKE_DB_DSN: "host=db dbname=faceauth user=faceauth_api"
       FA_SECRETS_DIR: /run/secrets
     secrets: [db_api_password, kms_token_api, kms_token_search]
-    networks: { internal: { aliases: [engine, search-1, search-2, kms] } }
+    networks: { internal: { aliases: [engine, engine-1, engine-2, search-1, search-2, kms] } }
