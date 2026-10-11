@@ -57,8 +57,10 @@ class Pipeline:
         self.det_thresh, self.min_face, self.blur_min, self.exposure, self.ear_min = \
             det_thresh, min_face, blur_min, exposure, ear_min
 
+    # detector = the server engine's active one (scrfd_34g@2, 320 input): same boxes -> the server's blur / pose-bin
+    # re-measurements agree with what the guide accepted (with different detectors, E8 lost frames near thresholds)
     @classmethod
-    def load(cls, models_dir="data/models", device="cuda", detector="scrfd_34g", headpose="6drepnet360",
+    def load(cls, models_dir="data/models", device="cuda", detector="scrfd_34g_320", headpose="6drepnet360",
              landmarks="farl_wflw_448", release_pub=RELEASE_PUB, verify=True, **kw):
         """verify (§7): the signed registry and every file hash are checked before any load; RegistryError
         (tampered, unsigned or unlisted model) refuses to start. verify=False is for dev runs without a registry."""

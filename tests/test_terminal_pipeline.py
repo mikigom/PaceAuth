@@ -120,7 +120,7 @@ def test_select_auth_best_three_in_capture_order():
 
 # ---- §7: models are loaded only from a verified, signed registry --------------------------------------------
 
-def _signed_models(tmp_path, names=("scrfd_34g", "6drepnet360", "farl_wflw_448"), key=None):
+def _signed_models(tmp_path, names=("scrfd_34g_320", "6drepnet360", "farl_wflw_448"), key=None):
     h = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()  # noqa: E731
     entries = []
     for n in names:
@@ -149,7 +149,7 @@ def test_load_verifies_signed_registry_before_loading(tmp_path, monkeypatch):
     _fake_wrappers(monkeypatch)
     pub = _signed_models(tmp_path)
     p = Pipeline.load(tmp_path, "cpu", release_pub=pub)
-    assert (p.detector, p.headpose, p.landmarks) == (("SCRFD", "scrfd_34g"), ("HeadPose", "6drepnet360"),
+    assert (p.detector, p.headpose, p.landmarks) == (("SCRFD", "scrfd_34g_320"), ("HeadPose", "6drepnet360"),
                                                      ("FaRLLandmarks", "farl_wflw_448"))
     with pytest.raises(RegistryError, match="not in the signed registry"):
         Pipeline.load(tmp_path, "cpu", release_pub=pub, headpose="6drepnet")

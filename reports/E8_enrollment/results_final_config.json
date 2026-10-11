@@ -1,0 +1,108 @@
+{
+ "id": "E8_enrollment",
+ "subjects": [
+  "F02",
+  "F03",
+  "F05",
+  "F06",
+  "M01",
+  "M03",
+  "M04",
+  "M07",
+  "M09"
+ ],
+ "trials": 20,
+ "fps": 10.0,
+ "timeout_s": 60.0,
+ "max_attempts": 2,
+ "success_rate": 0.85,
+ "success_ci95": [
+  0.621073173454686,
+  0.9679290628145363
+ ],
+ "by_group": {
+  "complete_coverage": {
+   "subjects": [
+    "F05",
+    "M03",
+    "M07"
+   ],
+   "trials": 15,
+   "success": 12,
+   "success_rate": 0.8,
+   "success_ci95": [
+    0.5191088661931469,
+    0.9566879948941633
+   ]
+  },
+  "coverage_limited": {
+   "subjects": [
+    "M01"
+   ],
+   "trials": 5,
+   "success": 5,
+   "success_rate": 1.0,
+   "success_ci95": [
+    0.4781762498950185,
+    1.0
+   ]
+  }
+ },
+ "per_subject": {
+  "F02": [],
+  "F03": [],
+  "F05": [
+   false,
+   true,
+   false,
+   true,
+   false
+  ],
+  "F06": [],
+  "M01": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "M03": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "M04": [],
+  "M07": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "M09": []
+ },
+ "first_attempt_success_rate": 0.65,
+ "abandoned_timeout": 0,
+ "retries": 7,
+ "time_s": {
+  "p50": 13.20329792094417,
+  "p95": 27.035794771695507,
+  "max": 28.370846130931753
+ },
+ "server_s_p95": 0.43265096938703207,
+ "failure_reasons": {
+  "rejected:retry": 10
+ },
+ "min_cos": {
+  "p1": 0.728660409450531,
+  "p5": 0.7346325993537903,
+  "p50": 0.8220095038414001
+ },
+ "targets": {
+  "success_rate": 0.99,
+  "time_p95_s": 20.0
+ },
+ "wall_s": 505.28766989707947
+}

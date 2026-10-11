@@ -736,6 +736,16 @@
    },
    "source": "https://huggingface.co/immich-app/scrfd_34g_gnkps/resolve/32b5674a7e69b8d741ca6f6969476faab2257add/detection/model.onnx (ONNX export, pytorch 2.1, opset 11). Weights = SCRFD_34G_GNKPS_v2 released by Alibaba DAMO on ModelScope as iic/cv_resnet_facedetection_scrfd10gkps (the id says 10g but the default model was replaced by the 34G GN+kps v2 model, see github.com/modelscope/modelscope/issues/24), pytorch_model.bin sha256 8db579dd6947798a36e8ac2d94fb8c47369b1bcc979bbebd861070f6e91049b5. Verified: all 303 weight initializers of this ONNX equal that checkpoint (exactly or after BatchNorm folding). This is NOT the InsightFace SCRFD_34G release (that one has no keypoint head).",
    "license": "RESTRICTED - treat as NON-COMMERCIAL / RESEARCH-ONLY until legal review. ModelScope model card and the immich HF mirror declare 'MIT License', but the model card also says the model and code come from InsightFace SCRFD and that the relevant licences must be respected. The weights were trained on WIDER FACE (CC BY-NC-ND 4.0: non-commercial, no derivatives). InsightFace policy: code MIT, models trained on their annotated training data are for non-commercial research purposes only. Commercial use needs written confirmation from the rights holders."
+  },
+  {
+   "name": "scrfd_34g",
+   "version": "2",
+   "kind": "detector",
+   "sha256": {
+    "onnx": "56be898aa764bbb20c689295e258fdf138d9e0bfaa3c388fa859bc666bef245e"
+   },
+   "source": "https://huggingface.co/immich-app/scrfd_34g_gnkps/resolve/32b5674a7e69b8d741ca6f6969476faab2257add/detection/model.onnx (ONNX export, pytorch 2.1, opset 11). Weights = SCRFD_34G_GNKPS_v2 released by Alibaba DAMO on ModelScope as iic/cv_resnet_facedetection_scrfd10gkps (the id says 10g but the default model was replaced by the 34G GN+kps v2 model, see github.com/modelscope/modelscope/issues/24), pytorch_model.bin sha256 8db579dd6947798a36e8ac2d94fb8c47369b1bcc979bbebd861070f6e91049b5. Verified: all 303 weight initializers of this ONNX equal that checkpoint (exactly or after BatchNorm folding). This is NOT the InsightFace SCRFD_34G release (that one has no keypoint head).",
+   "license": "RESTRICTED - treat as NON-COMMERCIAL / RESEARCH-ONLY until legal review. ModelScope model card and the immich HF mirror declare 'MIT License', but the model card also says the model and code come from InsightFace SCRFD and that the relevant licences must be respected. The weights were trained on WIDER FACE (CC BY-NC-ND 4.0: non-commercial, no derivatives). InsightFace policy: code MIT, models trained on their annotated training data are for non-commercial research purposes only. Commercial use needs written confirmation from the rights holders."
   }
  ],
  "datasets": [
