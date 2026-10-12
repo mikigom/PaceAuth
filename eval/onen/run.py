@@ -540,7 +540,7 @@ def cmd_evaluate(a):
 
 
 def cmd_capacity(a):
-    """Operating point for a smaller maximum gallery (customer decision 2026-10-11: at most 100,000 customers x 4).
+    """Operating point for a smaller maximum gallery (decided 2026-10-11: at most 100,000 customers x 4).
     Threshold = model-based FPIR 1e-6 at G x 4 templates from the real-face impostor tail (GPD), as done for 1M;
     measured at that threshold on the smallest measured gallery with >= G subjects (a superset: conservative)."""
     G, n_tpl = a.gallery, a.gallery * TARGET_TPL

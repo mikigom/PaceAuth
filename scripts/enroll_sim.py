@@ -79,10 +79,11 @@ def same_person_min_cos(frames):
     return float((e @ (m / np.linalg.norm(m))).min()), an
 
 
-def capture(sim, pipe, pool, scenes, rng, speed, react, fps, guide, trace=None, on_tick=None):
+def capture(sim, pipe, pool, scenes, rng, speed, react, fps, guide, trace=None, on_tick=None, scene_seed=None):
     """One guided capture. -> (done, sensor seconds, frames kept [(dir, (idx, enc))], ticks).
     trace: optional dict filled with tick -> BIWI frame id shown (diagnostics).
     on_tick(tick, t, sim_output, analysis, guide_status): optional per-tick callback (demo recording).
+    scene_seed: one backdrop / clothing / skin rendering for the whole capture (demo); default: drawn per BIWI frame.
 
     Guide mode "steps": the user turns toward each prompted direction. Mode "circle": the user looks straight, then
     moves the head around an ellipse (amp x the yaw 25 / pitch 15 targets) at `speed`, a bigger circle on every lap
@@ -120,7 +121,8 @@ def capture(sim, pipe, pool, scenes, rng, speed, react, fps, guide, trace=None, 
         if i not in scenes:   # the subject = largest face (BIWI frames can show people in the background)
             dets = pipe.detector.detect(pool[i][1])
             big = max(dets, key=lambda d: (d["bbox"][2] - d["bbox"][0]) * (d["bbox"][3] - d["bbox"][1])) if dets else None
-            scenes[i] = sim.scene("live", pool[i][1], big["kps"], np.random.default_rng(i), 600.0) if big else None
+            seed = i if scene_seed is None else scene_seed
+            scenes[i] = sim.scene("live", pool[i][1], big["kps"], np.random.default_rng(seed), 600.0) if big else None
         if scenes[i] is None:
             prompt = guide.feed(None, False, t=t, reasons=("no_face",))["prompt"]
         else:

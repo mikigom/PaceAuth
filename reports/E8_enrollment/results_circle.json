@@ -1,0 +1,146 @@
+{
+ "id": "E8_enrollment",
+ "guide_mode": "circle",
+ "subjects": [
+  "F02",
+  "F03",
+  "F05",
+  "F06",
+  "M01",
+  "M03",
+  "M04",
+  "M07",
+  "M09"
+ ],
+ "trials": 45,
+ "fps": 10.0,
+ "timeout_s": 60.0,
+ "max_attempts": 2,
+ "success_rate": 0.5333333333333333,
+ "success_ci95": [
+  0.3787200160874644,
+  0.6833991770025765
+ ],
+ "by_group": {
+  "complete_coverage": {
+   "subjects": [
+    "F03",
+    "F05",
+    "F06",
+    "M03",
+    "M07",
+    "M09"
+   ],
+   "trials": 30,
+   "success": 19,
+   "success_rate": 0.6333333333333333,
+   "success_ci95": [
+    0.43855984901195755,
+    0.8007013749879655
+   ]
+  },
+  "coverage_limited": {
+   "subjects": [
+    "F02",
+    "M01",
+    "M04"
+   ],
+   "trials": 15,
+   "success": 5,
+   "success_rate": 0.3333333333333333,
+   "success_ci95": [
+    0.11824110336688091,
+    0.6161962674588458
+   ]
+  }
+ },
+ "per_subject": {
+  "F02": [
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "F03": [
+   false,
+   true,
+   true,
+   true,
+   true
+  ],
+  "F05": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "F06": [
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "M01": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "M03": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "M04": [
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "M07": [
+   true,
+   true,
+   true,
+   true,
+   true
+  ],
+  "M09": [
+   false,
+   false,
+   false,
+   false,
+   false
+  ]
+ },
+ "first_attempt_success_rate": 0.4666666666666667,
+ "abandoned_timeout": 20,
+ "retries": 24,
+ "time_s": {
+  "p50": 17.88351546912454,
+  "p95": 65.79966466104608,
+  "max": 76.25875174589456
+ },
+ "server_s_p95": 0.5919052935903892,
+ "failure_reasons": {
+  "capture_timeout:": 41,
+  "rejected:denied": 3,
+  "rejected:retry": 1
+ },
+ "min_cos": {
+  "p1": 0.6639205425977707,
+  "p5": 0.7107783645391464,
+  "p50": 0.7832614779472351
+ },
+ "targets": {
+  "success_rate": 0.99,
+  "time_p95_s": 20.0
+ },
+ "wall_s": 2477.1356539726257
+}
