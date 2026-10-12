@@ -7,6 +7,7 @@
     $D python -m eval.onen.run digiface                  # crops of the DigiFace images the protocol selected
     $D python -m eval.onen.run embed --model kprpe_vitb_wf12m [--part 0/2]
     $D python -m eval.onen.run evaluate --model kprpe_vitb_wf12m   # -> reports/E2_1N/<model>/results.json
+    $D python -m eval.onen.run capacity --model adaface_ir101_wf12m --gallery 100000   # -> capacity_100000.json
     $D python -m eval.onen.run e6 --models kprpe_vitb_wf12m insightface_r50_wf600k   # -> reports/E6_alignment/
     $D python -m eval.onen.run summary                   # -> reports/E2_1N/summary.md
     $D python -m eval.onen.run all --models ...          # all of the above, in order
@@ -538,6 +539,65 @@ def cmd_evaluate(a):
         evaluate_model(m, a.boot, a.boot_small)
 
 
+def cmd_capacity(a):
+    """Operating point for a smaller maximum gallery (customer decision 2026-10-11: at most 100,000 customers x 4).
+    Threshold = model-based FPIR 1e-6 at G x 4 templates from the real-face impostor tail (GPD), as done for 1M;
+    measured at that threshold on the smallest measured gallery with >= G subjects (a superset: conservative)."""
+    G, n_tpl = a.gallery, a.gallery * TARGET_TPL
+    for model in a.models:
+        h = np.load(WORK / "emb" / model / "impostor_hist.npz")
+        real = metrics.ImpostorTail(h[f"{PRIMARY}__celeba"] + h[f"{PRIMARY}__ffhq"])
+        gals = sorted((g["subjects"], g["distractor_subjects"])
+                      for g in json.loads((REPORT / model / "results.json").read_text())["galleries"])
+        n_meas, D = next((n, d) for n, d in gals if n >= G)
+        raw = {v: dict(np.load(WORK / "emb" / model / f"searches_{D}_{v}.npz")) for v in ("single", "group3")}
+        ext = metrics.extrapolate(real, raw["single"]["mate"], n_tpl, TARGET_FPIR, MARGINS)
+        t_op = float(np.ceil(ext["threshold"] * 100) / 100)               # rounded up, as for the 1M recommendation
+        res = {"experiment": "E2_capacity", "model": model, "created": _now(), "max_gallery_subjects": G,
+               "templates_per_subject": TARGET_TPL, "target_fpir": TARGET_FPIR, "extrapolation": ext,
+               "recommended": {"FA_T_ID": t_op, "FA_MARGIN": 0.1},
+               "measured_gallery_subjects": n_meas,
+               "measured_at_recommended": {v: operating_point(r, t_op, 0.1) for v, r in raw.items()},
+               "tradeoff": []}
+        for t in np.round(np.arange(0.50, 0.6201, 0.01), 2):
+            row = {"threshold": float(t), "fpir_model": float(metrics.fpir_model(real.p(t), n_tpl))}
+            for v, r in raw.items():
+                o = operating_point(r, float(t), 0.1)
+                row[v] = {k: o[k] for k in ("fp", "n_nonmated", "fnir", "fnir_ci95", "misid")}
+            res["tradeoff"].append(row)
+        out = REPORT / model / f"capacity_{G}.json"
+        out.write_text(json.dumps(res, indent=1, default=_json) + "\n")
+        m = res["measured_at_recommended"]
+        print(f"[{model}] G={G}x{TARGET_TPL}: t(FPIR 1e-6)={ext['threshold']:.4f} -> T={t_op}; measured on {n_meas}: "
+              f"FP {m['single']['fp']}/{m['single']['n_nonmated']}, FNIR single {m['single']['fnir']:.4f} "
+              f"group3 {m['group3']['fnir']:.4f} {m['group3']['fnir_ci95']} -> {out}", flush=True)
+
+
+def cmd_export_gallery(a):
+    """Gallery for the deployed stack: the first --subjects E2 gallery subjects in E2 order (CelebA enrolled, then FFHQ
+    and DigiFace distractors by order), real-face templates of the same recognizer, minus the CelebA identities that the
+    load test (E9) and the security tests (E11) enrol or use as unregistered people -> data/tmp/gallery_<n>.npz."""
+    import sys
+    sys.path.insert(0, "scripts")
+    from loadgen import identities
+    t = load_protocol()
+    E = gather(a.model, t)
+    used = identities(0, 200, 100, 6) + identities(1234, 3, 0, 12)   # scripts/loadgen.py setup, tests/test_e2e_real.py
+    skip = {f"celeba:{i}" for i, _, _ in used}
+    rows = t[t.role.isin(["template", "distractor"]) & ~t.subject.isin(skip)]
+    first = rows.groupby("subject").order.first().sort_values(kind="stable")     # templates (-1) first, then by order
+    keep = first.index[:a.subjects]
+    rows = rows[rows.subject.isin(keep)]
+    rows = rows.assign(k=pd.Categorical(rows.subject, categories=keep, ordered=True)).sort_values("k", kind="stable")
+    owner = rows.k.cat.codes.to_numpy().astype(np.int32)
+    account = np.array(["gallery-" + s.replace(":", "-") for s in keep])
+    out = Path(f"data/tmp/gallery_{a.subjects}.npz")
+    np.savez(out, account=account, tpl=l2n(E[rows.index.to_numpy()]), owner=owner,
+             model=a.model, align="arcface_norm_crop_112", calib="photo-2d")
+    print(out, len(account), "subjects", len(owner), "templates",
+          pd.Series(keep).str.split(":").str[0].value_counts().to_dict(), f"(excluded {len(skip)} E9/E11 identities)")
+
+
 # ------------------------------------------------------------------------------------------------ E6
 E6 = {"seed": 1, "enrolled": 400, "nonenrolled": 400}  # FaRL (2 passes of ViT-B/448 per image) dominates the cost
 
@@ -662,8 +722,8 @@ def cmd_e6_evaluate(a):
 # ------------------------------------------------------------------------------------------------ CLI
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=["align", "protocol", "digiface", "embed", "evaluate", "e6-align", "e6-embed",
-                                    "e6-evaluate", "summary"])
+    ap.add_argument("cmd", choices=["align", "protocol", "digiface", "embed", "evaluate", "capacity", "export-gallery", "e6-align",
+                                    "e6-embed", "e6-evaluate", "summary"])
     ap.add_argument("--datasets", nargs="+", default=["celeba", "ffhq"])
     ap.add_argument("--model")
     ap.add_argument("--models", nargs="+", default=MODELS)
@@ -677,11 +737,13 @@ def main(argv=None):
     ap.add_argument("--variant", choices=["farl", "scrfd320"], default="farl", help="e6-*: alignment compared to SCRFD")
     ap.add_argument("--boot", type=int, default=1000)
     ap.add_argument("--boot-small", type=int, default=200)
+    ap.add_argument("--gallery", type=int, default=100_000, help="capacity: maximum gallery (subjects)")
+    ap.add_argument("--subjects", type=int, default=100_000, help="export-gallery: subjects to export")
     a = ap.parse_args(argv)
     if a.model:
         a.models = [a.model]
     {"align": cmd_align, "protocol": cmd_protocol, "digiface": cmd_digiface, "embed": cmd_embed,
-     "evaluate": cmd_evaluate, "e6-align": cmd_e6_align, "e6-embed": cmd_e6_embed, "e6-evaluate": cmd_e6_evaluate,
+     "evaluate": cmd_evaluate, "capacity": cmd_capacity, "export-gallery": cmd_export_gallery, "e6-align": cmd_e6_align, "e6-embed": cmd_e6_embed, "e6-evaluate": cmd_e6_evaluate,
      "summary": lambda a: __import__("eval.onen.report", fromlist=["main"]).main()}[a.cmd](a)
 
 
