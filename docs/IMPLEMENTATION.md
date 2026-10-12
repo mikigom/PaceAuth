@@ -36,6 +36,7 @@ do not silently change a contract.
 | Model wrappers | `faceauth/models/{scrfd,headpose,farl,recog,pad}.py` | terminal + engine |
 | Sensor simulator + attacks | `faceauth/sim/` | terminal sim, tests, PAD training |
 | Terminal (guidance + device client) | `faceauth/terminal/` | terminal sim |
+| Kiosk screen (replay of a recorded run) + demo video | `ui/`, `scripts/demo_record.py`, `scripts/render_video.py` | browser / `faceauth-video:dev` |
 | Engine (GPU inference service) | `faceauth/engine/` | central GPU |
 | Search (FAISS exact) | `faceauth/search/` | central GPU |
 | KMS | `faceauth/kms/` | separate service |
@@ -157,6 +158,15 @@ signed with the account service key (simulated; private key `secrets/account.key
 7. Session consumption + decision + approval insert + audit are one transaction (`UPDATE sessions ... WHERE
    consumed_at IS NULL AND expires_at > now() RETURNING` — 0 rows => replay -> reject).
 Fail closed: any dependency error (DB, engine, search, KMS) => reject/503, never a relaxed path.
+
+### Enrollment guidance (terminal, `faceauth/terminal/guide.py`)
+Default `circle` mode (Face ID style): "look straight" until C holds its frames, then ONE instruction (move the head
+slowly around) while a 60-tick ring lights wherever the head direction passed (quality ok, normalised radius >= 0.85
+of the yaw 25 / pitch 15 ellipse) and over the whole arc of every completed bin. The bins below still decide
+completion; when the ring is >= 90% full for 2 s, or nothing new was covered for 3 s, the prompt names the missing
+direction. `steps` mode (accessibility option) prompts one direction at a time. Hands-free authentication trigger:
+`faceauth/terminal/proximity.py` (depth-measured face distance in 400-800 mm, one face, frontal, quality ok, 3
+consecutive analysed frames; the session exists before the authentication frames are captured).
 
 ### Enrollment policy
 Account assertion valid & bound to the session; consent version == `FA_CONSENT_VERSION`; every frame `ok` and

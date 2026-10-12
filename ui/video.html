@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>FaceAuth 시연 영상</title>
+<link rel="stylesheet" href="kiosk.css">
+<style>
+  :root { --bg: #04060b; --fg: #f5f5f7; --muted: #98989d; --blue: #0a84ff; --green: #30d158; --red: #ff453a;
+    --amber: #ffd60a; --card: rgba(255, 255, 255, .055); --line: rgba(255, 255, 255, .12); }
+  html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+  body { font-family: "Noto Sans CJK KR", "Noto Sans KR", sans-serif; color: var(--fg); }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden;
+    background: radial-gradient(1300px 900px at 28% 18%, #0d1a35 0%, #060a14 55%, #04060b 100%); }
+  .scene { position: absolute; inset: 0; display: none; }
+  .abs { position: absolute; }
+  .kicker { font-size: 22px; color: var(--blue); font-weight: 700; letter-spacing: .14em; }
+  .h2 { font-size: 52px; font-weight: 700; line-height: 1.2; margin-top: 10px; }
+  .lead { font-size: 26px; color: #c7c7cc; line-height: 1.55; }
+  .muted { color: var(--muted); }
+  .num { font-variant-numeric: tabular-nums; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; }
+  .caption { font-size: 17px; color: var(--muted); }
+  /* title */
+  .t-ring { position: absolute; left: 810px; top: 150px; width: 300px; height: 300px; }
+  .t-name { position: absolute; left: 0; right: 0; top: 500px; text-align: center; font-size: 110px; font-weight: 700; letter-spacing: -.01em; }
+  .t-sub { position: absolute; left: 0; right: 0; top: 655px; text-align: center; font-size: 38px; color: #d1d1d6; }
+  .t-meta { position: absolute; left: 0; right: 0; top: 735px; text-align: center; font-size: 24px; color: var(--muted); }
+  .t-bars { position: absolute; left: 560px; width: 800px; top: 850px; display: flex; gap: 16px; justify-content: center; }
+  .t-bars div { padding: 10px 26px; border-radius: 999px; font-size: 20px; font-weight: 700; border: 1px solid var(--line); }
+  /* requirement cards */
+  .rq { position: absolute; top: 420px; width: 390px; height: 300px; padding: 36px 34px; box-sizing: border-box; }
+  .rq b { display: block; font-size: 60px; line-height: 1.1; }
+  .rq span { display: block; margin-top: 18px; font-size: 24px; color: #c7c7cc; line-height: 1.5; }
+  /* architecture */
+  .node { position: absolute; width: 270px; height: 128px; box-sizing: border-box; padding: 20px 22px; background: #0e1526; }
+  .node.hot { border-color: rgba(10, 132, 255, .9); box-shadow: 0 0 30px rgba(10, 132, 255, .35); }
+  .node b { display: block; font-size: 25px; }
+  .node span { display: block; margin-top: 8px; font-size: 18px; color: #aeaeb2; line-height: 1.4; }
+  .node.gpu { border-color: rgba(48, 209, 88, .45); }
+  .arch-svg { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+  .pkt-label { position: absolute; left: 0; right: 0; top: 820px; text-align: center; font-size: 28px; color: #d6e8ff; }
+  .pkt-label b { color: #64a8ff; margin-right: 12px; }
+  .notes { position: absolute; left: 140px; right: 140px; top: 905px; display: flex; gap: 20px; }
+  .notes div { flex: 1; padding: 18px 22px; font-size: 19px; color: #d1d1d6; line-height: 1.45; }
+  /* side panel next to a kiosk */
+  .side { position: absolute; left: 900px; top: 110px; width: 900px; }
+  .bul { margin-top: 30px; }
+  .bul div { position: relative; padding-left: 34px; margin-top: 18px; font-size: 25px; color: #d1d1d6; line-height: 1.45; }
+  .bul div:before { content: ""; position: absolute; left: 4px; top: 14px; width: 12px; height: 12px; border-radius: 50%; background: var(--blue); }
+  .grid9 { display: grid; grid-template-columns: repeat(3, 118px); gap: 12px; margin-top: 18px; }
+  .grid9 div { height: 96px; border-radius: 18px; background: rgba(255, 255, 255, .05); border: 1px solid var(--line);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 18px; color: #aeaeb2; }
+  .grid9 div i { font-style: normal; font-size: 22px; letter-spacing: 4px; color: #48484a; margin-top: 6px; }
+  .grid9 div.full { border-color: rgba(48, 209, 88, .7); background: rgba(48, 209, 88, .12); color: #fff; }
+  .grid9 div.full i, .grid9 div i.on { color: var(--green); }
+  .srv { margin-top: 28px; padding: 22px 26px; font-size: 22px; line-height: 1.55; }
+  .srv b { color: var(--green); }
+  /* montage */
+  .mini { position: absolute; top: 300px; width: 540px; height: 960px; transform-origin: 0 0; }
+  .mini-label { position: absolute; top: 862px; width: 302px; text-align: center; font-size: 22px; }
+  .counter { position: absolute; right: 120px; top: 120px; text-align: right; }
+  .counter b { display: block; font-size: 92px; line-height: 1; margin-top: 10px; }
+  /* operator panel */
+  .op { position: absolute; left: 790px; top: 60px; width: 1050px; height: 960px; box-sizing: border-box; padding: 34px 40px; }
+  .op-k { font-size: 18px; color: var(--amber); font-weight: 700; letter-spacing: .12em; }
+  .op-t { font-size: 40px; font-weight: 700; margin-top: 6px; }
+  .op-sensors { display: flex; gap: 18px; margin-top: 26px; }
+  .op-sensors figure { margin: 0; width: 310px; }
+  .op-sensors img { width: 310px; height: 232px; border-radius: 14px; display: block; background: #000; object-fit: cover; }
+  .op-sensors figcaption { margin-top: 8px; font-size: 17px; color: var(--muted); }
+  .op-trig { margin-top: 22px; padding: 16px 20px; font-size: 21px; line-height: 1.45; border-radius: 16px; background: rgba(255, 255, 255, .04); }
+  .op-steps { display: flex; gap: 10px; margin-top: 18px; }
+  .op-steps div { flex: 1; padding: 14px 8px; border-radius: 14px; text-align: center; font-size: 18px; background: rgba(255, 255, 255, .04);
+    border: 1px solid var(--line); color: #8e8e93; }
+  .op-steps div.pass { border-color: rgba(48, 209, 88, .7); color: #fff; background: rgba(48, 209, 88, .12); }
+  .op-steps div.fail { border-color: rgba(255, 69, 58, .8); color: #fff; background: rgba(255, 69, 58, .16); }
+  .op-steps div.skip { opacity: .35; }
+  .op-score { margin-top: 22px; }
+  .bar { position: relative; height: 22px; border-radius: 11px; background: #1c1c1e; margin-top: 12px; }
+  .bar .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 11px; }
+  .bar .thr { position: absolute; top: -10px; bottom: -10px; width: 3px; background: var(--amber); }
+  .bar .thr2 { position: absolute; top: -4px; bottom: -4px; width: 3px; background: #8e8e93; }
+  .scale { position: relative; height: 22px; font-size: 15px; color: #636366; margin-top: 8px; }
+  .scale span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  .op-line { font-size: 21px; margin-top: 12px; line-height: 1.5; }
+  .op-foot { position: absolute; left: 40px; right: 40px; bottom: 30px; font-size: 19px; color: #aeaeb2; line-height: 1.5; }
+  .tag { display: inline-block; padding: 3px 12px; border-radius: 8px; font-size: 18px; font-weight: 700; margin-right: 8px; }
+  .tag.g { background: rgba(48, 209, 88, .2); color: var(--green); }
+  .tag.r { background: rgba(255, 69, 58, .2); color: var(--red); }
+  .tag.b { background: rgba(10, 132, 255, .2); color: #64a8ff; }
+  /* KPI */
+  .kpi { position: absolute; width: 520px; height: 230px; box-sizing: border-box; padding: 28px 30px; }
+  .kpi b { display: block; font-size: 54px; line-height: 1.1; }
+  .kpi span { display: block; margin-top: 12px; font-size: 21px; color: #c7c7cc; line-height: 1.45; }
+  .kpi em { font-style: normal; font-size: 17px; color: var(--muted); display: block; margin-top: 6px; word-break: keep-all; }
+  .lim { position: absolute; left: 160px; width: 1600px; padding: 26px 32px; box-sizing: border-box; font-size: 26px; line-height: 1.5; }
+  .lim b { color: var(--amber); }
+  .end { position: absolute; left: 0; right: 0; text-align: center; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="../data/demo/timeline.js"></script>
+<script src="kiosk.js"></script>
+<script>
+"use strict";
+const { clamp, ease } = Kiosk;
+const TL = window.TIMELINE, META = TL.meta, SEGS = TL.segments;
+const T_ID = META.thresholds.FA_T_ID, MARGIN = META.thresholds.FA_MARGIN;
+const fmt = (n) => Math.round(n).toLocaleString("en-US");
+const stage = document.getElementById("stage");
+const enrolls = Object.fromEntries(SEGS.filter((s) => s.type === "enroll").map((s) => [s.user, s]));
+const auths = SEGS.filter((s) => s.type === "auth");
+const live = (u) => auths.find((s) => s.user === u && s.kind === "live");
+const mask = auths.find((s) => s.kind !== "live");
+const strangers = auths.filter((s) => s.user.startsWith("미등록자"));
+const scenes = [];
+const FADE = 0.45;
+
+function scene(dur, html, update) {
+  const el = document.createElement("div");
+  el.className = "scene";
+  el.innerHTML = html;
+  stage.appendChild(el);
+  const s = { dur, el, update, q: (sel) => el.querySelector(sel), qa: (sel) => [...el.querySelectorAll(sel)] };
+  scenes.push(s);
+  return s;
+}
+function reveal(node, lt, t0, d = 0.6, dy = 26) {      // fade + rise in at t0
+  const p = ease((lt - t0) / d);
+  node.style.opacity = p.toFixed(3);
+  node.style.transform = `translateY(${((1 - p) * dy).toFixed(1)}px)`;
+}
+function ringSVG(cls, style) {
+  let h = `<svg class="${cls}" style="${style || ""}" viewBox="-100 -100 200 200">`;
+  for (let i = 0; i < 60; i++) {
+    const phi = (180 - (i + 0.5) * 6) * Math.PI / 180, c = Math.cos(phi), s = -Math.sin(phi);
+    h += `<line x1="${(80 * c).toFixed(2)}" y1="${(80 * s).toFixed(2)}" x2="${(96 * c).toFixed(2)}" y2="${(96 * s).toFixed(2)}" stroke="#3a3a3c" stroke-width="3" stroke-linecap="round"/>`;
+  }
+  return h + "</svg>";
+}
+function kioskAt(parent, x, y, scale) {
+  const host = document.createElement("div");
+  host.style.cssText = `position:absolute;left:${x}px;top:${y}px;transform:scale(${scale});transform-origin:0 0`;
+  parent.appendChild(host);
+  return Kiosk.build(host);
+}
+const seconds = (s) => `${s.toFixed(1)} s`;
+
+// ------------------------------------------------------------------ 1. title
+{
+  const s = scene(6.5, `
+    ${ringSVG("t-ring")}
+    <div class="t-name">FaceAuth</div>
+    <div class="t-sub">RGB · Depth · IR 1:N 얼굴 인증 시스템</div>
+    <div class="t-meta">시제품 시연 · 하드웨어를 뺀 전 구간 구현 · 실제 스택에서 녹화한 장면</div>
+    <div class="t-bars"><div style="color:#fff">RGB</div><div style="color:#ff9f0a">Depth</div><div style="color:#bf5af2">IR</div></div>`,
+    (lt, s) => {
+      s.qa(".t-ring line").forEach((l, i) => {
+        const on = lt > 0.3 + i * 0.03;
+        l.setAttribute("stroke", on ? "#30d158" : "#3a3a3c");
+      });
+      reveal(s.q(".t-name"), lt, 1.6, 0.8);
+      reveal(s.q(".t-sub"), lt, 2.2);
+      reveal(s.q(".t-meta"), lt, 2.7);
+      reveal(s.q(".t-bars"), lt, 3.1);
+    });
+}
+
+// ------------------------------------------------------------------ 2. requirements
+{
+  const cards = [
+    ["10만 명", "등록 고객 최대<br>고객당 템플릿 4개"],
+    ["100 /초", "피크 인증 세션<br>p95 ≤ 1.5 s · p99 ≤ 2.5 s"],
+    ["40–80 cm", "다가오면 자동 인식<br>버튼·카드 없음"],
+    ["3중 센서", "RGB · Depth · IR로<br>사진·화면·마스크 차단"],
+  ];
+  scene(9, `
+    <div class="abs" style="left:150px;top:150px"><div class="kicker">요구사항 · RFP</div>
+      <div class="h2">10만 명 가운데 한 사람을,<br>다가오기만 하면 알아본다</div></div>
+    ${cards.map((c, i) => `<div class="rq card" style="left:${150 + i * 410}px"><b class="num">${c[0]}</b><span>${c[1]}</span></div>`).join("")}
+    <div class="abs lead" style="left:150px;top:790px;width:1620px">정확도 목표: 미등록자를 등록자로 오인하는 비율(FPIR) ≤ 10<sup>−6</sup>에서
+      등록자를 찾지 못하는 비율(FNIR) ≤ 1%</div>`,
+    (lt, s) => {
+      reveal(s.q(".abs"), lt, 0.2);
+      s.qa(".rq").forEach((c, i) => reveal(c, lt, 1.0 + i * 0.35));
+      reveal(s.q(".lead"), lt, 3.2);
+    });
+}
+
+// ------------------------------------------------------------------ 3. architecture
+{
+  const N = {
+    T: [110, 470, "키오스크 단말", "검출 · 포즈 · 품질<br>근접 트리거 · 패킷 서명"],
+    G: [470, 470, "게이트웨이", "mTLS · TLS 1.3<br>단말 인증서 필수"],
+    A: [830, 470, "API ×2", "세션 · 정책 · 판정<br>해시 체인 감사 로그"],
+    E: [1190, 290, "엔진 ×2 · GPU", "SCRFD · 6DRepNet360<br>PAD · AdaFace IR101"],
+    S: [1190, 650, "검색 ×2 · GPU", "FAISS 전수 검색<br>10만 명 × 4 템플릿"],
+    D: [1550, 290, "PostgreSQL ×3", "동기 복제 (ANY 1)<br>RPO 0"],
+    K: [1550, 650, "KMS", "고객별 암호화 키<br>탈퇴 시 키 파기"],
+  };
+  const c = (k) => [N[k][0] + 135, N[k][1] + 64];
+  const path = [["T", "G", "서명된 RGB·Depth·IR 3프레임"], ["G", "A", ""], ["A", "E", "PAD · 특징 추출"], ["E", "A", ""],
+    ["A", "S", "1:N 검색 (임계값 + 2위와 차이)"], ["S", "A", ""], ["A", "D", "판정 · 감사 기록"], ["D", "A", ""],
+    ["A", "G", ""], ["G", "T", "승인 토큰 (Ed25519, 30초)"]];
+  const edges = [["T", "G"], ["G", "A"], ["A", "E"], ["A", "S"], ["A", "D"], ["S", "K"]];
+  const s = scene(13, `
+    <div class="abs" style="left:110px;top:90px"><div class="kicker">시스템 구성</div><div class="h2">단말에서 승인 토큰까지</div></div>
+    <svg class="arch-svg">${edges.map(([a, b]) => `<line x1="${c(a)[0]}" y1="${c(a)[1]}" x2="${c(b)[0]}" y2="${c(b)[1]}" stroke="rgba(255,255,255,.18)" stroke-width="3"/>`).join("")}
+      </svg>
+    ${Object.entries(N).map(([k, n]) => `<div class="node card ${"ES".includes(k) ? "gpu" : ""}" data-k="${k}" style="left:${n[0]}px;top:${n[1]}px"><b>${n[2]}</b><span>${n[3]}</span></div>`).join("")}
+    <svg class="arch-svg"><circle class="pkt" r="12" fill="#0a84ff"/></svg>
+    <div class="pkt-label" style="opacity:0"></div>
+    <div class="notes"><div class="card">원본 영상은 메모리에서만 처리하고 저장하지 않음</div>
+      <div class="card">템플릿은 고객별 키로 암호화 · 복호화는 검색 복제본만</div>
+      <div class="card">서명된 모델만 적재 · 해시 불일치·CPU 대체 실행 거부</div></div>`,
+    (lt, s) => {
+      reveal(s.q(".abs"), lt, 0.2);
+      s.qa(".node").forEach((n, i) => reveal(n, lt, 0.6 + i * 0.18, 0.5, 18));
+      const t0 = 2.4, hop = 0.62, k = Math.floor((lt - t0) / hop), f = ease(((lt - t0) / hop) - k);
+      const pkt = s.q(".pkt"), lab = s.q(".pkt-label");
+      s.qa(".node").forEach((n) => n.classList.remove("hot"));
+      if (lt < t0 || k >= path.length) {
+        pkt.setAttribute("opacity", 0);
+        lab.style.opacity = lt < t0 ? 0 : Math.max(0, 1 - (lt - t0 - path.length * hop) / 0.5);
+      } else {
+        const [a, b] = path[k], p = [c(a)[0] + (c(b)[0] - c(a)[0]) * f, c(a)[1] + (c(b)[1] - c(a)[1]) * f];
+        pkt.setAttribute("cx", p[0]); pkt.setAttribute("cy", p[1]); pkt.setAttribute("opacity", 1);
+        s.q(`.node[data-k="${f < 0.5 ? a : b}"]`).classList.add("hot");
+        const steps = path.filter((x) => x[2]), cur = path.slice(0, k + 1).filter((x) => x[2]).length;
+        lab.innerHTML = cur ? `<b>${cur} / ${steps.length}</b>${steps[cur - 1][2]}` : "";
+        lab.style.opacity = cur ? 1 : 0;
+      }
+      s.qa(".notes .card").forEach((n, i) => reveal(n, lt, 9.0 + i * 0.3));
+    });
+}
+
+// ------------------------------------------------------------------ 4. enrollment of A (Face ID-style sweep)
+function enrollPanel(seg, title, lead) {
+  return `<div class="side"><div class="kicker">${title}</div><div class="h2">${lead}</div>
+    <div class="bul"><div>안내는 한 문장: 고개를 천천히 돌려 원을 완성</div>
+      <div>단말이 초당 10프레임 포즈·품질을 판정해 지나간 방향의 눈금을 채움</div>
+      <div>정면 + 8방향 × 2장을 모으면 완료 · 막히면 빠진 방향만 안내</div></div>
+    <div class="caption" style="margin-top:34px">서버가 요구하는 9방향 · 방향별 2장 (사용자 기준)</div>
+    <div class="grid9">${["UL", "U", "UR", "L", "C", "R", "DL", "D", "DR"].map((d) =>
+      `<div data-d="${d}">${{ C: "정면", L: "왼쪽", R: "오른쪽", U: "위", D: "아래", UL: "왼쪽 위", UR: "오른쪽 위", DL: "왼쪽 아래", DR: "오른쪽 아래" }[d]}<i>●●</i></div>`).join("")}</div>
+    <div class="srv card"></div></div>`;
+}
+function updateGrid(s, st) {
+  s.qa(".grid9 div").forEach((g) => {
+    const n = (st.coverage || {})[g.dataset.d] || 0;
+    g.classList.toggle("full", n >= 2);
+    g.querySelector("i").innerHTML = `<span style="color:${n >= 1 ? "#30d158" : "#48484a"}">●</span><span style="color:${n >= 2 ? "#30d158" : "#48484a"}">●</span>`;
+  });
+}
+function enrollServerText(seg) {
+  const r = seg.server.response;
+  return `<b>서버 재검증 통과</b> · 응답 ${seconds(seg.server.latency_s)}<br>9방향 포즈 · 품질 · PAD · 동일인 · 중복 확인 →
+    템플릿 4개를 고객별 키로 암호화 저장<br><span class="muted">상태 ${r.status} · 등록 시간(센서) ${seconds(seg.sensor_s)}</span>`;
+}
+{
+  const seg = enrolls.A, speed = 1.6, end = seg.ticks[seg.ticks.length - 1].t;
+  const s = scene(1.0 + end / speed + Math.max(seg.server.latency_s, 0.9) + 3.2, enrollPanel(seg, "1 · 등록", "Face ID처럼, 고개를 한 바퀴"),
+    (lt, s) => {
+      const ts = Math.max(0, (lt - 1.0) * speed);
+      const st = Kiosk.enrollState(seg, ts, META.device);
+      Kiosk.render(s.k, st);
+      reveal(s.q(".side"), lt, 0.1);
+      updateGrid(s, st);
+      const srv = s.q(".srv");
+      srv.innerHTML = enrollServerText(seg);
+      srv.style.opacity = st.phase === "done" ? ease((ts - end - Math.max(seg.server.latency_s, 0.9)) / 0.5) : 0;
+    });
+  s.k = kioskAt(s.el, 230, 60, 1.0);
+  const tag = document.createElement("div");
+  tag.className = "abs caption";
+  tag.style.cssText = "left:230px;top:1032px;width:540px;text-align:center";
+  tag.textContent = `실제 녹화 ${seconds(seg.sensor_s)} · ${speed}배속 재생`;
+  s.el.appendChild(tag);
+}
+
+// ------------------------------------------------------------------ 5. more users enroll
+{
+  const users = ["B", "C", "D"], play = 6.0;
+  const base = META.gallery.subjects - 3;               // A is already enrolled
+  const s = scene(play + 4.2, `
+    <div class="abs" style="left:150px;top:110px"><div class="kicker">2 · 여러 명 등록</div>
+      <div class="h2">10만 명 갤러리에 합류</div>
+      <div class="lead" style="margin-top:14px">사용자 B · C · D 등록 (실제 진행 시간을 ${play}초로 압축)</div></div>
+    <div class="counter"><div class="caption">1:N 검색 대상 고객 수</div><b class="num">0</b>
+      <div class="caption" style="margin-top:10px">실제 얼굴 템플릿 ${fmt(META.gallery.templates)}개</div></div>
+    ${users.map((u, i) => `<div class="mini-label" style="left:${300 + i * 470}px">${Kiosk.NAMES[u]} <span class="muted num"></span></div>`).join("")}`,
+    (lt, s) => {
+      reveal(s.q(".abs"), lt, 0.1);
+      let done = 0;
+      users.forEach((u, i) => {
+        const seg = enrolls[u], end = seg.ticks[seg.ticks.length - 1].t, ts = Math.max(0, (lt - 0.8)) * end / play;
+        const st = Kiosk.enrollState(seg, ts, META.device);
+        Kiosk.render(s.k[i], st);
+        if (st.phase === "done") done++;
+        s.qa(".mini-label span")[i].innerHTML = st.phase === "done" ? `· ${seconds(seg.sensor_s)}` : "";
+      });
+      s.q(".counter b").innerHTML = fmt(base + done);
+    });
+  s.k = users.map((u, i) => kioskAt(s.el, 300 + i * 470, 300, 0.56));
+}
+
+// ------------------------------------------------------------------ 6-9. hands-free identification
+const STEPS_LABEL = ["서명·세션", "센서 동기·품질", "PAD", "1:N 식별", "계정·권한"];
+function opPanel(kicker, title) {
+  return `<div class="op card"><div class="op-k">${kicker}</div><div class="op-t">${title}</div>
+    <div class="op-sensors"><figure><img class="op-rgb"><figcaption>RGB 640×480</figcaption></figure>
+      <figure><img class="op-dep"><figcaption>Depth (가까울수록 붉게)</figcaption></figure>
+      <figure><img class="op-ir"><figcaption>IR</figcaption></figure></div>
+    <div class="op-trig"></div>
+    <div class="op-steps">${STEPS_LABEL.map((x) => `<div>${x}</div>`).join("")}</div>
+    <div class="op-score"></div>
+    <div class="op-foot"></div></div>`;
+}
+const TRIG = { idle: "얼굴 없음 · 대기", far: "얼굴 감지 · 촬영 범위(0.4–0.8 m) 밖", too_close: "너무 가까움",
+  adjust: "범위 안 · 정면/품질 대기", multi: "여러 얼굴 · 대기", ready: "범위 안 · 정면 · 품질 통과" };
+function setImg(img, src) {
+  if (img.dataset.src !== src) { img.src = src; img.dataset.src = src; }
+}
+function updateOp(s, seg, lt, st) {
+  const tk = seg.ticks[clamp(Math.floor(lt * 30), 0, seg.ticks.length - 1)], sv = seg.server;
+  setImg(s.q(".op-rgb"), Kiosk.FRAMES + tk.frame + "_rgb.jpg");
+  setImg(s.q(".op-dep"), Kiosk.FRAMES + tk.frame + "_dep.jpg");
+  setImg(s.q(".op-ir"), Kiosk.FRAMES + tk.frame + "_ir.jpg");
+  const answer = sv.sent_t + sv.latency_s;
+  const dist = tk.distance_mm == null ? "–" : (tk.distance_mm / 1000).toFixed(2) + " m";
+  s.q(".op-trig").innerHTML = lt < sv.trigger_t
+    ? `<span class="tag b">단말</span>근접 트리거: ${TRIG[tk.state] || tk.state} · 깊이 측정 거리 <b class="num">${dist}</b>`
+    : `<span class="tag b">단말</span>범위 안 3프레임 연속 → <b>자동 시작</b> · 3프레임 서명 전송 · 서버 응답 <b class="num">${seconds(sv.latency_s)}</b>`;
+  const steps = s.qa(".op-steps div");
+  sv.checklist.forEach((c, i) => {
+    const shown = lt >= answer + 0.12 * i;
+    steps[i].className = shown ? c.status : "";
+  });
+  const sc = s.q(".op-score"), show = lt >= answer + 0.7;
+  sc.style.opacity = show ? ease((lt - answer - 0.7) / 0.5) : 0;
+  if (sv.top1 != null) {
+    const ok = sv.top1 >= T_ID && sv.top1 - sv.top2 >= MARGIN, col = ok ? "#30d158" : "#ff453a";
+    const w = clamp(sv.top1, 0, 1) * ease((lt - answer - 0.7) / 0.8) * 100;
+    sc.innerHTML = `<div class="op-line">1:N 검색: 등록 고객 ${fmt(META.gallery.subjects)}명 (템플릿 ${fmt(META.gallery.templates)}개) 중 최고 유사도</div>
+      <div class="bar"><div class="fill" style="width:${w.toFixed(2)}%;background:${col}"></div>
+        <div class="thr2" style="left:${(clamp(sv.top2, 0, 1) * 100).toFixed(2)}%"></div>
+        <div class="thr" style="left:${(T_ID * 100).toFixed(2)}%"></div></div>
+      <div class="scale"><span style="left:0;transform:none">0</span><span style="left:${(T_ID * 100).toFixed(2)}%;color:#ffd60a">기준 ${T_ID.toFixed(2)}</span><span style="right:0;left:auto;transform:none">1.0</span></div>
+      <div class="op-line">1위 <b class="num" style="color:${col}">${sv.top1.toFixed(3)}</b> ${sv.top1 >= T_ID ? "≥" : "<"} 기준 ${T_ID.toFixed(2)}
+        · 2위 ${sv.top2.toFixed(3)} · 차이 ${(sv.top1 - sv.top2).toFixed(3)} ${sv.top1 - sv.top2 >= MARGIN ? "≥" : "<"} ${MARGIN.toFixed(2)}</div>
+      <div class="op-line" style="color:${col}">${ok ? "기준을 넘고 2위와도 충분히 달라서 한 사람으로 확정 → 승인"
+        : sv.top1 < T_ID ? `${fmt(META.gallery.subjects)}명 누구와도 기준 미만 → 미등록자로 거절` : "2위와 차이가 작아 모호 → 거절"}</div>`;
+  } else {
+    sc.innerHTML = `<div class="op-line"><span class="tag r">PAD</span>위조 판정 → 1:N 검색 전에 차단 (유사도로 만회 불가)</div>`;
+  }
+  const ext = sv.response.reason, dec = sv.response.decision;
+  const seen = seg.ticks.slice(0, Math.floor(lt * 30) + 1).some((x) => x.state !== "idle");
+  s.q(".op-foot").innerHTML = lt < answer ? `<span class="muted">${seen ? "사람 감지 → 세션·챌린지 발급 · 판정 대기" : "대기 중"}</span>`
+    : dec === "approved"
+      ? `<span class="tag g">approved</span>단말에 승인 토큰 전달 → 로그인 서비스가 서명·만료·단말·행위 검증 → 계정 <b>${sv.login.account}</b> 로그인`
+      : `<span class="tag r">${dec}</span>내부 사유 <b>${sv.internal}</b> → 단말에는 <b>${ext}</b>만 전달 · 점수는 감사 로그에만`;
+}
+function authScene(seg, kicker, title, tail, start = 0) {
+  const sv = seg.server, dur = sv.sent_t + sv.latency_s - start + tail;
+  const s = scene(dur, opPanel(kicker, title), (lt, s) => {
+    const at = lt + start;
+    const st = Kiosk.authState(seg, at, META.device);
+    Kiosk.render(s.k, st);
+    updateOp(s, seg, at, st);
+    reveal(s.q(".op"), lt, 0.05, 0.5, 12);
+  });
+  s.k = kioskAt(s.el, 160, 60, 1.0);
+  return s;
+}
+authScene(live("A"), "3 · 자동 인식 · 로그인", "다른 날 다시 온 사용자 A", 5.2);
+authScene(live("D"), "3 · 자동 인식 · 로그인", "사용자 D — 다른 사람으로 혼동하지 않음", 4.8, 0.8);
+strangers.forEach((seg, i) => authScene(seg, "4 · 미등록자 거절", `등록하지 않은 사람 ${i + 1}`, 4.6, i ? 0.8 : 0));
+authScene(mask, "5 · 위조 차단", "사용자 D 얼굴의 실리콘 마스크", 4.6, 0.8);
+
+// ------------------------------------------------------------------ 10. measured results
+{
+  const k = [
+    ["0 / 98,567", "비동일인 검색 오인식 (운영 임계값 0.57)", "공개 얼굴 14.9만 명 갤러리 실측 · 95% 상한 3.0×10⁻⁵"],
+    ["1.35%", "등록자 미인식 FNIR (웹 사진 3장)", "10만×4 운영점 · 목표 1% 미달 · 현장 데이터 필요"],
+    ["p95 1.16 s", "GPU 1장 · 초당 50세션 종단 지연", "100만 명 갤러리에서 측정 · 100세션/초는 GPU 2장"],
+    ["6–9 s", "DB 장애 자동 전환 RTO · RPO 0", "확인된 쓰기 17,983건 무손실"],
+    ["22 / 22", "실제 스택 보안 시험 통과", "재전송 · 변조 · 주입 · 다중 얼굴 · 잠금"],
+    ["24 / 45", "Face ID 방식 등록 성공 (시뮬레이션 사용자 9명)", "4명은 20/20 · 실패는 녹화에 없는 아래 대각 방향"],
+  ];
+  scene(11, `<div class="abs" style="left:150px;top:100px"><div class="kicker">측정 결과</div><div class="h2">실제 스택에서 잰 숫자</div></div>
+    ${k.map((x, i) => `<div class="kpi card" style="left:${150 + (i % 3) * 560}px;top:${330 + Math.floor(i / 3) * 270}px"><b class="num">${x[0]}</b><span>${x[1]}</span><em>${x[2]}</em></div>`).join("")}`,
+    (lt, s) => { reveal(s.q(".abs"), lt, 0.1); s.qa(".kpi").forEach((n, i) => reveal(n, lt, 0.6 + i * 0.25)); });
+}
+
+// ------------------------------------------------------------------ 11. limits + end
+{
+  const L = [
+    ["1:N 정확도", "FPIR 10⁻⁶에서 FNIR ≤ 1%는 아직 미입증 — 실제 키오스크 촬영 데이터와 약 300만 회 비동일인 검색 필요"],
+    ["위조 방지", "PAD는 합성 데이터로만 검증 — 실센서·실제 마스크 데이터 학습과 ISO/IEC 30107-3 독립 시험 필요"],
+    ["등록", "시뮬레이션 사용자 성공률 53% (목표 99%) — 녹화 데이터의 방향 부족이 주원인, 실사용자 측정 필요"],
+    ["하드웨어", "센서·단말은 시뮬레이터 — 센서 출처 증명(센서 모듈 서명)은 하드웨어 단계 과제"],
+  ];
+  scene(10.5, `<div class="abs" style="left:160px;top:110px"><div class="kicker">남은 과제</div><div class="h2">다음 단계</div></div>
+    ${L.map((x, i) => `<div class="lim card" style="top:${300 + i * 128}px"><b>${x[0]}</b> · ${x[1]}</div>`).join("")}
+    <div class="end caption" style="top:860px">FaceAuth 시제품 · 내부 연구용 · 얼굴 영상: BIWI Kinect Head Pose DB를 센서 시뮬레이터로 렌더링 ·
+      갤러리: CelebA · FFHQ · DigiFace-1M 얼굴 템플릿</div>
+    <div class="end" style="top:930px;font-size:30px;font-weight:700">FaceAuth</div>`,
+    (lt, s) => {
+      reveal(s.q(".abs"), lt, 0.1);
+      s.qa(".lim").forEach((n, i) => reveal(n, lt, 0.6 + i * 0.4));
+      s.qa(".end").forEach((n, i) => reveal(n, lt, 3.0 + i * 0.4));
+    });
+}
+
+// ------------------------------------------------------------------ timeline
+let acc = 0;
+for (const s of scenes) { s.start = acc; acc += s.dur; }
+window.DURATION = acc;
+window.SCENE_TIMES = scenes.map((s) => [+s.start.toFixed(2), +s.dur.toFixed(2)]);
+window.renderAt = async function (t) {
+  for (const s of scenes) {
+    const lt = t - s.start;
+    if (lt < 0 || lt >= s.dur) { s.el.style.display = "none"; continue; }
+    s.el.style.display = "block";
+    s.el.style.opacity = Math.min(1, lt / FADE, (s.dur - lt) / FADE).toFixed(3);
+    s.update(lt, s);
+  }
+  await Kiosk.settle();
+  await Promise.all([...document.images].filter((i) => i.src && !i.complete).map((i) => i.decode().catch(() => {})));
+};
+document.fonts.ready.then(() => { window.renderAt(0).then(() => { window.READY = true; }); });
+</script>
+</body>
+</html>

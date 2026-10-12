@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FaceAuth 키오스크</title>
+<link rel="stylesheet" href="kiosk.css">
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; min-height: 100vh; background: #04060b; color: #f5f5f7; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 22px; font-family: "Noto Sans CJK KR", "Noto Sans KR", sans-serif; }
+  #host { width: 540px; height: 960px; transform-origin: top center; }
+  #cap { font-size: 17px; color: #98989d; text-align: center; max-width: 92vw; padding: 0 16px; }
+</style>
+</head>
+<body>
+<div id="host"></div>
+<div id="cap"></div>
+<script src="../data/demo/timeline.js"></script>
+<script src="kiosk.js"></script>
+<script>
+"use strict";
+// Real-time replay of the recorded scenario (scripts/demo_record.py), looping.
+const TL = window.TIMELINE, host = document.getElementById("host"), k = Kiosk.build(host);
+function fit() {                                   // scale the 540x960 screen to the window
+  const s = Math.min(1, (innerHeight - 90) / 960, (innerWidth - 32) / 540);
+  host.style.transform = `scale(${s})`;
+  host.style.margin = `0 0 ${((s - 1) * 960).toFixed(0)}px`;
+}
+addEventListener("resize", fit);
+fit();
+const plan = TL.segments.map((seg) => seg.type === "enroll"
+  ? { seg, dur: seg.ticks[seg.ticks.length - 1].t + Math.max(seg.server.latency_s, 0.9) + 2.5,
+      cap: `등록 · ${Kiosk.NAMES[seg.user]} (실제 녹화, 센서 시간 ${seg.sensor_s.toFixed(1)} s)` }
+  : { seg, dur: seg.server.sent_t + seg.server.latency_s + 4.5,
+      cap: seg.kind === "live" ? `로그인 시도 · ${Kiosk.NAMES[seg.user] || seg.user}` : `위조 시도 · ${Kiosk.NAMES[seg.user]} 얼굴 마스크` });
+const total = plan.reduce((a, p) => a + p.dur, 0);
+let t0 = null;
+function frame(now) {
+  t0 = t0 ?? now;
+  let t = ((now - t0) / 1000) % total;
+  for (const p of plan) {
+    if (t < p.dur) {
+      const st = p.seg.type === "enroll" ? Kiosk.enrollState(p.seg, t, TL.meta.device) : Kiosk.authState(p.seg, t, TL.meta.device);
+      Kiosk.render(k, st);
+      document.getElementById("cap").textContent = p.cap;
+      break;
+    }
+    t -= p.dur;
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
