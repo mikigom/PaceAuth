@@ -2,8 +2,13 @@ import math
 
 import pytest
 
-from faceauth.terminal.guide import (CENTER_TOL, HINTS, ORDER, PROMPTS, SLOTS, TARGETS, TOL_PITCH, TOL_YAW, Guide,
-                                     direction_of, group_of)
+from faceauth.terminal.guide import (CENTER_TOL, CIRCLE_PROMPT, HINTS, ORDER, PROMPTS, RING_TICKS, SLOTS, TARGETS,
+                                     TOL_PITCH, TOL_YAW, direction_of, group_of, ring_position)
+from faceauth.terminal.guide import Guide as _Guide
+
+
+def Guide(**kw):  # these tests cover the stepwise prompts (accessibility mode); circle mode is tested at the end
+    return _Guide(**{"mode": "steps", **kw})
 
 
 # ---- bins ------------------------------------------------------------------------------------------------
@@ -213,3 +218,95 @@ def test_default_clock_is_used_without_t():
     assert g.feed((0, 0, 0), True, "a", 1.0)["accepted"]
     now[0] = 6.5
     assert g.feed((0, 0, 0), True, "b", 1.0)["timed_out"]
+
+
+# ---- circle mode (default, Face ID-style continuous sweep) --------------------------------------------------
+
+def test_ring_position_puts_targets_evenly_on_the_unit_circle():
+    for name, az in (("L", 0), ("UL", 45), ("U", 90), ("UR", 135), ("R", 180), ("DR", 225), ("D", 270), ("DL", 315)):
+        a, r = ring_position(*TARGETS[name])
+        assert abs((a - az + 180) % 360 - 180) < 1e-6 and abs(r - math.hypot(az % 90 != 0, 1)) < 1e-6, name
+
+
+def _sweep(g, laps=2.0, fps=10.0, period=5.0, ay=27.0, ap=16.0, hold=1.0, t0=0.0):
+    """Look straight for `hold` s, then move the head around an ellipse; returns the last status."""
+    n, st = int((hold + laps * period) * fps), None
+    for i in range(n):
+        t = t0 + i / fps
+        th = 2 * math.pi * max(0.0, t - t0 - hold) / period
+        pose = (0.0, 0.0, 0.0) if t - t0 < hold else (ay * math.cos(th), ap * math.sin(th), 0.0)
+        st = g.feed(pose, True, f"f{i}", 1.0, t=t)
+        if st["done"]:
+            break
+    return st
+
+
+def test_continuous_sweep_completes_enrollment_and_fills_the_ring():
+    g = _Guide()
+    assert g.mode == "circle"
+    first = g.feed((0.0, 0.0, 0.0), True, "f", 1.0, t=0.0)
+    assert first["prompt"] == PROMPTS["C"]                      # look straight first
+    st = _sweep(g, t0=0.1)
+    assert st["done"] and st["prompt"] == HINTS["done"]
+    assert st["ring_frac"] == 1.0 and len(st["ring"]) == RING_TICKS
+    assert all(n == 2 for n, _ in g.coverage().values())        # the server's 9 bins are what completed it
+
+
+def test_after_the_centre_one_instruction_is_given():
+    g = _Guide()
+    for i in range(3):
+        g.feed((0.0, 0.0, 0.0), True, f"c{i}", 1.0, t=i * 0.1)
+    assert g.feed((20.0, 5.0, 0.0), True, "x", 1.0, t=0.5)["prompt"] == CIRCLE_PROMPT
+
+
+def test_small_or_poor_sweeps_light_nothing():
+    g = _Guide()
+    for i in range(50):                                          # radius 0.4 < RING_R_MIN
+        th = 2 * math.pi * i / 50
+        g.feed((10 * math.cos(th), 6 * math.sin(th), 0.0), True, f"s{i}", 1.0, t=i * 0.1)
+    for i in range(50):                                          # big enough but quality not ok
+        th = 2 * math.pi * i / 50
+        g.feed((27 * math.cos(th), 16 * math.sin(th), 0.0), False, f"q{i}", 1.0, t=5 + i * 0.1)
+    assert sum(g.ring) == 0
+
+
+def test_ring_fills_between_consecutive_sweep_frames():
+    g = _Guide()
+    a = g.feed((25.0, 0.0, 0.0), True, "a", 1.0, t=0.0)          # azimuth 0
+    y, p = 25 * math.cos(math.radians(30)), 15 * math.sin(math.radians(30))
+    b = g.feed((y, p, 0.0), True, "b", 1.0, t=0.1)               # azimuth 30: ticks 0..5 lit
+    assert set(range(0, 6)) <= set(b["ring"]) and len(a["ring"]) <= 2
+
+
+def test_full_ring_with_a_missing_direction_names_it():
+    g = _Guide(per_dir=1)
+    for i, name in enumerate(ORDER[:-1]):                        # every bin but DL: their arcs light up
+        g.feed(TARGETS[name] + (0.0,), True, name, 1.0, t=i * 0.1)
+    g.feed((12.5, -13.0, 0.0), True, "a", 1.0, t=1.0)            # azimuth 300, between bins
+    st = g.feed((21.65, -7.5, 0.0), True, "b", 1.0, t=1.1)       # azimuth 330, between bins: 300-330 lit
+    assert st["ring_frac"] == 1.0 and not st["done"] and st["prompt"] == CIRCLE_PROMPT
+    assert g.feed((0.0, 0.0, 0.0), True, "c", 1.0, t=2.0)["prompt"] == CIRCLE_PROMPT
+    assert g.feed((0.0, 0.0, 0.0), True, "c", 1.0, t=3.2)["prompt"] == PROMPTS["DL"]
+
+
+def test_no_progress_names_the_missing_direction():
+    g = _Guide(per_dir=1)
+    g.feed((0.0, 0.0, 0.0), True, "c", 1.0, t=0.0)               # centre done: the sweep starts
+    assert g.feed((5.0, 2.0, 0.0), True, "s", 1.0, t=2.9)["prompt"] == CIRCLE_PROMPT
+    assert g.feed((5.0, 2.0, 0.0), True, "s", 1.0, t=3.1)["prompt"] == PROMPTS["L"]
+    assert g.feed(TARGETS["L"] + (0.0,), True, "l", 1.0, t=3.2)["prompt"] == CIRCLE_PROMPT  # progress again
+
+
+def test_better_frames_in_a_full_bin_are_not_progress():
+    g = _Guide(per_dir=1)
+    g.feed((0.0, 0.0, 0.0), True, "c", 1.0, t=0.0)
+    g.feed(TARGETS["L"] + (0.0,), True, "l", 1.0, t=0.1)
+    for i in range(40):                                          # keeps finding sharper L frames: stalls anyway
+        st = g.feed(TARGETS["L"] + (0.0,), True, f"l{i}", 2.0 + i, t=0.2 + i * 0.1)
+    assert st["accepted"] and st["prompt"] == PROMPTS["UL"]
+
+
+def test_a_completed_bin_lights_its_whole_arc():
+    g = _Guide(per_dir=1)
+    st = g.feed(TARGETS["U"] + (0.0,), True, "u", 1.0, t=0.0)
+    assert set(range(11, 19)) <= set(st["ring"]) and len(st["ring"]) == 8   # azimuth 90 +- 22.5

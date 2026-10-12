@@ -33,7 +33,7 @@ import msgpack  # noqa: E402
 import numpy as np  # noqa: E402
 
 from faceauth.terminal.client import SECRETS, DeviceClient, make_account_assertion, synced_ts  # noqa: E402
-from faceauth.terminal.guide import TARGETS, Guide  # noqa: E402
+from faceauth.terminal.guide import CIRCLE_PROMPT, PROMPTS, TARGETS, Guide  # noqa: E402
 
 GATEWAY, ENGINE = "https://gateway:8443", "http://engine:8001"
 HELD_OUT = ["02", "03", "05", "06", "07", "09", "10", "13", "15", "16", "18", "21", "22"]  # train_pad BIWI test split
@@ -79,21 +79,36 @@ def same_person_min_cos(frames):
     return float((e @ (m / np.linalg.norm(m))).min()), an
 
 
-def capture(sim, pipe, pool, scenes, rng, speed, react, fps, guide, trace=None):
+def capture(sim, pipe, pool, scenes, rng, speed, react, fps, guide, trace=None, on_tick=None):
     """One guided capture. -> (done, sensor seconds, frames kept [(dir, (idx, enc))], ticks).
-    trace: optional dict filled with tick -> BIWI frame id shown (diagnostics)."""
+    trace: optional dict filled with tick -> BIWI frame id shown (diagnostics).
+    on_tick(tick, t, sim_output, analysis, guide_status): optional per-tick callback (demo recording).
+
+    Guide mode "steps": the user turns toward each prompted direction. Mode "circle": the user looks straight, then
+    moves the head around an ellipse (amp x the yaw 25 / pitch 15 targets) at `speed`, a bigger circle on every lap
+    that did not finish; if the kiosk names a missing direction, the user turns there."""
     from faceauth.terminal.pipeline import wire_frame
     head = rng.normal(0, 3, 2).astype(np.float32)                       # starts roughly frontal
     poses = np.stack([p for p, _, _ in pool])
     lo, hi = poses.min(0), poses.max(0)
-    target, since, tick, corr = None, 0.0, 0, np.zeros(2, np.float32)
+    target, since, tick, corr, prompt = None, 0.0, 0, np.zeros(2, np.float32), None
+    th, amp = 0.0, float(rng.uniform(0.85, 1.25))                       # circle phase (rad) and size
     while not (guide.done or guide.timed_out):
         t = tick / fps
         cur = guide.current()
+        if guide.mode == "circle" and len(guide.kept["C"]) >= guide.per_dir:  # follows the instruction shown;
+            cur = "circle" if prompt == CIRCLE_PROMPT else cur if prompt == PROMPTS.get(cur) else target  # hints: carry on
         if cur != target:
             target, since, corr = cur, t, np.zeros(2, np.float32)
         if target is not None and t - since >= react:                  # reacts, then turns toward the target
-            goal = np.asarray(TARGETS[target], np.float32) + corr      # corr: follows the on-screen pose feedback
+            if target == "circle":
+                goal = amp * np.array([25.0 * np.cos(th), 15.0 * np.sin(th)], np.float32)
+                if np.linalg.norm(goal - head) < 6.0:                  # on the circle: keep sweeping
+                    th += speed / fps / (20.6 * amp)                   # 20.6 = rms radius of the 25 x 15 ellipse
+                    if th >= 2 * np.pi:
+                        th, amp = th - 2 * np.pi, min(amp * 1.12, 1.5)
+            else:
+                goal = np.asarray(TARGETS[target], np.float32) + corr  # corr: follows the on-screen pose feedback
             step = goal - head
             dist = float(np.linalg.norm(step))
             head = np.clip(head + step * min(1.0, speed / fps / max(dist, 1e-6)) + rng.normal(0, 0.7, 2), lo, hi)
@@ -107,12 +122,15 @@ def capture(sim, pipe, pool, scenes, rng, speed, react, fps, guide, trace=None):
             big = max(dets, key=lambda d: (d["bbox"][2] - d["bbox"][0]) * (d["bbox"][3] - d["bbox"][1])) if dets else None
             scenes[i] = sim.scene("live", pool[i][1], big["kps"], np.random.default_rng(i), 600.0) if big else None
         if scenes[i] is None:
-            guide.feed(None, False, t=t, reasons=("no_face",))
+            prompt = guide.feed(None, False, t=t, reasons=("no_face",))["prompt"]
         else:
             o = sim.capture([scenes[i]], rng)
             enc, rgb = wire_frame(o["rgb"], o["depth"], o["ir"])
-            r, _ = pipe.feed(guide, rgb, (tick, enc), t=t)
-            if target is not None and r["pose"] is not None and t - since >= react:
+            r, st = pipe.feed(guide, rgb, (tick, enc), t=t)
+            prompt = st["prompt"]
+            if on_tick:
+                on_tick(tick, t, o, r, st)
+            if target not in (None, "circle") and r["pose"] is not None and t - since >= react:
                 # the kiosk shows where the head is vs the target; the person corrects per axis (integral feedback)
                 corr = np.clip(corr + 0.15 * (np.asarray(TARGETS[target], np.float32) - np.asarray(r["pose"][:2], np.float32)),
                                -20.0, 20.0).astype(np.float32)
@@ -126,7 +144,7 @@ def trials(job):
     torch.set_num_threads(2)
     from faceauth.sim.sensor import SensorSim
     from faceauth.terminal.pipeline import Pipeline
-    subject, seqs, n_trials, fps, seed, worker = job
+    subject, seqs, n_trials, fps, seed, worker, mode = job
     pipe = Pipeline.load(str(ROOT / "data/models"))
     pool, sim, scenes = subject_pool(seqs), SensorSim(seed=seed), {}
     client = register(f"e8-{worker:02d}")
@@ -138,7 +156,7 @@ def trials(job):
         account = f"e8-{subject}-{k}-{uuid.uuid4().hex[:6]}"
         rec = {"subject": subject, "trial": k, "speed_deg_s": speed, "react_s": react, "attempts": []}
         for attempt in range(MAX_ATTEMPTS):
-            guide = Guide(timeout_s=TIMEOUT_S)
+            guide = Guide(timeout_s=TIMEOUT_S, mode=mode)
             done, sensor_s, kept, ticks = capture(sim, pipe, pool, scenes, rng, speed, react, fps, guide)
             # Simulation shortcut: a real terminal opens the session before capturing (Design §2) and the capture takes
             # sensor_s; here the simulated capture runs far slower than real time on a shared GPU, so the session is
@@ -201,6 +219,7 @@ def main():
     ap.add_argument("--fps", type=float, default=10.0, help="terminal analysis rate (frames analysed per second)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--subjects", nargs="*", help="only these BIWI subjects (e.g. a regression check)")
+    ap.add_argument("--mode", default="circle", choices=("circle", "steps"), help="guide mode (terminal/guide.py)")
     ap.add_argument("--out", default="reports/E8_enrollment/results.json")
     ap.add_argument("--withdraw", nargs="*", default=["e8-%", "acct-f05%"],
                     help="account LIKE patterns withdrawn before the run (leftovers would be duplicates)")
@@ -210,7 +229,7 @@ def main():
     subj = {}
     for s in HELD_OUT:
         subj.setdefault(SUBJECTS[s], []).append(s)
-    jobs = [(name, seqs, a.trials, a.fps, a.seed, i) for i, (name, seqs) in enumerate(sorted(subj.items()))
+    jobs = [(name, seqs, a.trials, a.fps, a.seed, i, a.mode) for i, (name, seqs) in enumerate(sorted(subj.items()))
             if not a.subjects or name in a.subjects]
     t0 = time.time()
     with Pool(min(a.workers, len(jobs))) as pool:
@@ -225,10 +244,11 @@ def main():
     first = [r for r in recs if r["attempts"][0].get("status") == "active"]
     times = np.array([r["time_s"] for r in ok])
     res = {
-        "id": "E8_enrollment", "subjects": sorted(subj), "trials": len(recs), "fps": a.fps, "timeout_s": TIMEOUT_S,
+        "id": "E8_enrollment", "guide_mode": a.mode, "subjects": sorted({r["subject"] for r in recs}), "trials": len(recs),
+        "fps": a.fps, "timeout_s": TIMEOUT_S,
         "max_attempts": MAX_ATTEMPTS,
         "success_rate": len(ok) / len(recs), "success_ci95": cp_ci(len(ok), len(recs)), "by_group": by_group,
-        "per_subject": {sub: [r["success"] for r in recs if r["subject"] == sub] for sub in sorted(subj)},
+        "per_subject": {sub: [r["success"] for r in recs if r["subject"] == sub] for sub in sorted({r["subject"] for r in recs})},
         "first_attempt_success_rate": len(first) / len(recs),
         "abandoned_timeout": sum(not any(x["captured"] for x in r["attempts"]) for r in recs),
         "retries": sum(len(r["attempts"]) - 1 for r in recs),
@@ -250,7 +270,7 @@ def main():
     out.write_text(json.dumps(res, indent=1))
     raw = ROOT / "reports/raw/E8"
     raw.mkdir(parents=True, exist_ok=True)
-    (raw / "trials.json").write_text(json.dumps(recs, indent=1, default=str))
+    (raw / f"{Path(a.out).stem}_trials.json").write_text(json.dumps(recs, indent=1, default=str))
     print(json.dumps(res, indent=1))
 
 
