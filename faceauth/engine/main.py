@@ -1,6 +1,6 @@
 """Engine: central GPU inference service (docs/IMPLEMENTATION.md §3).
 
-POST /v1/analyze (msgpack) {"mode": "enroll"|"auth", "frames": [{"rgb","depth","ir"}]} -> per frame: detection,
+POST /v1/analyze (msgpack) {"mode": "enroll"|"auth"|"guide"|"observe"|"live", "calib_version", "frames"} -> detection,
 server-side sensor/quality re-verification (FR-03), head pose, PAD and embedding. The API decides; the engine
 only measures.
 
@@ -24,6 +24,7 @@ import psycopg
 from fastapi import FastAPI, HTTPException, Request, Response
 
 from faceauth.common.packet import decode_frame
+from faceauth.common.pad_validation import PADValidationGate, _finite_measurements
 from faceauth.common.registry import active_entries, load_registry
 from faceauth.models.headpose import CROPS, HeadPose
 from faceauth.models.pad import PAD, face_features
@@ -39,12 +40,16 @@ QUALITY = "q@1"
 DET_THRESH, MIN_FACE_PX, OTHER_FACE_PX = 0.5, 60.0, 30.0  # faces under 30 px (far background) are not counted
 BLUR_MIN, EXPOSURE = 40.0, (40.0, 220.0)
 DEPTH_MM, DEPTH_VALID, IR_RANGE = (350, 1000), 0.5, (20, 250)  # 40-80 cm use + margin; face-box medians
+LIVE_DEPTH_MM = (350, 3000)  # Read-only group demo; authentication/enrollment retain the close-range policy.
 AUTH_MAX_POSE = (25.0, 20.0)
 MAX_BATCH_FRAMES = 64
+MAX_LIVE_FACES = 16
 # Per-replica parallelism (measured: one serial worker = ~90 frames/s, SCRFD 4.9 + PAD 2.3 ms/frame on the CPU-bound
 # path). Several SCRFD sessions = several CUDA streams + concurrent pre/post-processing; PAD physics on threads.
 DET_SESSIONS = int(os.environ.get("FA_ENGINE_DET_SESSIONS", "2"))   # SCRFD-34G tops out ~350 frames/s per A6000
 CPU_THREADS = int(os.environ.get("FA_ENGINE_CPU_THREADS", "6"))
+PAD_ENABLED = os.environ.get("FA_PILOT_DISABLE_PAD", "0") != "1"
+PAD_MODE = "enabled" if PAD_ENABLED else "disabled_pilot"
 
 
 cv2.setNumThreads(1)  # frames are parallelised above; OpenCV's own pool would fight them on a 128-core host
@@ -81,31 +86,73 @@ class Models:
             self.dets.put(det)
         self.det = det
         self.pool = ThreadPoolExecutor(max(DET_SESSIONS, CPU_THREADS), thread_name_prefix="frame")
-        self.pose = HeadPose(entries[POSE]["path"])
-        self.rec = Recognizer(entries[recog_name]["path"])
+        pose_batch = int(os.environ.get("FA_ENGINE_POSE_BATCH_SIZE", "64"))
+        recog_batch = int(os.environ.get("FA_ENGINE_RECOG_BATCH_SIZE", "128"))
+        if min(pose_batch, recog_batch) < 1:
+            raise ValueError("Engine pose/recognition batch sizes must be positive")
+        self.pose = HeadPose(entries[POSE]["path"], batch_size=pose_batch)
+        self.rec = Recognizer(entries[recog_name]["path"], batch_size=recog_batch)
         self.pad = PAD(entries[PAD_MODEL]["path"])
+        self.pad_validation = PADValidationGate(entries[PAD_MODEL]["path"],
+            release_pub=os.environ.get("FA_RELEASE_PUB", "/run/secrets/release_pub"),
+            detector_dir=entries[DETECTOR]["path"])
         self.versions = {"detector": self.det.version + ("+trt16" if trt else ""), "pose": self.pose.version,
                          "recog": self.rec.version, "align": self.rec.align, "pad": self.pad.version,
                          "quality": QUALITY}
         self.providers = got
+        self.warmup = self._warmup()
 
-    def _frame(self, dec):
-        """Detection + sensor/quality checks for one decoded frame -> (result dict, face for later stages | None)."""
-        if isinstance(dec, str):
-            return {"ok": False, "reasons": [dec], "n_faces": 0}, None
-        rgb, depth, ir = dec
+    def _warmup(self):
+        """Exercise every GPU model on generated tensors before advertising readiness.
+
+        No sensor frames, PAD decisions, templates or sessions are created. Model
+        construction alone does not expose CUDA failures during the first forward pass.
+        """
+        started = time.monotonic()
+        self.det.detect(np.zeros((480, 640, 3), np.uint8), DET_THRESH)
+        pose_count = min(8, self.pose.batch_size)
+        recog_count = min(8, self.rec.batch_size)
+        poses = self.pose.predict_crops([np.zeros((256, 256, 3), np.uint8)] * pose_count, 256)
+        embeddings = self.rec.embed_aligned(np.zeros((recog_count, 112, 112, 3), np.uint8))
+        pad = self.pad.cnn(np.zeros((8, 6, self.pad.size, self.pad.size), np.float32))
+        if (poses.shape != (pose_count, 3) or embeddings.shape != (recog_count, self.rec.dim)
+                or pad.shape != (8,) or not all(np.isfinite(x).all() for x in (poses, embeddings, pad))):
+            raise RuntimeError("GPU model warm-up returned invalid outputs")
+        return {"synthetic": True, "detector": True, "pose": True, "recognition": True, "pad": True,
+                "pose_batch": pose_count, "recognition_batch": recog_count, "pad_batch": 8,
+                "elapsed_ms": round((time.monotonic() - started) * 1000, 1)}
+
+    def _detect(self, dec):
+        """Visible foreground faces, ordered by area with a deterministic coordinate tie break."""
+        rgb, _, _ = dec
         det = self.dets.get()
         try:
             faces = det.detect(rgb, DET_THRESH)
         finally:
             self.dets.put(det)
-        big = [f for f in faces if min(f["bbox"][2] - f["bbox"][0], f["bbox"][3] - f["bbox"][1]) >= OTHER_FACE_PX]
-        out = {"n_faces": len(big), "bbox": None, "kps": None, "det_score": 0.0, "pose": None, "pad": None,
+        h, w = rgb.shape[:2]
+        big = []
+        for face in faces:
+            box = np.asarray(face["bbox"], dtype=np.float32).copy()
+            if box.shape != (4,) or not np.isfinite(box).all():
+                continue
+            box[::2] = np.clip(box[::2], 0, w)
+            box[1::2] = np.clip(box[1::2], 0, h)
+            if min(box[2] - box[0], box[3] - box[1]) >= OTHER_FACE_PX:
+                big.append({**face, "bbox": box})
+        return sorted(big, key=lambda f: (
+            -float((f["bbox"][2] - f["bbox"][0]) * (f["bbox"][3] - f["bbox"][1])),
+            *(float(v) for v in f["bbox"]), -float(f["score"])))
+
+    @staticmethod
+    def _empty_face(n_faces):
+        return {"n_faces": n_faces, "bbox": None, "kps": None, "det_score": 0.0, "pose": None, "pad": None,
                "emb": None, "quality": {}}
-        if len(big) != 1:
-            out.update(ok=False, reasons=["no_face" if not big else "multi_face"])
-            return out, None
-        f = big[0]
+
+    def _measure_face(self, dec, f, *, depth_range=DEPTH_MM):
+        """Measure one face without changing its identity when a quality check fails."""
+        rgb, depth, ir = dec
+        out = self._empty_face(1)
         x1, y1, x2, y2 = (int(round(v)) for v in f["bbox"])
         h, w = depth.shape
         x1, y1, x2, y2 = max(x1, 0), max(y1, 0), min(x2, w), min(y2, h)
@@ -123,7 +170,7 @@ class Models:
             reasons.append("blur")
         if not EXPOSURE[0] <= bright <= EXPOSURE[1]:
             reasons.append("exposure")
-        if not (q["depth_valid"] >= DEPTH_VALID and DEPTH_MM[0] <= q["depth_mm"] <= DEPTH_MM[1]):
+        if not (q["depth_valid"] >= DEPTH_VALID and depth_range[0] <= q["depth_mm"] <= depth_range[1]):
             reasons.append("depth_invalid")
         if not IR_RANGE[0] <= q["ir_median"] <= IR_RANGE[1]:
             reasons.append("ir_invalid")
@@ -131,34 +178,109 @@ class Models:
                    reasons=reasons)
         return out, (rgb, depth, ir, f)
 
+    def _frame(self, dec, purpose="enroll"):
+        """Enrollment requires one face; authentication always measures the largest face."""
+        if isinstance(dec, str):
+            return {"ok": False, "reasons": [dec], "n_faces": 0}, None
+        big = self._detect(dec)
+        if not big or (purpose != "auth" and len(big) != 1):
+            out = self._empty_face(len(big))
+            out.update(ok=False, reasons=["no_face" if not big else "multi_face"])
+            if purpose == "auth":
+                out.update(detected_faces=len(big), selection="largest")
+            return out, None
+        out, face = self._measure_face(dec, big[0])
+        if purpose == "auth":
+            out.update(detected_faces=len(big), selection="largest")
+        return out, face
+
+    def _live_frame(self, dec):
+        """Measure each visible face separately; raw coordinates stay in the sensor frame."""
+        if isinstance(dec, str):
+            return {"ok": False, "reasons": [dec], "faces": [], "n_faces": 0,
+                    "image_size": None, "truncated": False}, []
+        faces = self._detect(dec)
+        measured = [self._measure_face(dec, face, depth_range=LIVE_DEPTH_MM) for face in faces[:MAX_LIVE_FACES]]
+        h, w = dec[0].shape[:2]
+        return {"ok": True, "reasons": [], "faces": [r for r, _ in measured], "n_faces": len(faces),
+                "image_size": [w, h], "truncated": len(faces) > MAX_LIVE_FACES}, measured
+
+    def _prepare_frame(self, item):
+        context, dec = item
+        if context["mode"] == "live":
+            return self._live_frame(dec)
+        purpose = (context.get("capture_purpose") if context["mode"] in ("guide", "observe")
+                   else context["mode"])
+        result, face = self._frame(dec, purpose)
+        return result, [(result, face)]
+
     def process(self, batch):
-        """batch: [(mode, [decoded frame | error str])] -> per request, the list of per-frame answers."""
-        flat = [(mode, d) for mode, frames in batch for d in frames]
-        res, faces = zip(*self.pool.map(self._frame, [d for _, d in flat])) if flat else ((), ())
+        """batch: [(capture context, decoded frames)] -> per-request measurements."""
+        flat = [(context, d) for context, frames in batch for d in frames]
+        prepared = list(self.pool.map(self._prepare_frame, flat))
+        results = [result for result, _ in prepared]
+        measured = [(context, r, face) for (context, _), (_, items) in zip(flat, prepared) for r, face in items]
+        contexts, res, faces = zip(*measured) if measured else ((), (), ())
         idx = [i for i, f in enumerate(faces) if f is not None]
         if idx:
             crop, resize = CROPS[self.pose.crop]
             fs = [faces[i] for i in idx]
             poses = self.pose.predict_crops([crop(r, f["bbox"]) for r, _, _, f in fs], resize)
-            embs = self.rec.embed([r for r, _, _, _ in fs], [f["kps"] for _, _, _, f in fs])
-            p = self.pad
-            feats = list(self.pool.map(lambda x: face_features(x[0], x[1], x[2], x[3]["kps"], p.size, p.zoom, p.fx), fs))
-            pads = [p.decide(c, ph) for c, (_, ph) in zip(p.cnn(np.stack([x for x, _ in feats])), feats)]
             for j, i in enumerate(idx):
                 r = res[i]
                 r["pose"] = [float(v) for v in poses[j]]
-                r["emb"] = embs[j].astype("<f4").tobytes()
-                r["pad"] = {"score": pads[j]["score"], "live": pads[j]["live"], "nonresponse": pads[j]["nonresponse"]}
-                if flat[i][0] == "auth" and not (abs(poses[j][0]) <= AUTH_MAX_POSE[0]
-                                                  and abs(poses[j][1]) <= AUTH_MAX_POSE[1]):
+                context = contexts[i]
+                purpose = (context.get("capture_purpose") if context["mode"] in ("guide", "observe")
+                           else context["mode"])
+                if purpose in ("auth", "live") and not (abs(poses[j][0]) <= AUTH_MAX_POSE[0]
+                                               and abs(poses[j][1]) <= AUTH_MAX_POSE[1]):
                     r["reasons"].append("pose_out_of_range")
+                r["score"] = r["det_score"] * min(1.0, r["quality"]["blur"] / (3 * BLUR_MIN))
+            recog_idx = [i for i in idx if contexts[i]["mode"] in ("enroll", "auth")
+                         or (contexts[i]["mode"] == "live" and not res[i]["reasons"])]
+            if recog_idx:
+                recog_faces = [faces[i] for i in recog_idx]
+                embs = self.rec.embed([r for r, _, _, _ in recog_faces], [f["kps"] for _, _, _, f in recog_faces])
+                for i, emb in zip(recog_idx, embs):
+                    res[i]["emb"] = emb.astype("<f4").tobytes()
+            pad_idx = [i for i in idx if contexts[i]["mode"] == "observe"
+                       or (PAD_ENABLED and contexts[i]["mode"] in ("auth", "enroll"))]
+            if pad_idx:
+                p = self.pad
+                feats = list(self.pool.map(lambda x: face_features(x[0], x[1], x[2], x[3]["kps"],
+                                                                  p.size, p.zoom, p.fx), [faces[i] for i in pad_idx]))
+                pads = [p.decide(c, ph) for c, (_, ph) in zip(p.cnn(np.stack([x for x, _ in feats])), feats)]
+                for i, pad in zip(pad_idx, pads):
+                    res[i]["pad"] = _finite_measurements(pad) if contexts[i]["mode"] == "observe" else {
+                        key: pad[key] for key in ("score", "live", "nonresponse")}
         for r in res:
             r["ok"] = not r["reasons"]
         out, k = [], 0
         for _, frames in batch:
-            out.append(list(res[k:k + len(frames)]))
+            out.append(results[k:k + len(frames)])
             k += len(frames)
         return out
+
+    def analyze_batch(self, batch):
+        """Gate real decisions and bind every response to the exact models used."""
+        output, allowed, positions = [], [], []
+        for context, frames in batch:
+            validation = self.pad_validation.status(context["calib_version"])
+            output.append({"versions": dict(self.versions), "dim": self.rec.dim,
+                           "pad_enabled": PAD_ENABLED, "pad_mode": PAD_MODE,
+                           "capture_purpose": context.get("capture_purpose"),
+                           "calib_version": context["calib_version"], "pad_validation": validation,
+                           "model_binding": dict(self.pad_validation.binding)})
+            if PAD_ENABLED and context["mode"] in ("auth", "enroll") and validation["ready"] is not True:
+                output[-1]["frames"] = [{"ok": False, "reasons": ["pad_validation_required"],
+                                          "n_faces": 0, "pad": None, "emb": None} for _ in frames]
+            else:
+                positions.append(len(output) - 1)
+                allowed.append((context, frames))
+        if allowed:
+            for position, measured in zip(positions, self.process(allowed)):
+                output[position]["frames"] = measured
+        return output
 
 
 def _decode(f) -> tuple | str:
@@ -191,11 +313,11 @@ class Engine:
         self.admin_token = _env_file("FA_ADMIN_TOKEN_FILE")
         self.batches = self.frames = 0
 
-    async def analyze(self, mode, frames):
+    async def analyze(self, context, frames):
         loop = asyncio.get_running_loop()
         decoded = await asyncio.gather(*(loop.run_in_executor(self.cpu, _decode, f) for f in frames))
         fut = loop.create_future()
-        await self.queue.put((mode, decoded, fut))
+        await self.queue.put((context, decoded, fut))
         return await fut
 
     async def worker(self):
@@ -207,9 +329,11 @@ class Engine:
                 items.append(self.queue.get_nowait())
                 n += len(items[-1][1])
             try:
-                outs = await loop.run_in_executor(self.gpu, self.models.process, [(m, d) for m, d, _ in items])
+                models = self.models
+                outs = await loop.run_in_executor(self.gpu, models.analyze_batch, [(m, d) for m, d, _ in items])
                 for (_, _, fut), o in zip(items, outs):
-                    fut.set_result(o)
+                    if not fut.done():
+                        fut.set_result(o)
                 self.batches, self.frames = self.batches + 1, self.frames + n
             except Exception as e:  # noqa: BLE001 - fail the requests (API answers 503), keep serving
                 for _, _, fut in items:
@@ -240,19 +364,41 @@ async def analyze(request: Request):
     try:
         body = msgpack.unpackb(await request.body(), raw=False)
         mode, frames = body["mode"], body["frames"]
-        if mode not in ("enroll", "auth") or not isinstance(frames, list) or not 0 < len(frames) <= 64:
+        calibration = body.get("calib_version")
+        purpose = body.get("capture_purpose")
+        if (mode not in ("enroll", "auth", "guide", "observe", "live") or not isinstance(frames, list)
+                or not 0 < len(frames) <= 64 or not isinstance(calibration, str) or not 0 < len(calibration) <= 64
+                or (mode == "live" and len(frames) != 1)
+                or (mode == "guide" and (len(frames) != 1 or purpose not in ("auth", "enroll")))
+                or (mode == "observe" and (purpose not in ("auth", "enroll")
+                    or not 3 <= len(frames) <= (24 if purpose == "enroll" else 16)))):
             raise ValueError
     except Exception:  # noqa: BLE001
         raise HTTPException(400, "malformed request") from None
-    out = await E.analyze(mode, frames)
+    if (body.get("pad_enabled", True) is not PAD_ENABLED
+            or body.get("pad_mode", "enabled") != PAD_MODE):
+        raise HTTPException(503, "pad_mode_mismatch")
+    out = await E.analyze({"mode": mode, "calib_version": calibration, "capture_purpose": purpose}, frames)
+    return Response(msgpack.packb(out), media_type=MSGPACK)
+
+
+@app.get("/v1/readiness")
+async def readiness(calib_version: str):
     m = E.models
-    return Response(msgpack.packb({"versions": m.versions, "dim": m.rec.dim, "frames": out}), media_type=MSGPACK)
+    if m is None:
+        raise HTTPException(503, "models_not_ready")
+    validation = m.pad_validation.status(calib_version)
+    return {"ready": not PAD_ENABLED or validation["ready"], "capture_ready": True, "pad_validation": validation,
+            "pad_enabled": PAD_ENABLED, "pad_mode": PAD_MODE,
+            "versions": m.versions, "model_binding": m.pad_validation.binding, "calib_version": calib_version}
 
 
 @app.get("/healthz")
 async def healthz():
     m = E.models
     return {"ok": m is not None, "versions": m and m.versions, "providers": m and m.providers,
+            "pad_enabled": PAD_ENABLED, "pad_mode": PAD_MODE,
+            "warmup": m and m.warmup,
             "batches": E.batches, "frames": E.frames}
 
 

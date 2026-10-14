@@ -149,7 +149,7 @@ def test_rejected_frames_are_not_collected_and_prompt_explains():
     s = g.feed(None, False, None, 0.0, t=0.1, reasons=("multi_face",))
     assert s["prompt"] == HINTS["multi_face"] and s["direction"] is None
     s = _feed(g, "C", ok=False, reasons=("unknown_code",))
-    assert s["prompt"] == PROMPTS["C"]
+    assert s["prompt"] == HINTS["quality_unknown"]
     s = g.feed((12.0, 0.0, 0.0), True, "between", 1.0, t=0.2)  # between C and L: no bin
     assert not s["accepted"] and s["direction"] is None and s["prompt"] == PROMPTS["C"]
 
@@ -303,10 +303,116 @@ def test_better_frames_in_a_full_bin_are_not_progress():
     g.feed(TARGETS["L"] + (0.0,), True, "l", 1.0, t=0.1)
     for i in range(40):                                          # keeps finding sharper L frames: stalls anyway
         st = g.feed(TARGETS["L"] + (0.0,), True, f"l{i}", 2.0 + i, t=0.2 + i * 0.1)
-    assert st["accepted"] and st["prompt"] == PROMPTS["UL"]
+    assert st["accepted"] and st["hint_direction"] == "UL"
+    assert st["prompt"] == "고개를 돌린 채 턱을 조금 들어주세요"
 
 
 def test_a_completed_bin_lights_its_whole_arc():
     g = _Guide(per_dir=1)
     st = g.feed(TARGETS["U"] + (0.0,), True, "u", 1.0, t=0.0)
     assert set(range(11, 19)) <= set(st["ring"]) and len(st["ring"]) == 8   # azimuth 90 +- 22.5
+
+
+@pytest.mark.parametrize("pose", [(math.nan, 0), (0, math.inf), (0, 0, math.nan),
+                                  (0,), (None, 0), "000", {}, [0, 0, 0, 0]])
+def test_invalid_pose_never_collects_animates_or_leaks_nonfinite_numbers(pose):
+    import json
+    g = _Guide()
+    state = g.feed(pose, True, "invalid", 1, t=0)
+    assert state["reason_code"] == "pose_invalid"
+    assert state["prompt"] == HINTS["pose_invalid"]
+    assert not state["accepted"] and not state["quality_ok"] and not state["motion"]["valid"]
+    assert not state["ring"] and not g.frames()
+    assert all(value is None for key, value in state["motion"].items() if key != "valid")
+    json.dumps(state, allow_nan=False)
+
+
+@pytest.mark.parametrize("reason", ["multi_face", "blur", "depth_invalid", "ir_invalid"])
+def test_quality_rejection_stops_all_pose_feedback_even_with_contradictory_ok(reason):
+    g = _Guide()
+    state = g.feed((25, 0, 0), True, "invalid", 1, t=0, reasons=(reason,))
+    assert state["prompt"] == HINTS[reason] and state["reason_code"] == reason
+    assert not state["motion"]["valid"] and not state["quality_ok"]
+    assert not state["accepted"] and not state["ring"] and not g.frames()
+
+
+@pytest.mark.parametrize("pose", [None, (25, 0, 0)])
+@pytest.mark.parametrize("reason", ["missing_modality", "decode_error", "unregistered_frame_size", "unexpected_sensor_failure"])
+def test_unknown_quality_or_sensor_errors_do_not_prompt_more_head_motion(pose, reason):
+    g = _Guide(per_dir=1)
+    _feed(g, "C", t=0)
+    state = g.feed(pose, False, "bad", 1, t=1, reasons=(reason,))
+    expected = reason if reason in HINTS else "quality_unknown"
+    assert state["reason_code"] == expected and state["prompt"] == HINTS[expected]
+    assert not state["motion"]["valid"] and not state["accepted"]
+
+
+def test_motion_sequence_is_real_pose_and_overshoot_does_not_grant_ring_or_coverage():
+    g = _Guide(per_dir=1)
+    first = _feed(g, "C", t=0)
+    state = g.feed((43, 3, 0), True, "overshoot", 1, t=3.1)
+    assert state["sample_seq"] == first["sample_seq"] + 1 and state["ring_ticks"] == 60
+    assert state["motion"]["valid"] and state["motion"]["yaw"] == 43 and state["motion"]["pitch"] == 3
+    assert state["phase"] == "refine" and state["hint_direction"] == "L"
+    assert state["prompt"] == "고개를 조금 덜 돌려주세요"
+    assert state["reason_code"] == "between_directions" and not state["accepted"] and not state["ring"]
+
+
+def test_real_new_frame_resets_stall_even_after_its_direction_arc_already_lit():
+    g = _Guide()
+    for index, name in enumerate(("C", "C", "L")):
+        _feed(g, name, t=index * .1)
+    assert g.progress_t == .2
+    g.ring = [True] * RING_TICKS                # no visual tick can mask a missed frame-count update
+    assert _feed(g, "L", t=3.1)["phase"] == "sweep"
+    assert g.progress_t == 3.1
+    _feed(g, "L", score=2, t=3.2)
+    assert g.progress_t == 3.1                  # sharper replacement is not new coverage
+
+
+def test_visual_sweep_does_not_reset_stalled_actual_capture():
+    g = _Guide(per_dir=1)
+    _feed(g, "C", t=0)
+    # Between-bin poses can light new ticks but cannot satisfy the missing directions.
+    g.feed((21.65, 7.5, 0), True, "gap1", 1, t=2)
+    state = g.feed((12.5, 13, 0), True, "gap2", 1, t=3.1)
+    assert state["ring"] and state["phase"] == "refine" and state["hint_direction"] == "L"
+    assert g.progress_t == 0 and len(g.frames()) == 1
+
+
+@pytest.mark.parametrize("pose,expected", [
+    ((25, 7.5, 0), "고개를 돌린 채 턱을 조금 내려주세요"),
+    ((25, -7.5, 0), "고개를 돌린 채 턱을 조금 들어주세요"),
+    ((40, 0, 0), "고개를 조금 덜 돌려주세요"),
+    ((12, 0, 0), PROMPTS["L"]),
+])
+def test_horizontal_refinement_explains_cross_axis_and_too_far_misses(pose, expected):
+    g = _Guide(per_dir=1)
+    _feed(g, "C", t=0)
+    state = g.feed(pose, True, "gap", 1, t=3.1)
+    assert state["prompt"] == expected and state["phase"] == "refine"
+    assert not state["accepted"] and state["coverage"]["L"] == (0, 1)
+
+
+def test_quality_loss_breaks_arc_interpolation_and_timeout_cannot_paint():
+    g = _Guide(timeout_s=2)
+    g.feed((25, 0, 0), True, "a", 1, t=0)
+    before = set(g.feed(None, False, t=.1, reasons=("no_face",))["ring"])
+    state = g.feed((25 * math.cos(math.radians(30)), 15 * math.sin(math.radians(30)), 0), True, "b", 1, t=.2)
+    assert 2 not in state["ring"]                 # no imagined bridge over the missing face
+    before = set(state["ring"])
+    state = g.feed((-25, 0, 0), True, "late", 1, t=3)
+    assert set(state["ring"]) == before and state["phase"] == "timeout"
+    assert not state["motion"]["valid"] and not state["accepted"]
+
+
+def test_complete_requires_all_eighteen_frames_even_when_visual_ring_is_full():
+    g = _Guide()
+    g.ring = [True] * RING_TICKS
+    for name in ORDER:
+        state = _feed(g, name, t=0)
+    assert state["ring_frac"] == 1 and not state["done"] and len(g.frames()) == 9
+    for name in ORDER:
+        state = _feed(g, name, t=.1)
+    assert state["done"] and state["phase"] == "complete" and len(g.frames()) == 18
+    assert not state["motion"]["valid"]

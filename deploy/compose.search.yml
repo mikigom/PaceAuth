@@ -1,5 +1,5 @@
 # Owned by the search contributor (see docs/IMPLEMENTATION.md §1, §4).
-# search-1/search-2: FAISS exact 1:N replicas (faceauth/search/app.py). Each holds the whole gallery on GPU 5
+# search-1/search-2: FAISS exact 1:N replicas; each holds the gallery on FA_GPU_DEVICE_ID.
 # (1M subjects x 4 x 512 float32 = 8.2 GB, + ~0.8 GB CUDA context / faiss temp). Internal network only.
 # A rebuild (start, POST /v1/admin/reload, model activation) answers 503 until ready: reload one replica at a time.
 # Needs db + kms from deploy/compose.platform.yml (not declared as depends_on: the replicas retry until both answer).
@@ -27,7 +27,7 @@ x-search: &search
   deploy:
     resources:
       reservations:
-        devices: [{ driver: nvidia, device_ids: ["5"], capabilities: [gpu] }]
+        devices: [{ driver: nvidia, device_ids: ["${FA_GPU_DEVICE_ID:-0}"], capabilities: [gpu] }]
   healthcheck:
     test: ["CMD", "python", "-c", "import json,sys,urllib.request as u; sys.exit(0 if json.load(u.urlopen('http://127.0.0.1:8002/v1/status', timeout=2))['ready'] else 1)"]
     interval: 5s

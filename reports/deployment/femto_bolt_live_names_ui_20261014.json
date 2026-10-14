@@ -1,0 +1,69 @@
+{
+  "tested_url": "http://192.168.2.218:8080",
+  "checks": {
+    "live_recognition_badge": true,
+    "name_signup_field_present": true,
+    "existing_login_controls_enabled": true,
+    "logged_out": true,
+    "preview_no_duplicate_frames": true,
+    "preview_at_least_25fps": true,
+    "all_modalities_mirrored_with_readable_overlay": true,
+    "single_flight_recognition_requests": true,
+    "all_labels_unmirrored": true,
+    "consent_unchecked": true,
+    "no_post_requests": true,
+    "no_operation_started": true,
+    "mobile_no_overflow": true
+  },
+  "captures_requested": 0,
+  "read_only": true,
+  "media_persisted": false,
+  "performance": {
+    "seconds": 10.0005,
+    "preview_received": 301,
+    "preview_unique_sequences": 301,
+    "preview_receive_fps": 30.098495075246237,
+    "preview_display_fps": 30.098495075246237,
+    "recognition_responses": 149,
+    "recognition_unique_sequences": 149,
+    "recognition_update_fps": 14.899255037248137,
+    "recognition_reported_fps_mean": 15.036912751677852,
+    "recognition_latency_ms_mean": 17.749664429530196,
+    "recognition_frame_age_ms_max": 93,
+    "max_faces_seen": 0,
+    "preview_ui_fps": "30.0 fps",
+    "recognition_ui_fps": "15.0"
+  },
+  "modalities": {
+    "rgb": {
+      "mirrored": true,
+      "image_size": [
+        640,
+        480
+      ],
+      "overlay_unmirrored": true,
+      "visible_faces": 0
+    },
+    "depth": {
+      "mirrored": true,
+      "image_size": [
+        640,
+        480
+      ],
+      "overlay_unmirrored": true,
+      "visible_faces": 0
+    },
+    "ir": {
+      "mirrored": true,
+      "image_size": [
+        640,
+        480
+      ],
+      "overlay_unmirrored": true,
+      "visible_faces": 0
+    }
+  },
+  "overlay_face_count": 0,
+  "js_errors": [],
+  "passed": true
+}

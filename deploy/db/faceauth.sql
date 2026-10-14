@@ -23,6 +23,14 @@ CREATE TABLE subjects (                         -- id is the pseudonymous key; o
 );
 CREATE UNIQUE INDEX subjects_live_account ON subjects (account_id) WHERE status <> 'revoked';
 
+-- Applies even before first face enrollment. Epoch invalidates captures started before a lifecycle change.
+CREATE TABLE account_controls (
+  account_id       text PRIMARY KEY,
+  enabled          boolean NOT NULL DEFAULT true,
+  enrollment_epoch bigint NOT NULL DEFAULT 0,
+  updated_at       timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE templates (
   id               bigserial PRIMARY KEY,
   subject_id       uuid NOT NULL REFERENCES subjects (id),

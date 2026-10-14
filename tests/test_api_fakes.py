@@ -25,7 +25,8 @@ from fastapi import FastAPI, Request, Response
 DIM = 512
 SECRETS = Path(os.environ.get("FA_SECRETS_DIR", "/app/secrets"))
 RECOG = os.environ.get("FA_RECOG_MODEL", "kprpe_vitb_wf12m")
-STATE = {"engine_fail": False, "search_fail": False, "kms_fail": False, "search_frozen": False}
+STATE = {"engine_fail": False, "search_fail": False, "kms_fail": False, "search_frozen": False,
+         "pad_ready": True, "pad_enabled": os.environ.get("FA_PILOT_DISABLE_PAD", "0") != "1"}
 VERSION = {"recog": None}                                  # engine's loaded recognition version
 INDEX = {"model_version": None, "applied": 0, "tpl": {}}    # search: template_id -> (subject_id, vector)
 KEYS = {}                                                   # kms: subject_id -> 32-byte key
@@ -98,10 +99,42 @@ def _frame(f) -> dict:
         v = identity(s["id"]) + float(s.get("noise", 0.05)) * noise / np.linalg.norm(noise)
         live = bool(s.get("live", True))
         out.update(bbox=[200.0, 120.0, 440.0, 400.0], kps=[[270, 230], [370, 230], [320, 290], [280, 340], [360, 340]],
-                   det_score=0.9, pose=list(s.get("pose", [0.0, 0.0, 0.0])), pad={"score": 0.9 if live else 0.1,
-                                                                                     "live": live},
+                   det_score=0.9, score=0.9, pose=list(s.get("pose", [0.0, 0.0, 0.0])),
+                   pad={"score": 0.9 if live else 0.1, "live": live, "nonresponse": False,
+                        "cnn": 0.9 if live else 0.1, "checks": {"depth": True}, "failed": []},
                    emb=(v / np.linalg.norm(v)).astype("<f4").tobytes())
     return {**out, "n_faces": faces, "reasons": reasons, "ok": not reasons}
+
+
+def _analyze_frame(frame, mode, capture_purpose):
+    try:
+        spec = json.loads(frame["rgb"])
+    except (ValueError, KeyError):
+        return _frame(frame)
+    people = spec.get("people")
+    if people is None:
+        people = [{**spec, "faces": 1}] * int(spec.get("faces", 1))
+    people = sorted(people, key=lambda s: -(lambda b: (b[2] - b[0]) * (b[3] - b[1]))(
+        s.get("bbox", [200, 120, 440, 400])))
+
+    def face(person):
+        out = _frame({**frame, "rgb": json.dumps({**person, "faces": 1}).encode()})
+        out["bbox"] = person.get("bbox", out["bbox"])
+        return out
+
+    if mode == "live":
+        faces = [face(person) for person in people[:16]]
+        for item in faces:
+            item["pad"] = None
+            if not item["ok"]:
+                item["emb"] = None
+        return {"faces": faces, "n_faces": len(people), "image_size": [640, 480], "truncated": len(people) > 16}
+    purpose = capture_purpose if mode in ("guide", "observe") else mode
+    if purpose == "auth" and people:
+        return {**face(people[0]), "detected_faces": len(people), "selection": "largest"}
+    if "people" in spec:
+        return _frame({**frame, "rgb": json.dumps({**spec, "faces": len(people)}).encode()})
+    return _frame(frame)
 
 
 @app.post("/v1/analyze")
@@ -110,8 +143,32 @@ async def analyze(request: Request):
         return Response(status_code=500)
     req = msgpack.unpackb(await request.body(), raw=False)
     versions = {k: "fake@1" for k in ("detector", "pose", "landmarks", "align", "pad", "quality")}
+    frames = [_analyze_frame(f, req["mode"], req.get("capture_purpose")) for f in req["frames"]]
+    if not STATE["pad_enabled"] and req["mode"] in ("auth", "enroll"):
+        for frame in frames:
+            frame["pad"] = None
     return _pack({"versions": {**versions, "recog": VERSION["recog"] or "none"}, "dim": DIM,
-                  "frames": [_frame(f) for f in req["frames"]]})
+                  "pad_enabled": STATE["pad_enabled"],
+                  "pad_mode": "enabled" if STATE["pad_enabled"] else "disabled_pilot",
+                  "calib_version": req["calib_version"], "pad_validation": _validation(req["calib_version"]),
+                  "capture_purpose": req.get("capture_purpose"),
+                  "model_binding": {"fixture": "api-contract-only"},
+                  "frames": frames})
+
+
+def _validation(calibration):
+    return {"ready": STATE["pad_ready"], "calib_version": calibration,
+            "reasons": [] if STATE["pad_ready"] else ["pad_real_sensor_validation_missing"]}
+
+
+@app.get("/v1/readiness")
+async def readiness(calib_version: str):
+    if STATE["engine_fail"]:
+        return Response(status_code=503)
+    return {"ready": not STATE["pad_enabled"] or STATE["pad_ready"], "capture_ready": True,
+            "pad_validation": _validation(calib_version), "pad_enabled": STATE["pad_enabled"],
+            "pad_mode": "enabled" if STATE["pad_enabled"] else "disabled_pilot",
+            "versions": {"recog": VERSION["recog"] or "none"}, "calib_version": calib_version}
 
 
 # ------------------------------------------------------------------ search

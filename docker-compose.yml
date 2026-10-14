@@ -1,5 +1,5 @@
 # Base file: networks, secrets, tester. Services live in deploy/compose.*.yml (merged via COMPOSE_FILE in .env).
-# GPU policy: only host GPU 5 is ever reserved.
+# GPU is selected by FA_GPU_DEVICE_ID (default: the first host GPU).
 name: faceauth
 
 networks:
@@ -39,4 +39,4 @@ services:
     deploy:
       resources:
         reservations:
-          devices: [{ driver: nvidia, device_ids: ["5"], capabilities: [gpu] }]
+          devices: [{ driver: nvidia, device_ids: ["${FA_GPU_DEVICE_ID:-0}"], capabilities: [gpu] }]

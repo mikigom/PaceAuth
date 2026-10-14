@@ -35,7 +35,7 @@ class Gallery:
         self.n = 0                             # rows incl. tombstones
         self.sub = np.zeros(0, np.int32)       # row -> subject index
         self.alive = np.zeros(0, bool)
-        self.row_of = {}                       # template id -> row; tombstoned ids stay, so they are never re-added
+        self.row_of = {}                       # template id -> latest row; tombstones require explicit reactivation
         self.subjects = []                     # subject index -> subject id
         self.sub_idx = {}
         self.live = np.zeros(0, np.int32)      # subject index -> live templates
@@ -50,8 +50,9 @@ class Gallery:
         cfg.useFloat16 = False
         return faiss.GpuIndexFlatIP(self.res, self.dim, cfg)
 
-    def add(self, tids, subject_ids, vecs) -> int:
-        """Append templates (vecs: n x d float32, L2-normalised). Ids already present are skipped. -> rows added.
+    def add(self, tids, subject_ids, vecs, *, allow_reactivation=False) -> int:
+        """Append templates (vecs: n x d float32, L2-normalised). Live IDs are skipped. -> rows added.
+        Tombstones may be re-added only after the caller verifies an active database row and decrypts it again.
         On an exception the gallery may be inconsistent: discard it."""
         vecs = np.asarray(vecs, np.float32)
         if vecs.ndim != 2 or len(vecs) != len(tids) or len(tids) != len(subject_ids):
@@ -65,7 +66,8 @@ class Gallery:
         tids = np.asarray(tids, np.int64)
         keep, seen = [], set()
         for i, t in enumerate(tids.tolist()):
-            if t not in self.row_of and t not in seen:
+            row = self.row_of.get(t)
+            if t not in seen and (row is None or (allow_reactivation and not self.alive[row])):
                 seen.add(t)
                 keep.append(i)
         if not keep:

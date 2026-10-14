@@ -1,0 +1,54 @@
+{
+  "deployed_at": "2026-10-14T16:19:17.079986+09:00",
+  "url": "http://192.168.2.218:8080",
+  "passed": true,
+  "mode": "login_free_lan_admin_demo",
+  "configuration": "FA_LIVE_OPEN_CONSOLE=1 in compose.live.yml",
+  "terminal_image_id": "sha256:8b48f727745d382e74fe512d451e4b1be17454972411636193a2f60f3453953b",
+  "source_sha256": {
+    "live.html": "50bf2f0d942b9c4e90ab86629ece7cefa44a61cacc1efa60cef103cfe76c2660",
+    "live.css": "183fba7b49945c4bddbf8174769d3de709dbc171c7d37ab670ffe1b89ffe0b0c",
+    "live.js": "49bf4f339fafc2bff3b8d9afd62eed3e7c0ea437caa1396c3fde85a1020b4006"
+  },
+  "features": [
+    "anonymous operator session bootstrapped by opening page",
+    "name-only person creation with optional account ID",
+    "account management without personal login",
+    "selected account enrollment and face authentication",
+    "explicit biometric consent and opt-in photo persistence",
+    "browser-owned operations and automatic session renewal",
+    "unchanged mirrored circular enrollment guidance"
+  ],
+  "tests": {
+    "backend_legacy_passed": 96,
+    "backend_console_passed": 19,
+    "actual": {
+      "report": "femto_bolt_console_actual_20261014.json",
+      "checks": 68,
+      "passed": true
+    },
+    "console_ui": {
+      "report": "femto_bolt_console_ui_mock_20261014.json",
+      "checks": 33,
+      "passed": true
+    },
+    "legacy_accounts_ui": {
+      "report": "femto_bolt_accounts_ui_mock_20261014.json",
+      "checks": 37,
+      "passed": true
+    },
+    "circle_ui": {
+      "report": "femto_bolt_circle_ui_mock_20261014.json",
+      "checks": 69,
+      "passed": true
+    }
+  },
+  "existing_face_counts_preserved": {
+    "subjects": 1,
+    "active_templates": 4
+  },
+  "no_hidden_operator_account_created": true,
+  "no_existing_user_password_changed": true,
+  "real_media_persisted_by_checks": false,
+  "real_enrollment_started_by_checks": false
+}

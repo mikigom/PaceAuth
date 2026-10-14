@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f7f8fa">
+  <title>PaceAuth · 얼굴로, 간편하게</title>
+  <link rel="stylesheet" href="/static/live.css">
+  <script src="/static/live.js" defer></script>
+</head>
+<body data-account-state="guest" data-account-mode="login" data-flow-step="account">
+  <a class="skip-link" href="#auth-heading">얼굴 등록·인증으로 이동</a>
+  <main class="shell">
+    <header class="page-header">
+      <a class="brand" href="/" aria-label="PaceAuth 홈">
+        <svg class="brand-mark" viewBox="0 0 36 36" fill="none" aria-hidden="true"><rect width="36" height="36" rx="12" fill="currentColor"/><path d="M11 24V12h7a5 5 0 0 1 0 10h-2" stroke="white" stroke-width="3.5" stroke-linecap="round"/><circle cx="25" cy="26" r="2" fill="#9ac4ff"/></svg>
+        PaceAuth
+      </a>
+      <nav id="main-navigation" class="main-navigation" aria-label="화면 선택" hidden><button id="nav-live" type="button" aria-current="page">라이브</button><button id="nav-accounts" type="button">계정 관리</button></nav>
+      <span class="device-label"><span class="header-dot" aria-hidden="true"></span>내부망 체험</span>
+    </header>
+
+    <section id="live-intro" class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">가볍게 만나는 얼굴 인증</p>
+      <h1 id="page-title">얼굴로, 간편하게</h1>
+      <p id="page-description">등록부터 확인까지, 카메라 앞에서 한 번에.</p>
+    </section>
+
+    <div id="live-workspace" class="workspace">
+      <div class="preview-column">
+        <section class="preview-card" aria-label="실시간 카메라">
+          <div id="enrollment-header" class="enrollment-header" hidden><p class="eyebrow">나만의 얼굴 등록</p><h1 id="enrollment-heading">얼굴을 원 안에 맞춰 주세요</h1><p id="enrollment-subheading">화면을 보며 고개를 조금씩 움직여요.</p></div>
+          <div class="preview-toolbar">
+            <span id="preview-indicator" class="indicator" data-tone="waiting"><span class="status-dot" aria-hidden="true"></span><span id="preview-label">연결 확인 중</span></span>
+            <div class="view-selector" role="group" aria-label="미리보기 종류">
+              <button class="view-button" type="button" data-view="rgb" aria-pressed="true">컬러</button>
+              <button class="view-button" type="button" data-view="depth" aria-pressed="false">깊이</button>
+              <button class="view-button" type="button" data-view="ir" aria-pressed="false">적외선</button>
+            </div>
+          </div>
+          <div class="preview-stage">
+            <span id="enrollment-camera-disc" class="enrollment-camera-disc" aria-hidden="true" hidden></span>
+            <img id="preview-image" alt="좌우 반전된 카메라 컬러 영상" hidden>
+            <svg id="enrollment-ring" class="enrollment-ring" viewBox="0 0 440 440" role="progressbar" aria-label="얼굴 등록 촬영 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="촬영 준비 중" hidden><circle class="enrollment-inner-outline" cx="220" cy="220" r="181"/><g id="enrollment-ticks" aria-hidden="true"></g><g id="enrollment-target-marker" class="enrollment-target-marker" aria-hidden="true" hidden><circle cx="220" cy="25" r="7"/><circle class="target-marker-core" cx="220" cy="25" r="2.5"/></g><g id="enrollment-pose-marker" class="enrollment-pose-marker" aria-hidden="true" hidden><circle class="pose-marker-halo" cx="220" cy="220" r="14"/><circle class="pose-marker-core" cx="220" cy="220" r="6"/></g></svg>
+            <div id="enrollment-finish" class="enrollment-finish" hidden><svg viewBox="0 0 160 160" fill="none" aria-hidden="true"><circle cx="80" cy="80" r="66" fill="#e8f1ff"/><path class="finish-check" d="m49 81 22 22 42-46" stroke="#3182f6" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><g class="finish-retry" stroke="#8b95a1" stroke-width="8" stroke-linecap="round"><path d="M80 51v34"/><path d="M80 105v1"/></g></svg><span id="enrollment-finish-label">등록 완료</span></div>
+            <svg id="face-overlay" class="face-overlay" viewBox="0 0 640 480" preserveAspectRatio="xMidYMid meet" role="img" aria-label="실시간 얼굴 인식 위치와 이름" hidden></svg>
+            <div id="preview-placeholder" class="preview-placeholder">
+              <svg class="camera-icon" viewBox="0 0 160 160" fill="none" aria-hidden="true">
+                <rect x="24" y="24" width="112" height="112" rx="38" fill="#e8f1ff"/>
+                <path d="M40 16H26a10 10 0 0 0-10 10v14m104-24h14a10 10 0 0 1 10 10v14M16 120v14a10 10 0 0 0 10 10h14m80 0h14a10 10 0 0 0 10-10v-14" stroke="#82b5fb" stroke-width="5" stroke-linecap="round"/>
+                <path d="M60 66v9m40-9v9M64 95q16 15 32 0" stroke="#3182f6" stroke-width="6" stroke-linecap="round"/>
+                <path class="scan-line" d="M33 50h94" stroke="#3182f6" stroke-width="3" stroke-linecap="round"/>
+              </svg>
+              <strong id="placeholder-title">카메라를 연결하고 있어요</strong>
+              <span id="placeholder-description">준비되면 내 모습이 여기에 보여요.</span>
+            </div>
+            <span id="preview-kind" class="preview-kind" hidden>RGB</span>
+            <span class="mirror-label"><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v12M5 4 2 8l3 4V4Zm6 0 3 4-3 4V4Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>거울 모드</span>
+          </div>
+          <div id="enrollment-guidance" class="enrollment-guidance" data-direction="C" hidden>
+            <div class="enrollment-motion" aria-hidden="true"><svg viewBox="0 0 84 84" fill="none"><ellipse class="head-orbit" cx="42" cy="43" rx="32" ry="24"/><g class="head-turn"><path class="head-neck" d="M33 57v9l9 5 9-5v-9"/><path class="head-shape" d="M24 35c0-16 7-22 18-22s18 6 18 22v11c0 12-9 21-18 21s-18-9-18-21V35Z"/><g class="head-features"><path d="M32 34v6m20-6v6"/><path class="head-nose" d="m41 41-2 8h5"/><path d="M36 55q6 4 12 0"/></g></g><path class="head-arrow" d="M64 19h9v9m0-9-10 10"/></svg></div>
+            <div class="enrollment-guidance-copy"><span id="enrollment-next-direction">먼저 정면을 바라봐 주세요</span><p id="enrollment-coverage-count">9개 방향을 확인해요</p></div>
+            <span id="enrollment-center-status" class="enrollment-center-status" data-state="waiting"><span class="center-status-icon" aria-hidden="true">◎</span><span id="enrollment-center-label">정면</span></span>
+          </div>
+          <p id="enrollment-connection-message" class="enrollment-connection-message" role="status" hidden></p>
+          <div id="enrollment-operation-slot" class="enrollment-operation-slot" hidden></div>
+          <p id="enrollment-mode-note" class="enrollment-mode-note" hidden>불편하지 않은 범위에서 천천히 움직여 주세요. 언제든 촬영을 취소할 수 있어요.</p>
+          <div class="preview-caption">
+            <div class="recognition-bar"><span id="live-recognition-state" class="status-pill" data-tone="waiting">인식 준비 중</span><div class="face-legend" aria-label="얼굴 표시 색상"><span data-status="known">등록</span><span data-status="unknown">미등록</span><span data-status="uncertain">확인 중</span></div></div>
+            <p id="live-recognition-message" class="recognition-message" role="status">얼굴이 보이면 이름을 알려드려요.</p>
+          </div>
+        </section>
+        <div class="camera-tips" aria-label="촬영 안내">
+          <div><span class="tip-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M5 20v-2a7 7 0 0 1 14 0v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><p><strong>등록은 한 명씩</strong><span>카메라에서 60~70cm 떨어져 주세요</span></p></div>
+          <div><span class="tip-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M8 12l3 3 5-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><p><strong>인증은 가장 큰 얼굴로</strong><span>여럿이라면 카메라 가까이 서 주세요</span></p></div>
+        </div>
+        <p class="recognition-note">이름 표시는 인증 결과와 별개예요. ‘인증 시작’으로 결과를 확인해 주세요.</p>
+      </div>
+
+      <aside class="side-panel" aria-label="얼굴 등록과 인증">
+        <section class="status-card auth-card" aria-labelledby="auth-heading">
+          <div class="auth-intro">
+            <svg class="welcome-face" viewBox="0 0 80 80" fill="none" aria-hidden="true"><rect x="8" y="8" width="64" height="64" rx="23" fill="#e8f1ff"/><rect x="15" y="12" width="50" height="52" rx="19" fill="#c9e0ff"/><rect x="19" y="12" width="42" height="46" rx="17" fill="#e4f0ff"/><path d="M31 29v6m18-6v6M32 45q8 7 16 0" stroke="#3182f6" stroke-width="3.5" stroke-linecap="round"/><circle cx="63" cy="62" r="12" fill="#3182f6"/><path d="m58 62 3 3 5-6" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <h2 id="auth-heading" tabindex="-1">내 얼굴로 시작하기</h2>
+            <p id="auth-description" class="status-message">잠시만요, 서비스를 준비하고 있어요.</p>
+          </div>
+          <ol class="journey" aria-label="이용 순서">
+            <li class="journey-step" data-step="account" aria-current="step"><span class="step-number">1</span><span id="journey-account-label">계정</span></li>
+            <li class="journey-step" data-step="consent"><span class="step-number">2</span><span>동의</span></li>
+            <li class="journey-step" data-step="ready"><span class="step-number">3</span><span>얼굴 확인</span></li>
+          </ol>
+          <ul id="auth-blockers" class="blockers" hidden></ul>
+
+          <span id="operation-home" hidden></span>
+          <section id="operation-panel" class="operation-card" aria-labelledby="operation-heading" data-state="busy" hidden>
+            <div class="section-heading"><h2 id="operation-heading">촬영 안내</h2><span id="operation-state" class="status-pill" data-tone="waiting">준비 중</span></div>
+            <svg class="operation-visual" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+              <circle class="visual-disc" cx="60" cy="60" r="51"/>
+              <g class="visual-scanning"><circle class="visual-spinner" cx="60" cy="60" r="49"/><g class="visual-face"><rect x="34" y="31" width="52" height="58" rx="21"/><path d="M48 51v7m24-7v7M49 71q11 9 22 0"/></g></g>
+              <path class="visual-success" d="m38 61 15 15 30-32"/>
+              <g class="visual-warning"><path d="M60 36v29"/><circle cx="60" cy="79" r="3"/></g>
+              <path class="visual-cancelled" d="m45 45 30 30m0-30L45 75"/>
+            </svg>
+            <p id="operation-prompt" class="operation-prompt" role="status">카메라를 바라봐 주세요.</p>
+            <p id="operation-description" class="status-message"></p>
+            <div id="operation-progress" hidden><div class="progress-label"><span id="progress-caption">촬영 진행</span><span id="progress-count"></span></div><progress id="capture-progress" max="100" aria-label="촬영 진행률"></progress></div>
+            <div id="pose-guide" hidden>
+              <ol class="pose-grid" aria-label="방향별 촬영 상태">
+                <li data-direction="UL"><i aria-hidden="true">↖</i><span>왼쪽 위</span><small>대기</small></li>
+                <li data-direction="U"><i aria-hidden="true">↑</i><span>위</span><small>대기</small></li>
+                <li data-direction="UR"><i aria-hidden="true">↗</i><span>오른쪽 위</span><small>대기</small></li>
+                <li data-direction="L"><i aria-hidden="true">←</i><span>왼쪽</span><small>대기</small></li>
+                <li data-direction="C"><i aria-hidden="true">◎</i><span>정면</span><small>대기</small></li>
+                <li data-direction="R"><i aria-hidden="true">→</i><span>오른쪽</span><small>대기</small></li>
+                <li data-direction="DL"><i aria-hidden="true">↙</i><span>왼쪽 아래</span><small>대기</small></li>
+                <li data-direction="D"><i aria-hidden="true">↓</i><span>아래</span><small>대기</small></li>
+                <li data-direction="DR"><i aria-hidden="true">↘</i><span>오른쪽 아래</span><small>대기</small></li>
+              </ol>
+              <p class="metric-note">내가 보는 방향으로 천천히 움직여 주세요.<br>불편하면 언제든 촬영을 취소할 수 있어요.</p>
+            </div>
+            <div class="operation-actions"><button id="cancel-operation" class="secondary-button" type="button" hidden>촬영 취소</button><button id="retry-operation" class="primary-button" type="button" hidden>다시 시도</button><button id="dismiss-operation" class="secondary-button" type="button" hidden>닫기</button></div>
+          </section>
+
+          <div id="auth-workflow" hidden>
+            <div id="console-account-picker" class="console-account-picker" hidden>
+              <div class="section-heading"><label for="demo-account">누구의 얼굴을 확인할까요?</label><button id="console-add-account" class="text-button" type="button">계정 추가</button></div>
+              <select id="demo-account" aria-describedby="demo-account-note"><option value="">계정을 선택해 주세요</option></select>
+              <p id="demo-account-note" class="metric-note">등록하거나 인증할 사람을 선택해 주세요.</p>
+            </div>
+            <form id="pilot-login-form" class="login-form">
+              <div class="account-switch" role="group" aria-label="계정 이용 방법"><button id="account-mode-login" type="button" aria-pressed="true">로그인</button><button id="account-mode-signup" type="button" aria-pressed="false">계정 만들기</button></div>
+              <div id="signup-fields" class="field" hidden><label for="pilot-display-name">이름 <span class="optional">선택</span></label><input id="pilot-display-name" name="display_name" type="text" autocomplete="name" maxlength="80" placeholder="얼굴 옆에 표시할 이름"></div>
+              <div class="field"><label for="pilot-account">아이디</label><input id="pilot-account" name="account_id" type="text" autocomplete="username" minlength="3" maxlength="64" required placeholder="영문 소문자, 숫자 등 3~64자" spellcheck="false" autocapitalize="none"></div>
+              <div class="field"><label for="pilot-password">비밀번호</label><input id="pilot-password" name="password" type="password" autocomplete="current-password" minlength="10" maxlength="128" required placeholder="10자 이상 입력해 주세요" aria-describedby="password-note"><span id="password-note" class="field-note">10~128자로 입력해 주세요.</span></div>
+              <div class="account-actions"><button id="pilot-login" class="primary-button" type="submit">로그인</button><button id="pilot-signup" class="primary-button" type="button" hidden>체험 계정 만들기</button></div>
+            </form>
+            <div id="verified-account" class="verified-account" hidden>
+              <span class="account-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" fill="currentColor"/><path d="M5 20a7 7 0 0 1 14 0" fill="currentColor"/></svg></span>
+              <div class="account-identity"><span class="metric-label">반가워요</span><strong id="account-name"></strong></div><button id="pilot-logout" class="text-button" type="button">로그아웃</button>
+            </div>
+            <details id="profile-settings" class="profile-settings" hidden><summary>표시 이름 바꾸기 <span class="chevron" aria-hidden="true"></span></summary><form id="profile-form" class="login-form profile-form" hidden><label for="profile-display-name">얼굴 옆에 표시할 이름</label><div class="profile-controls"><input id="profile-display-name" name="display_name" type="text" autocomplete="name" maxlength="80" required><button id="profile-save" class="secondary-button" type="submit">저장</button></div></form></details>
+            <div id="enrollment-target" class="enrollment-target" hidden><span id="enrollment-target-label" class="metric-label">지금 얼굴을 등록할 사람</span><strong id="enrollment-target-name"></strong><span id="enrollment-target-id"></span><p id="enrollment-target-note"></p><button id="clear-enrollment-target" class="text-button" type="button">계정 관리로 돌아가기</button></div>
+            <div class="consent-box">
+              <details class="consent-details"><summary>생체정보 처리 안내 <span class="chevron" aria-hidden="true"></span></summary><p id="consent-description">얼굴 등록·인증에 필요한 생체정보 처리 안내를 불러오고 있어요.</p><span id="consent-version" class="metric-note"></span></details>
+              <label class="consent-choice"><input id="biometric-consent" type="checkbox"><span>안내를 읽고, 얼굴 등록·인증을 위한<br class="desktop-break"> 생체정보 처리에 동의해요.</span></label>
+              <label class="consent-choice photo-consent-choice"><input id="photo-consent" type="checkbox"><span>등록 사진 1장을 저장하는 데 동의해요.<span class="consent-optional">선택 · 계정 관리에 표시하며 언제든 삭제할 수 있어요.</span></span></label>
+            </div>
+          </div>
+          <span id="auth-feedback-home" hidden></span><p id="auth-feedback" class="auth-feedback" role="status" hidden></p>
+          <div class="auth-actions"><button id="start-enroll" class="secondary-button" type="button" disabled aria-describedby="action-note">얼굴 등록</button><button id="start-authenticate" class="primary-button" type="button" disabled aria-describedby="action-note">인증 시작 <span aria-hidden="true">→</span></button></div>
+          <p id="action-note" class="metric-note">계정으로 로그인하면 시작할 수 있어요.</p>
+          <div class="service-mode"><span id="auth-state" class="status-pill" data-tone="waiting">확인 중</span><p id="pad-disabled-notice" class="pad-disabled-notice" hidden><strong>위조 방지 검사 꺼짐</strong><span>지금은 얼굴 일치만 확인하는 체험 모드예요.</span></p></div>
+        </section>
+        <p class="privacy-note"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m10 2 6 2v5c0 4-6 8-6 8S4 13 4 9V4l6-2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="m7 9 2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>등록 사진은 동의한 경우에만 저장해요</p>
+      </aside>
+    </div>
+
+    <section id="accounts-page" class="accounts-page" aria-labelledby="accounts-heading" hidden>
+      <div class="intro accounts-intro"><div><p class="eyebrow">함께 쓰는 얼굴 인증</p><h1 id="accounts-heading" tabindex="-1">계정 관리</h1><p>함께할 사람을 등록하고, 한곳에서 관리해요.</p></div><button id="new-account" class="primary-button" type="button"><span aria-hidden="true">＋</span>계정 추가</button></div>
+      <p id="accounts-feedback" class="auth-feedback" role="status" hidden></p>
+      <p id="accounts-service-message" class="accounts-service-message" role="status" hidden></p>
+      <div class="accounts-workspace">
+        <section class="accounts-directory" aria-label="등록된 계정">
+          <div class="accounts-toolbar"><div class="accounts-count"><strong id="accounts-count">0</strong><span>명의 계정</span></div><label class="account-search"><svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.7"/><path d="m13 13 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><input id="account-search" type="search" placeholder="이름 또는 아이디 검색" aria-label="계정 검색" autocomplete="off"></label><button id="refresh-accounts" class="text-button" type="button" aria-label="계정 목록 새로고침">새로고침</button></div>
+          <div id="account-list" class="account-list" role="list" aria-label="계정 목록"></div>
+          <div id="accounts-empty" class="accounts-empty"><span class="empty-people" aria-hidden="true">＋</span><h2 id="accounts-empty-title">계정을 불러오고 있어요</h2><p id="accounts-empty-description">잠시만 기다려 주세요.</p></div>
+          <p class="accounts-privacy">등록 사진은 동의한 사람만 표시돼요. 사진과 계정은 여기에서 삭제할 수 있어요.</p>
+        </section>
+        <aside class="account-detail-card" aria-label="선택한 계정 관리">
+          <div id="account-selection-empty" class="account-selection-empty"><svg viewBox="0 0 80 80" fill="none" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="24" fill="#edf4ff"/><circle cx="40" cy="31" r="11" fill="#a6caff"/><path d="M20 62a20 20 0 0 1 40 0" fill="#a6caff"/></svg><h2>관리할 계정을 골라 주세요</h2><p>이름, 사진, 사용 상태를<br>여기에서 바꿀 수 있어요.</p></div>
+          <div id="account-detail" hidden>
+            <div class="account-detail-top"><span id="account-detail-avatar" class="person-avatar person-avatar-large" aria-hidden="true"></span><span id="account-detail-admin" class="status-pill" hidden>관리자</span></div>
+            <h2 id="account-detail-name"></h2><p id="account-detail-id" class="account-detail-id"></p>
+            <div class="account-status-row"><span id="account-detail-face" class="status-pill"></span><span id="account-detail-enabled" class="status-pill"></span></div>
+            <form id="managed-profile-form" class="login-form"><div class="field"><label for="managed-display-name">표시 이름</label><div class="profile-controls"><input id="managed-display-name" type="text" maxlength="80" autocomplete="off" required><button id="save-managed-profile" class="secondary-button" type="submit">저장</button></div></div></form>
+            <div class="account-photo-section"><div class="section-heading"><h3>얼굴과 등록 사진</h3><button id="delete-account-photo" class="text-button danger-text" type="button" hidden>사진 삭제</button></div><p id="account-photo-description" class="metric-note"></p><button id="enroll-managed-account" class="secondary-button" type="button">얼굴 등록</button><p id="account-enrolled-at" class="metric-note" hidden></p></div>
+            <div class="account-enabled-section"><div><h3>계정 사용</h3><p id="account-enabled-description" class="metric-note"></p></div><button id="toggle-account-enabled" class="toggle-switch" type="button" role="switch" aria-label="계정 활성화" aria-checked="false"><span aria-hidden="true"></span></button></div>
+            <p id="account-protection-note" class="metric-note" hidden></p>
+            <div class="account-danger-zone"><span id="account-created-at" class="metric-note"></span><button id="delete-managed-account" class="text-button danger-text" type="button">계정 삭제</button></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <dialog id="create-account-dialog" class="account-dialog" aria-labelledby="create-account-heading"><form id="create-account-form" class="login-form"><div class="dialog-heading"><div><p class="eyebrow">새로운 얼굴을 만나볼까요?</p><h2 id="create-account-heading">계정 추가</h2></div><button id="close-create-account" class="dialog-close" type="button" aria-label="계정 추가 닫기">×</button></div><p class="status-message">계정을 만든 뒤 이 화면에서 얼굴을 등록해요.</p><div class="field"><label for="new-display-name">이름</label><input id="new-display-name" type="text" maxlength="80" autocomplete="off" required placeholder="얼굴 옆에 표시할 이름"></div><div class="field"><label for="new-account-id">아이디 <span id="new-account-id-optional" class="optional" hidden>선택</span></label><input id="new-account-id" type="text" minlength="3" maxlength="64" autocomplete="off" autocapitalize="none" spellcheck="false" pattern="[a-z0-9][a-z0-9_.\-]{2,63}" required placeholder="영문 소문자, 숫자 등 3~64자"></div><div id="new-account-password-field" class="field"><label for="new-account-password">초기 비밀번호</label><input id="new-account-password" type="password" minlength="10" maxlength="128" autocomplete="new-password" required placeholder="10자 이상 입력해 주세요"></div><p id="create-account-feedback" class="auth-feedback" role="status" hidden></p><button id="submit-create-account" class="primary-button" type="submit">계정 만들기</button></form></dialog>
+    <dialog id="delete-account-dialog" class="account-dialog" aria-labelledby="delete-account-heading"><div class="delete-visual" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M11 14h26M19 14V9h10v5M15 14l2 25h14l2-25M21 21v11m6-11v11" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h2 id="delete-account-heading">이 계정을 삭제할까요?</h2><p class="delete-account-target"><strong id="delete-target-name"></strong><span id="delete-target-id"></span></p><p class="status-message">계정과 등록 사진, 얼굴 등록 정보를 삭제해요. 삭제 후에는 다시 등록해야 해요.</p><p id="delete-account-feedback" class="auth-feedback" role="status" hidden></p><div class="dialog-actions"><button id="cancel-delete-account" class="secondary-button" type="button">취소</button><button id="confirm-delete-account" class="danger-button" type="button">삭제하기</button></div></dialog>
+
+    <details id="live-advanced" class="advanced-panel">
+      <summary>연결 정보 및 검증 도구 <span class="chevron" aria-hidden="true"></span></summary>
+      <div class="advanced-grid">
+        <section class="sensor-details" aria-labelledby="sensor-heading">
+          <div class="section-heading"><h2 id="sensor-heading">카메라 연결</h2><span id="camera-state" class="status-pill" data-tone="waiting">확인 중</span></div>
+          <p id="camera-message" class="status-message" role="status">카메라 상태를 확인하고 있어요.</p>
+          <div class="metrics"><div><span class="metric-label">센서 수신</span><strong id="capture-fps">—<small> fps</small></strong></div><div><span class="metric-label">화면 표시</span><strong id="display-fps">—<small> fps</small></strong></div><div><span class="metric-label">중앙 깊이</span><strong id="depth-distance">—<small> m</small></strong></div></div>
+          <p class="recognition-rate">얼굴 인식 <strong id="recognition-fps">—</strong> fps</p>
+          <p class="metric-note">화면 표시는 최근 2초 평균입니다. 중앙 깊이는 화면 중앙의 유효 깊이 중앙값이며 얼굴과의 거리가 아닙니다.</p>
+          <div class="preview-footer"><p id="view-description">컬러 영상을 거울처럼 좌우 반전해 표시합니다.</p><span id="frame-age">프레임 대기</span></div>
+        </section>
+        <section class="diagnostics" aria-label="운영자 진단 정보">
+          <h2>서비스 정보</h2>
+          <dl><div><dt>서버 연결</dt><dd id="detail-server">확인 중</dd></div><div><dt>동작 모드</dt><dd id="detail-mode">—</dd></div><div><dt>수신 프레임</dt><dd id="detail-frames">—</dd></div><div><dt>유효 깊이 비율</dt><dd id="detail-depth-valid">—</dd></div><div><dt>마지막 상태 확인</dt><dd id="detail-updated">—</dd></div></dl>
+          <details class="device-details"><summary>기기 상세 정보 <span class="chevron" aria-hidden="true"></span></summary><pre id="device-info" hidden></pre></details>
+          <p class="metric-note">영상이 나오지 않으면 센서 전원과 USB 3 연결을 확인해 주세요.</p>
+        </section>
+        <details id="observation-panel" class="observation-panel" hidden>
+          <summary>센서 검증용 표본 수집 <span class="chevron" aria-hidden="true"></span></summary>
+          <p class="metric-note">실제 사람과 공격 매체의 판별 점수를 수집합니다. 표본 기록은 인증 승인이 아니며, 직접 선택한 분류는 별도 검증이 필요합니다. 원본 영상은 저장하지 않습니다.</p>
+          <form id="observation-form" class="login-form">
+            <label for="observation-mode">촬영 검증 방식</label><select id="observation-mode" aria-describedby="observation-mode-description"><option value="diagnostic" selected>센서 진단 · 5프레임</option><option value="auth">인증 촬영 검증 · 정면</option><option value="enroll">등록 촬영 검증 · 9방향</option></select>
+            <p id="observation-mode-description" class="metric-note">정면에서 5개 프레임의 진단 점수를 수집합니다.</p>
+            <label for="observation-kind">촬영 대상</label><select id="observation-kind"><option value="live">실제 사람</option><option value="print">인쇄 사진</option><option value="replay">화면 재생</option><option value="mask_rigid">단단한 얼굴 마스크</option><option value="mask_silicone">실리콘 얼굴 마스크</option></select>
+            <label for="observation-split">표본 용도</label><select id="observation-split"><option value="calibration">보정용</option><option value="test">독립 평가용</option></select>
+            <label for="observation-subject">대상 코드 · 이름 등 개인정보 제외</label><input id="observation-subject" type="text" maxlength="64" autocomplete="off" required placeholder="예: subject-001">
+            <label for="observation-instrument">공격 매체 코드 · 실제 사람은 제외</label><input id="observation-instrument" type="text" maxlength="64" autocomplete="off" disabled placeholder="예: print-001">
+            <label for="observation-conditions">조명 · 거리 메모</label><input id="observation-conditions" type="text" maxlength="256" autocomplete="off" placeholder="예: 실내 조명, 60cm">
+            <button id="start-observation" class="secondary-button" type="submit" disabled>검증 표본 수집</button>
+          </form>
+          <p id="observation-note" class="metric-note">계정 로그인과 생체정보 처리 동의가 필요합니다.</p>
+        </details>
+      </div>
+      <p id="pilot-notice" class="pilot-notice" hidden>체험용 테스트 계정을 사용하며, 실제 서비스의 계정 본인 확인을 대신하지 않습니다.</p>
+    </details>
+    <footer class="page-footer"><span>PaceAuth<span class="footer-divider" aria-hidden="true">·</span><span id="footer-mode">LIVE DEMO</span></span><span>Orbbec Femto Bolt</span></footer>
+    <noscript><p class="noscript">실시간 영상과 얼굴 인증을 사용하려면 JavaScript를 켜 주세요.</p></noscript>
+  </main>
+</body>
+</html>

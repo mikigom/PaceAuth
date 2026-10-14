@@ -1,0 +1,43 @@
+{
+  "tested_url": "http://192.168.2.218:8080",
+  "checks": {
+    "preview_visible": true,
+    "initial_logged_out": true,
+    "initial_capture_disabled": true,
+    "mode_descriptions": true,
+    "pad_off_notice_visible": true,
+    "pad_off_status_label": true,
+    "signup_login_controls_enabled": true,
+    "consent_unchecked": true,
+    "no_post_requests": true,
+    "mobile_no_horizontal_overflow": true
+  },
+  "captures_requested": 0,
+  "read_only": true,
+  "media_persisted": false,
+  "observation_modes": [
+    "diagnostic",
+    "auth",
+    "enroll"
+  ],
+  "preview": {
+    "seconds": 6.000399999999907,
+    "received": 180,
+    "displayed": 181,
+    "unique_sequences": 180,
+    "max_frame_age_ms": 0,
+    "capture_fps_text": "29.9 fps",
+    "display_fps_text": "30.0 fps",
+    "measured_display_fps": 30.16,
+    "measured_receive_fps": 30.0
+  },
+  "readiness": {
+    "ready": true,
+    "capture_ready": true,
+    "pad_enabled": false,
+    "pad_mode": "disabled_pilot",
+    "blockers": []
+  },
+  "js_errors": [],
+  "passed": true
+}

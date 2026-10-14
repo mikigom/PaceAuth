@@ -1,0 +1,89 @@
+{
+  "tested_url": "http://192.168.2.218:8080",
+  "checks": {
+    "deployed_files_match_workspace": true,
+    "redesigned_title_and_light_scheme": true,
+    "simplified_footer": true,
+    "live_recognition_badge": true,
+    "name_signup_field_present": true,
+    "existing_login_controls_enabled": true,
+    "logged_out": true,
+    "preview_no_duplicate_frames": true,
+    "preview_at_least_25fps": true,
+    "all_modalities_mirrored_with_readable_overlay": true,
+    "single_flight_recognition_requests": true,
+    "all_labels_unmirrored": true,
+    "consent_unchecked": true,
+    "no_post_requests": true,
+    "no_operation_started": true,
+    "mobile_no_overflow_320": true,
+    "mobile_open_tools_no_overflow_320": true,
+    "mobile_no_overflow_390": true,
+    "mobile_open_tools_no_overflow_390": true
+  },
+  "captures_requested": 0,
+  "read_only": true,
+  "media_persisted": false,
+  "source_hashes": {
+    "live.html": {
+      "served": "ce4bda05e35424c7cdbb30c5677f6f360fb09e5ab906e22765f110b2124c9219",
+      "workspace": "ce4bda05e35424c7cdbb30c5677f6f360fb09e5ab906e22765f110b2124c9219"
+    },
+    "live.js": {
+      "served": "f91e014bb5dc5c696756a98b87a0e24e65cbc3b369de9bea17c1ad606908a523",
+      "workspace": "f91e014bb5dc5c696756a98b87a0e24e65cbc3b369de9bea17c1ad606908a523"
+    },
+    "live.css": {
+      "served": "e699bcd63a8ef0a7451d78f138327b967cd668d0d54bdabc9ac294d64afbee4c",
+      "workspace": "e699bcd63a8ef0a7451d78f138327b967cd668d0d54bdabc9ac294d64afbee4c"
+    }
+  },
+  "performance": {
+    "seconds": 10.0005,
+    "preview_received": 287,
+    "preview_unique_sequences": 287,
+    "preview_receive_fps": 28.698565071746412,
+    "preview_display_fps": 28.7985600719964,
+    "recognition_responses": 149,
+    "recognition_unique_sequences": 146,
+    "recognition_update_fps": 14.599270036498174,
+    "recognition_reported_fps_mean": 14.744966442953038,
+    "recognition_latency_ms_mean": 21.91409395973155,
+    "recognition_frame_age_ms_max": 290,
+    "max_faces_seen": 1,
+    "preview_ui_fps": "30.5 fps",
+    "recognition_ui_fps": "15.0"
+  },
+  "modalities": {
+    "rgb": {
+      "mirrored": true,
+      "image_size": [
+        640,
+        480
+      ],
+      "overlay_unmirrored": true,
+      "visible_faces": 1
+    },
+    "depth": {
+      "mirrored": true,
+      "image_size": [
+        640,
+        480
+      ],
+      "overlay_unmirrored": true,
+      "visible_faces": 1
+    },
+    "ir": {
+      "mirrored": true,
+      "image_size": [
+        640,
+        480
+      ],
+      "overlay_unmirrored": true,
+      "visible_faces": 1
+    }
+  },
+  "overlay_face_count": 1,
+  "js_errors": [],
+  "passed": true
+}

@@ -1,0 +1,53 @@
+{
+  "tested_at": "2026-10-14T08:16:45.015987+00:00",
+  "source_sha256": {
+    "live.html": "9d0205f4da3192ac75fff585f577fedf0a5e17596367b35e231e3ba6d7c02a24",
+    "live.css": "aa865be91fd5007157b24903d3c129174595129b5ef96ddd27cb056fdc3662d5",
+    "live.js": "96909d3b72812a9730bf6a0b98d63cd0026fac204c001718d8dc7877836b1d6d"
+  },
+  "passed": true,
+  "checks": {
+    "anonymous_opens_console": true,
+    "all_login_controls_hidden": true,
+    "explicit_target_required": true,
+    "initial_photo_optin_false": true,
+    "no_mutation_on_page_open": true,
+    "only_active_choices": true,
+    "console_no_overflow_320": true,
+    "console_no_overflow_390": true,
+    "console_no_overflow_768": true,
+    "console_no_overflow_1440": true,
+    "name_only_create_form": true,
+    "name_only_valid": true,
+    "generated_id_response_selected": true,
+    "no_password_or_empty_id_sent": true,
+    "legacy_admin_account_editable_without_self_protection": true,
+    "managed_enrollment_selects_target_resets_consent": true,
+    "unregistered_auth_disabled": true,
+    "anonymous_target_enrollment_correct": true,
+    "capture_name_and_controls_locked": true,
+    "anonymous_operation_survives_status_poll": true,
+    "anonymous_operation_cancel": true,
+    "selector_change_resets_consent": true,
+    "selected_target_authentication_endpoint": true,
+    "auth_result_without_login": true,
+    "observation_uses_selected_account": true,
+    "session_renewal_resets_operations_and_consents": true,
+    "external_disable_clears_selection_and_consent": true,
+    "anonymous_account_delete_confirmation": true,
+    "empty_list_prompt": true,
+    "empty_console_no_implicit_identity": true,
+    "accessible_inputs": true,
+    "csrf_header_all_writes": true,
+    "no_login_signup_logout_posts": true
+  },
+  "screenshots": [
+    "/tmp/paceauth-console-ui/desktop-open-console-synthetic.png",
+    "/tmp/paceauth-console-ui/mobile-open-console-synthetic.png",
+    "/tmp/paceauth-console-ui/name-only-create-synthetic.png"
+  ],
+  "js_errors": [],
+  "backend": "isolated mocked API; no real accounts, consent or capture",
+  "human_media_persisted": false,
+  "synthetic_media_persisted": true
+}

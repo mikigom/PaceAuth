@@ -1,0 +1,90 @@
+{
+  "deployed_at": "2026-10-14T16:07:48.507594+09:00",
+  "url": "http://192.168.2.218:8080",
+  "terminal_image_id": "sha256:e40854eb7eadad4177620a61367497dc7c4bd0b1e2a4017739cf790f4563b32b",
+  "passed": true,
+  "features": [
+    "administrator account creation and management",
+    "display name editing",
+    "optional encrypted registration thumbnail and deletion",
+    "managed face re-enrollment",
+    "account disable and enable with revoked sessions",
+    "account deletion with central template and key erasure",
+    "circular mirrored enrollment preview with verified coverage and reduced motion"
+  ],
+  "existing_account_bootstrap": "sole existing pilot account explicitly promoted to administrator",
+  "database_migration": "deploy/db/migrations/002_account_management.sql",
+  "restarted_services": [
+    "api-1",
+    "api-2",
+    "search-1",
+    "search-2",
+    "terminal"
+  ],
+  "existing_face_counts_preserved": {
+    "subjects": 1,
+    "active_templates": 4
+  },
+  "unit_and_integration_tests": {
+    "terminal_store_web_recognition": {
+      "passed": 96
+    },
+    "device_client": {
+      "passed": 13
+    },
+    "rotation_guide": {
+      "passed": 84
+    },
+    "central_api": {
+      "passed": 62
+    },
+    "search": {
+      "passed": 24,
+      "skipped_gpu_only": 1
+    }
+  },
+  "verification": {
+    "account_crud": {
+      "report": "femto_bolt_accounts_actual_20261014.json",
+      "passed": true,
+      "checks": 49
+    },
+    "account_browser": {
+      "report": "femto_bolt_accounts_browser_actual_20261014.json",
+      "passed": true,
+      "checks": 35
+    },
+    "account_ui": {
+      "report": "femto_bolt_accounts_ui_mock_20261014.json",
+      "passed": true,
+      "checks": 37
+    },
+    "circle_ui": {
+      "report": "femto_bolt_circle_ui_mock_20261014.json",
+      "passed": true,
+      "checks": 69
+    },
+    "deployed_preview": {
+      "report": "femto_bolt_toss_ui_actual_20261014.json",
+      "passed": true,
+      "checks": 19
+    }
+  },
+  "source_sha256": {
+    "live.html": "ce4bda05e35424c7cdbb30c5677f6f360fb09e5ab906e22765f110b2124c9219",
+    "live.css": "e699bcd63a8ef0a7451d78f138327b967cd668d0d54bdabc9ac294d64afbee4c",
+    "live.js": "f91e014bb5dc5c696756a98b87a0e24e65cbc3b369de9bea17c1ad606908a523"
+  },
+  "ready": {
+    "camera": "streaming",
+    "auth": true,
+    "capture": true,
+    "pad_enabled": false
+  },
+  "automated_checks_requested_real_enrollment": false,
+  "real_camera_media_persisted": false,
+  "notes": [
+    "Existing registrations have no thumbnail; optional photo consent and a new enrollment are needed to add one.",
+    "Circular enrollment was tested with synthetic browser responses; real person enrollment was not repeated for this deployment."
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "schema": "faceauth.deployment.pad_readiness.v1",
+  "recorded_at": "2026-10-14T14:15:59.998597+09:00",
+  "scope": "Read-only runtime and model-artifact readiness; not a PAD accuracy study or deployment approval.",
+  "kernel": "7.0.0-38-generic",
+  "sensor": {
+    "model": "Orbbec Femto Bolt",
+    "connection": "USB3.1",
+    "fps_setting": 30,
+    "calib_version": "femto-bolt-v1-50beeef1ae82fb27"
+  },
+  "web_readiness": {
+    "capture_ready": true,
+    "ready": false,
+    "blocker_codes": [
+      "pad_calibration_mismatch",
+      "pad_real_sensor_validation_missing"
+    ]
+  },
+  "model_evaluator": {
+    "ready": false,
+    "reasons": [
+      "pad_calibration_mismatch",
+      "pad_real_sensor_validation_missing"
+    ],
+    "model_version": "pad_rgbdir@2",
+    "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+    "model_calib_version": "gemini336-sim-v1",
+    "binding": {
+      "model_version": "pad_rgbdir@2",
+      "model_json_sha256": "531cef5f48dc88c9070786a6349a872092fb6be17fdf9bea7386b7a36e8c5ef7",
+      "weights_sha256": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18",
+      "pipeline_sha256": "3975d30b7343bfe06873a5bc149407a4b25795c809c7606fb789be77cbed9477",
+      "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5"
+    }
+  },
+  "runtime_binding_matches_current_files": true,
+  "both_engine_bindings_match_current_files": true,
+  "source_sha256": {
+    "models/pad.py": "f2d990a9e6d5303bb04b507b05993c6336529c589a7c2548c24b1e806a778c33",
+    "models/scrfd.py": "b7385053327e49f141235344841e95a5c4652523291a664c7bacf87c096d941b",
+    "common/align.py": "a0112cda33add8da7d521a40a1c61055a3e5f49c754fe4811aaac68041063a67",
+    "common/packet.py": "e784908efa80c522f57753459b01ba88c3311dcdbf35ab6cfa56bb983b8db85e",
+    "terminal/orbbec.py": "61eff28802ff92bb1674b72061b30be0c09188a50358ed54682a0a28d09800b0",
+    "engine/main.py": "a5388e9e4f9244e4a7110bc951a615fd9854713315e017c2e56a6b8408ec7306",
+    "api/policy.py": "e7201f5e49e8827100102d11a80a548a84666c4249b53a68471f7510ca803842",
+    "terminal/live.py": "68ad424962f14e1e6c6b061b596cd26e8267b00eb2f84f240bbfa703c26cdef3",
+    "terminal/web_auth.py": "5ae617468f4f5dfb8fd7813c9dc95f1e8c495253305a592298837f28cc2dfc01",
+    "terminal/pipeline.py": "8ae072ef2b04ffccd6076264e4f73fe316358bc3b46a9efeb75db50122f10615",
+    "terminal/guide.py": "c76ebad57acc9badb3b2ac6b996d6dbbe65084c07e0263710c6bc0f8a385874d"
+  },
+  "gpu_report": "femto_bolt_gpu_20261014.json",
+  "tests": {
+    "files": [
+      "tests/test_pad_validation.py",
+      "tests/test_web_auth.py"
+    ],
+    "passed": 45,
+    "runtime": "faceauth:dev with current source mounted read-only",
+    "scope": "Synthetic contract fixtures; no physical PAD accuracy claim"
+  },
+  "observations": {
+    "captured_by_this_readiness_check": 0,
+    "real_sensor_pad_accuracy_measured": false,
+    "images_saved": false,
+    "authentication_approved": false
+  },
+  "remaining_work": [
+    "Collect explicitly consented real Femto Bolt bona-fide and physical print/replay/mask observations.",
+    "Separate calibration and final-test subjects and attack instruments; retain incomplete-attempt accounting.",
+    "Develop/calibrate a model for the actual sensor input; current model remains Gemini simulator-calibrated.",
+    "Evaluate enrolled/authentication selection modes against agreed acceptance criteria and required independent evidence.",
+    "After qualifying model release, validate real user web enrollment and authentication end to end."
+  ]
+}

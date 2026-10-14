@@ -1,0 +1,71 @@
+# Camera/web service: explicit -f separates its lifecycle from the GPU cluster.
+name: paceauth-live
+services:
+  terminal:
+    image: paceauth-terminal:local
+    build:
+      context: .
+      dockerfile: docker/live.Dockerfile
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 20s
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    # USB hotplug works without granting access to every host device.
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+      - ./data/models:/app/data/models:ro
+      - ./secrets/ca.crt:/app/secrets/ca.crt:ro
+      - ./secrets/account.key:/app/secrets/account.key:ro
+      - ./secrets/approval.pub:/app/secrets/approval.pub:ro
+      # Used only by server-side account management; never sent to the browser.
+      - ./secrets/admin_token:/app/secrets/admin_token:ro
+      - ./secrets/devices/dev-001.crt:/app/secrets/devices/dev-001.crt:ro
+      - ./secrets/devices/dev-001.key:/app/secrets/devices/dev-001.key:ro
+      - ./secrets/devices/dev-001.ed25519:/app/secrets/devices/dev-001.ed25519:ro
+      - live-state:/var/lib/paceauth
+    networks: [default, auth-edge]
+    device_cgroup_rules:
+      - 'c 189:* rw'
+    # Femto's depth engine uses EGL. Pass only the GPU render node, not the display.
+    devices:
+      - source: ${FA_DRM_RENDER_NODE:-/dev/dri/renderD128}
+        target: /dev/dri/renderD128
+        permissions: rw
+    ports:
+      - '${FA_LIVE_BIND_IP:-127.0.0.1}:${FA_LIVE_PORT:-8080}:8080'
+    environment:
+      FA_ORBBEC_SERIAL: ${FA_ORBBEC_SERIAL:-}
+      FA_ORBBEC_FPS: ${FA_ORBBEC_FPS:-30}
+      FA_LIVE_AUTH_ENABLED: '1'
+      # This LAN deployment is an open administrator/demo console, as requested.
+      FA_LIVE_OPEN_CONSOLE: '1'
+      FA_LIVE_RECOGNITION_FPS: ${FA_LIVE_RECOGNITION_FPS:-15}
+      FA_TERMINAL_GATEWAY: https://gateway:8443
+      FA_TERMINAL_DEVICE: dev-001
+      FA_LIVE_STATE_DIR: /var/lib/paceauth
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      LP_NUM_THREADS: '4'
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '2'
+
+volumes:
+  live-state:
+
+networks:
+  auth-edge:
+    external: true
+    name: faceauth_edge

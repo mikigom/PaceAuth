@@ -1,0 +1,69 @@
+{
+  "date": "2026-10-14",
+  "deployed_at": "2026-10-14T08:18:32.867136+00:00",
+  "url": "http://192.168.2.218:8080",
+  "scope": "Enrollment direction feedback, freshness, capture progress and aggregate diagnostics",
+  "checks": {
+    "deployed_sources_match": true,
+    "metrics_logger_info_enabled": true,
+    "existing_account_metadata_unchanged_at_deployment": true,
+    "smooth_synthetic_ui_passed": true,
+    "console_synthetic_ui_passed": true,
+    "accounts_synthetic_ui_passed": true,
+    "deployed_browser_passed": true
+  },
+  "source_sha256": {
+    "faceauth/terminal/guide.py": "fb8118da2bd59c98e4c5cd98541a527c30dc9a09e263c68da694957576f7eaa1",
+    "faceauth/terminal/web_auth.py": "54a01878409348ab90ecdf06541ded41c51059ad6fb1a679892de454f4e03e4e",
+    "ui/live.html": "9d0205f4da3192ac75fff585f577fedf0a5e17596367b35e231e3ba6d7c02a24",
+    "ui/live.css": "aa865be91fd5007157b24903d3c129174595129b5ef96ddd27cb056fdc3662d5",
+    "ui/live.js": "96909d3b72812a9730bf6a0b98d63cd0026fac204c001718d8dc7877836b1d6d"
+  },
+  "backend_tests": {
+    "passed": 216,
+    "command": "docker run --rm -e PYTHONDONTWRITEBYTECODE=1 -v /home/junghoonseo/Codes/PaceAuth:/app:ro -w /app faceauth:dev pytest -q -p no:cacheprovider tests/test_guide.py tests/test_web_auth.py tests/test_open_console.py tests/test_account_management_web.py tests/test_live_terminal.py tests/test_live_recognition.py"
+  },
+  "synthetic_ui_tests": {
+    "smooth": 86,
+    "console": 33,
+    "accounts": 37
+  },
+  "behavior": [
+    "Only captured coverage resets stall and fills progress",
+    "Quality rejection, missing face, sensor errors and stale responses stop motion guidance",
+    "Actual measured pose and target hints; yaw/pitch correction when stalled",
+    "Sample age includes encoding and inference; browser stops showing pose at500ms",
+    "Enrollment analysis capped15Hz, oneinflight; operation polling100ms, singleflight",
+    "Completion graphic replaces livepreview; dismiss/retry restorespreview",
+    "Aggregate diagnostic counts andlatencies without rawimages,rawposes oridentity"
+  ],
+  "unchanged": [
+    "9directions x2frames required",
+    "Centralserver quality/identity verification",
+    "PADdisabled mode",
+    "Mirrored previews andlargestfaceauthentication"
+  ],
+  "actual_human_registration_retest": "user_confirmed_natural_direction_progress",
+  "user_confirmation": {
+    "date": "2026-10-14",
+    "timezone": "Asia/Seoul",
+    "feedback": "이제 자연스럽게 진행돼요",
+    "scope": "Participant-reported enrollment direction guidance experience after deployment; not a new identity accuracy measurement."
+  },
+  "automated_capture_requests": 0,
+  "real_images_saved": false,
+  "deployed_browser_tests": {
+    "passed": 33,
+    "total": 33,
+    "report": "femto_bolt_enrollment_feedback_actual_20261014.json"
+  },
+  "runtime": {
+    "camera_state": "streaming",
+    "capture_fps": 30.1,
+    "frame_age_ms": 17,
+    "auth_ready": true,
+    "pad_enabled": false
+  },
+  "passed": true,
+  "verified_at": "2026-10-14T08:18:57.574275+00:00"
+}

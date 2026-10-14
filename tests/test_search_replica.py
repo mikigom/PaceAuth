@@ -212,6 +212,62 @@ def test_snapshot_overlap_is_harmless(db, monkeypatch):
     assert [s for s, _ in ranked(r, A[1])[0]] == [sb]
 
 
+@pytest.mark.parametrize("initially_present", [False, True])
+@pytest.mark.parametrize("transitions", [(False, True), (True, False), (False, True, False, True)])
+def test_account_toggle_batch_last_event_wins(db, initially_present, transitions):
+    conn, ro = db
+    fake, rng = FakeKMS(), np.random.default_rng(41)
+    activate(conn, "1")
+    vectors, probes = person(rng)
+    sid, tids = enroll(conn, fake.client(), vectors, active=initially_present)
+    replica = Replica(ro, None, fake.client, "recog", gpu=False)
+    replica.build()
+    for enabled in transitions:
+        _account_templates_enabled(conn, sid, enabled)
+    expected = 4 if transitions[-1] else 0
+    assert replica.poll() == 4 * len(transitions)
+    assert replica.status()["ntotal"] == expected
+    assert replica.status()["applied_event_id"] == max_event(conn)
+    assert (sid in {subject for subject, _ in ranked(replica, probes)[0]}) is transitions[-1]
+    assert replica.poll() == 0 and replica.status()["ntotal"] == expected
+
+
+def _account_templates_enabled(conn, sid, enabled):
+    with conn.transaction():
+        conn.execute("UPDATE templates SET active=%s WHERE subject_id=%s", (enabled, sid))
+        conn.execute("SELECT pg_advisory_xact_lock(7001)")
+        conn.execute("INSERT INTO template_events (op,template_id,subject_id,model_version) "
+                     "SELECT %s,id,subject_id,model_version FROM templates WHERE subject_id=%s ORDER BY id",
+                     ("add" if enabled else "remove", sid))
+
+
+def test_account_enable_restores_tombstones_after_separate_polls(db):
+    conn, ro = db
+    fake, rng = FakeKMS(), np.random.default_rng(42)
+    activate(conn, "1")
+    vectors, probes = person(rng)
+    sid, tids = enroll(conn, fake.client(), vectors)
+    replica = Replica(ro, None, fake.client, "recog", gpu=False)
+    replica.build()
+    for _ in range(3):
+        _account_templates_enabled(conn, sid, False)
+        assert replica.poll() == 4
+        assert replica.status()["ntotal"] == 0
+        _account_templates_enabled(conn, sid, True)
+        assert replica.poll() == 4
+        assert replica.status()["ntotal"] == 4 and replica.status()["nsubjects"] == 1
+        assert ranked(replica, probes)[0][0][0] == sid
+        assert replica.poll() == 0
+    # A spurious add for inactive/shredded rows cannot restore the deleted face.
+    delete(conn, fake, sid)
+    replica.poll()
+    conn.execute("INSERT INTO template_events (op,template_id,subject_id,model_version) "
+                 "SELECT 'add',id,subject_id,model_version FROM templates WHERE subject_id=%s", (sid,))
+    replica.poll()
+    assert replica.status()["ntotal"] == 0
+    assert replica.status()["applied_event_id"] == max_event(conn)
+
+
 def test_model_activation_rebuilds_and_mismatch_is_409(db):
     conn, ro = db
     fake, rng = FakeKMS(), np.random.default_rng(3)

@@ -133,6 +133,63 @@ def test_synced_ts_is_ordered_and_within_sync_tolerance():
     assert synced_ts([0, 1], 0, seed=5) == synced_ts([0, 1], 0, seed=5)
 
 
+def test_capture_client_binds_purpose_calibration_and_gateway_identity():
+    requests = []
+    c = _mock_client(requests)
+    c.calib_version = "femtobolt-test-v1"
+    c.readiness()
+    assert requests[-1].method == "GET" and requests[-1].url.params["device_id"] == DEV
+    assert requests[-1].extensions["sni_hostname"] == "gateway"
+    frames, ts = _frames(3), synced_ts(range(3), 1_760_000_000_000)
+    c.capture_guide(SESSION, frames[0], ts[0], purpose="enroll")
+    c.observe(SESSION, frames, ts)
+    for request, purpose, count in zip(requests[1:], ("enroll", "auth"), (1, 3)):
+        header, sig, wire = parse_packet(request.content)
+        assert header["capture_purpose"] == purpose and header["calib_version"] == c.calib_version
+        assert len(wire) == count and verify_packet(header, sig, wire, c.key.public_key()) == []
+    with pytest.raises(ValueError):
+        c.observe(SESSION, frames[:2], ts[:2])
+    c.observe(SESSION, frames * 6, synced_ts(range(18), 1_760_000_000_000), purpose="enroll")
+    header, sig, wire = parse_packet(requests[-1].content)
+    assert header["capture_purpose"] == "enroll" and len(wire) == 18
+    assert verify_packet(header, sig, wire, c.key.public_key()) == []
+    with pytest.raises(ValueError):
+        c.observe(SESSION, frames * 6, [], purpose="auth")
+    with pytest.raises(ValueError):
+        c.observe(SESSION, frames * 9, [], purpose="enroll")
+    c.close()
+
+
+def test_final_submission_waits_for_gateway_without_slowing_guidance_or_readiness():
+    requests = []
+    c = _mock_client(requests)
+    frames, ts = _frames(3), synced_ts(range(3), 1_760_000_000_000)
+    c.readiness()
+    c.capture_guide(SESSION, frames[0], ts[0])
+    c.enroll(SESSION, frames, ts, ["C"] * 3, "assertion", {"version": "v1"})
+    c.authenticate(SESSION, frames, ts)
+    c.observe(SESSION, frames, ts)
+    assert [r.extensions["timeout"]["read"] for r in requests] == [10, 10, 95, 95, 95]
+    for request in requests[2:]:
+        assert request.extensions["timeout"] == {"connect": 2, "read": 95, "write": 30, "pool": 10}
+    c.close()
+
+
+def test_live_recognition_signs_one_auth_frame_with_device_and_challenge():
+    requests = []
+    c = _mock_client(requests, reply={"demo": True, "faces": []})
+    c.create_session("auth", "live-demo")
+    assert json.loads(requests[-1].content)["action_id"] == "live-demo"
+    out = c.recognize_live(SESSION, _frames(1)[0], synced_ts([0], 1_760_000_000_000)[0])
+    request = requests[-1]
+    header, sig, frames = parse_packet(request.content)
+    assert request.url.path == "/v1/live/recognize" and out["demo"] is True
+    assert header["capture_purpose"] == "auth" and header["challenge"] == SESSION["challenge"]
+    assert len(frames) == 1 and verify_packet(header, sig, frames, c.key.public_key()) == []
+    assert request.extensions["sni_hostname"] == "gateway" and request.extensions["timeout"]["read"] == 10
+    c.close()
+
+
 # ---- real TLS handshakes against a local server presenting the gateway certificate ----------------------------
 
 class _Echo(http.server.BaseHTTPRequestHandler):
@@ -202,3 +259,21 @@ def test_mtls_rejects_server_not_signed_by_dev_ca(tmp_path):
     with _serve(*_self_signed(tmp_path)) as url:
         with pytest.raises(httpx.ConnectError, match="(?i)certificate"):
             DeviceClient(url, DEV, timeout=5).create_session("auth", "a")
+
+
+def test_account_management_uses_server_credential_over_verified_mtls(tmp_path):
+    captured = []
+    client = _mock_client(captured, reply={"accounts": []})
+    client.secrets_dir = tmp_path
+    (tmp_path / "admin_token").write_text("fixture-management-credential")
+    client.account_summary(["alice"])
+    client.account_status("alice", False)
+    client.delete_account_face("alice")
+    assert [r.url.path for r in captured] == [
+        "/v1/admin/accounts/summary", "/v1/admin/accounts/alice/status", "/v1/admin/accounts/alice/face"]
+    assert [r.method for r in captured] == ["POST", "POST", "DELETE"]
+    assert json.loads(captured[1].content) == {"enabled": False}
+    for request in captured:
+        assert request.headers["authorization"] == "Bearer fixture-management-credential"
+        assert request.extensions["sni_hostname"] == "gateway"
+    client.close()

@@ -33,7 +33,7 @@ RING_TICKS = 60        # one tick per 6 degrees of head-direction azimuth
 RING_R_MIN = 0.85      # normalised sweep radius (target ellipse = 1.0) that lights the ring: wide enough for a bin
 RING_GAP_MAX = 40.0    # fill the ring between consecutive sweep frames at most this far apart (deg)
 HINT_AFTER_S = 2.0     # ring >= 90% but a direction still missing for this long -> name that direction
-STALL_S = 3.0          # no new tick and no new frame for this long -> name the missing direction
+STALL_S = 3.0          # no new accepted direction frame for this long -> name the missing direction
 
 HINTS = {  # keys = terminal/engine reason codes (+ guide states)
     "no_face": "얼굴이 화면 안에 들어오도록 해주세요",
@@ -41,11 +41,30 @@ HINTS = {  # keys = terminal/engine reason codes (+ guide states)
     "small_face": "카메라에 조금 더 가까이 와주세요",
     "blur": "잠시 움직임을 멈춰주세요",
     "exposure": "조명이 너무 어둡거나 밝습니다",
+    "depth_invalid": "카메라에서 50~80cm 떨어져 얼굴 전체가 보이도록 해주세요",
+    "ir_invalid": "적외선 영상에서 얼굴을 확인하기 어렵습니다. 가림을 치우고 카메라를 바라봐 주세요",
+    "pose_out_of_range": "고개를 돌리지 말고 정면을 바라봐 주세요",
     "eyes_closed": "눈을 뜨고 화면을 바라봐 주세요",
+    "missing_modality": "카메라의 영상이 모두 도착하지 않았어요. 잠시 기다려 주세요",
+    "unregistered_frame_size": "카메라의 영상 크기 설정을 확인해 주세요",
+    "decode_error": "카메라 영상을 읽지 못했어요. 잠시 기다려 주세요",
+    "quality_unknown": "얼굴을 선명하게 확인할 수 없어요. 잠시 정면을 바라봐 주세요",
+    "pose_invalid": "얼굴 방향을 확인하고 있어요. 잠시 정면을 바라봐 주세요",
     "too_far": "조금만 덜 움직여주세요",
     "done": "얼굴 촬영이 완료되었습니다",
     "timeout": "시간이 초과되었습니다. 처음부터 다시 시도해주세요",
 }
+
+
+def finite_pose(pose):
+    """Keep malformed/non-finite estimates out of both guidance and JSON responses."""
+    try:
+        if pose is None or isinstance(pose, (str, bytes, bytearray, dict)) or not 2 <= len(pose) <= 3:
+            return None
+        values = tuple(float(value) for value in pose)
+        return values if all(math.isfinite(value) for value in values) else None
+    except (TypeError, ValueError, OverflowError):
+        return None
 
 
 def direction_of(yaw: float, pitch: float, tol_yaw: float = TOL_YAW, tol_pitch: float = TOL_PITCH,
@@ -88,7 +107,7 @@ class Guide:
     mode "circle" (default, Face ID-style): look straight first, then one instruction - move the head slowly around
     - while a RING_TICKS progress ring fills wherever the sweep passed (quality ok, radius >= RING_R_MIN) and over
     the whole arc of every completed bin. The bins are still what completes enrollment; if the ring is nearly full
-    or nothing new lit up for STALL_S while a bin is missing, the prompt names that direction.
+    or no new frame was collected for STALL_S while a bin is missing, the prompt helps with that direction.
     mode "steps" (accessibility option): the prompt walks ORDER one direction at a time.
     """
 
@@ -119,32 +138,60 @@ class Guide:
         t = self.clock() if t is None else t
         self.t0 = t if self.t0 is None else self.t0
         seq, self.seq = self.seq, self.seq + 1
+        raw_pose, pose = pose, finite_pose(pose)
+        reasons = tuple(reason for reason in reasons if isinstance(reason, str))
+        if pose is None and raw_pose is not None:
+            reasons = ("pose_invalid", *reasons)
+        try:
+            quality_score = float(quality_score)
+        except (TypeError, ValueError, OverflowError):
+            quality_score = math.nan
+        if not math.isfinite(quality_score):
+            reasons = (*reasons, "quality_unknown")
+        # A contradictory single-face flag must never animate or collect another person's pose.
+        quality_ok = bool(quality_ok and not reasons and pose is not None)
         direction = None if pose is None else direction_of(pose[0], pose[1])
         accepted = False
         if not (self.done or self.timed_out):
+            have = sum(min(len(v), self.per_dir) for v in self.kept.values())
             if t - self.t0 > self.timeout_s:
                 self.timed_out = True
             elif quality_ok and direction is not None and self._inside(pose, direction):
-                accepted = self._keep(direction, float(quality_score), seq, frame_ref)
-            lit, have = sum(self.ring), sum(min(len(v), self.per_dir) for v in self.kept.values())
-            self._sweep(pose, quality_ok)
-            if direction not in (None, "C") and len(self.kept[direction]) >= self.per_dir:
+                accepted = self._keep(direction, quality_score, seq, frame_ref)
+            self._sweep(pose, quality_ok and not self.timed_out)
+            if not self.timed_out and direction not in (None, "C") and len(self.kept[direction]) >= self.per_dir:
                 self._light(ring_position(*TARGETS[direction])[0], 22.5)  # a completed bin owns its arc
             if self.done:
                 self.ring = [True] * RING_TICKS                         # the bins decide; the ring closes with them
-            if (sum(self.ring) > lit or sum(min(len(v), self.per_dir) for v in self.kept.values()) > have
-                    or self.progress_t is None):                       # new coverage only: replacing a kept frame
-                self.progress_t = t                                     # with a better one is not progress
+            if sum(min(len(v), self.per_dir) for v in self.kept.values()) > have or self.progress_t is None:
+                # A sweep tick or a sharper replacement is visual feedback, not new enrollment coverage.
+                self.progress_t = t
         frac = sum(self.ring) / RING_TICKS
         if frac >= 0.9 and not self.done:
             self.nearly_full_since = t if self.nearly_full_since is None else self.nearly_full_since
+        phase = self._phase(t)
+        # An overshoot is still a measured pose. The UI may clamp its marker; only _sweep grants ring coverage.
+        motion_ok = bool(quality_ok and not (self.done or self.timed_out))
+        azimuth, radius = ring_position(pose[0], pose[1]) if motion_ok else (None, None)
+        reason = (next((reason for reason in reasons if reason in HINTS), "quality_unknown")
+                  if not quality_ok else "between_directions" if direction is None
+                  else "pose_margin" if not self._inside(pose, direction) else None)
+        if pose is None and not reasons:
+            reason = "no_face"
         return {"coverage": self.coverage(), "direction": direction, "accepted": accepted, "current": self.current(),
                 "prompt": self._prompt(pose, quality_ok, reasons, t), "done": self.done, "timed_out": self.timed_out,
-                "ring": [i for i, lit in enumerate(self.ring) if lit], "ring_frac": round(frac, 3)}
+                "ring": [i for i, lit in enumerate(self.ring) if lit], "ring_frac": round(frac, 3),
+                "ring_ticks": RING_TICKS, "sample_seq": seq, "phase": phase,
+                "hint_direction": self.current() if phase in ("center", "refine") or self.mode == "steps" else None,
+                "quality_ok": quality_ok, "reason_code": reason,
+                "motion": {"valid": motion_ok, "yaw": round(pose[0], 2) if motion_ok else None,
+                           "pitch": round(pose[1], 2) if motion_ok else None,
+                           "azimuth": round(azimuth, 2) if motion_ok else None,
+                           "radius": round(radius, 3) if motion_ok else None}}
 
     def _sweep(self, pose, quality_ok):
         """Light the ring where the head direction passed (between consecutive sweep frames when close enough)."""
-        if pose is None or not quality_ok:
+        if pose is None or not quality_ok or abs(pose[0]) > 35 or abs(pose[1]) > 22:
             self.last_az = None
             return
         az, r = ring_position(pose[0], pose[1])
@@ -194,15 +241,54 @@ class Guide:
             return HINTS["done"]
         hint = next((HINTS[r] for r in reasons if r in HINTS), None)
         if pose is None:
-            return hint or HINTS["no_face"]
-        if not quality_ok and hint:
-            return hint
+            return hint or HINTS["quality_unknown" if reasons else "no_face"]
+        if not quality_ok:
+            return hint or HINTS["quality_unknown"]
         cur = self.current()
         if self.mode == "circle":
             if len(self.kept["C"]) < self.per_dir:
                 return PROMPTS["C"]
-            if t is not None and ((self.nearly_full_since is not None and t - self.nearly_full_since >= HINT_AFTER_S)
-                                  or t - self.progress_t >= STALL_S):
-                return PROMPTS[cur]                     # ring ~full or no progress, a bin still missing: name it
+            if self._phase(t) == "refine":
+                return self._correction(pose, cur)       # explain the missing axis, not just the direction
             return CIRCLE_PROMPT
         return HINTS["too_far"] if _overshoot(pose[0], pose[1], cur) else PROMPTS[cur]
+
+    def _phase(self, t):
+        if self.timed_out:
+            return "timeout"
+        if self.done:
+            return "complete"
+        if len(self.kept["C"]) < self.per_dir:
+            return "center"
+        if self.mode == "steps" or (t is not None and (
+                (self.nearly_full_since is not None and t - self.nearly_full_since >= HINT_AFTER_S)
+                or (self.progress_t is not None and t - self.progress_t >= STALL_S))):
+            return "refine"
+        return "sweep"
+
+    def _correction(self, pose, target):
+        """For an unfinished direction, explain a cross-axis miss without widening its acceptance bin."""
+        yaw, pitch = pose[:2]
+        ty, tp = TARGETS[target]
+        signed_yaw, signed_pitch = yaw if ty >= 0 else -yaw, pitch if tp >= 0 else -pitch
+        yaw_low, yaw_high = 25 - TOL_YAW + self.margin, 25 + TOL_YAW - self.margin
+        pitch_low, pitch_high = 15 - TOL_PITCH + self.margin, 15 + TOL_PITCH - self.margin
+        if ty and signed_yaw > yaw_high:
+            return "고개를 조금 덜 돌려주세요"
+        if tp and signed_pitch > pitch_high:
+            return "턱을 조금 내려주세요" if tp > 0 else "턱을 조금 들어주세요"
+        if ty and signed_yaw >= yaw_low:
+            if not tp and pitch > TOL_PITCH - self.margin:
+                return "고개를 돌린 채 턱을 조금 내려주세요"
+            if not tp and pitch < -TOL_PITCH + self.margin:
+                return "고개를 돌린 채 턱을 조금 들어주세요"
+            if tp and signed_pitch < pitch_low:
+                return "고개를 돌린 채 턱을 조금 들어주세요" if tp > 0 else "고개를 돌린 채 턱을 조금 내려주세요"
+        if tp and signed_pitch >= pitch_low:
+            if not ty and abs(yaw) > TOL_YAW - self.margin:
+                return "고개를 조금 오른쪽으로 돌려주세요" if yaw > 0 else "고개를 조금 왼쪽으로 돌려주세요"
+            if ty and signed_yaw < yaw_low:
+                return "고개를 조금 왼쪽으로 돌려주세요" if ty > 0 else "고개를 조금 오른쪽으로 돌려주세요"
+        if self._inside(pose, target):
+            return "좋아요. 그 자세로 잠시 유지해 주세요"
+        return PROMPTS[target]

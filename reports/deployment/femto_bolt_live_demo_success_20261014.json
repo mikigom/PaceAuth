@@ -1,0 +1,50 @@
+{
+  "recorded_at": "2026-10-14T06:03:43.842531+00:00",
+  "deployment_url": "http://192.168.2.218:8080",
+  "implemented": [
+    "optional Korean display names at signup and editable own profile",
+    "automatic independent live recognition up to16 visible faces",
+    "known green name boxes, unknown orange boxes, uncertain gray boxes",
+    "mirrored boxes and readable labels for aligned RGB/depth/IR",
+    "largest visible face selected for authentication; no fallback to a smaller person",
+    "cross-frame identity consistency for authentication",
+    "single-person enrollment retained"
+  ],
+  "user_report": {
+    "two_people_known_and_unknown_boxes": "succeeded",
+    "authentication_with_registered_person_closer": "succeeded"
+  },
+  "server_evidence": {
+    "auth_approved_at": "2026-10-14T06:02:56.300100+00:00",
+    "decision": "approved",
+    "reason": "ok",
+    "pad_enabled": false,
+    "pad_mode": "disabled_pilot",
+    "earlier_approved_at": "2026-10-14T06:01:12.459329+00:00"
+  },
+  "automated_verification": {
+    "engine_checks_passed": 36,
+    "api_policy_client_checks_passed": 75,
+    "terminal_profile_tracking_checks_passed": 52,
+    "browser_mock_checks_passed": 25,
+    "deployed_browser_checks_passed": 13
+  },
+  "measured_performance": {
+    "preview_fps": 30.1,
+    "live_one_visible_face_fps": 14.76,
+    "live_one_visible_face_mean_latency_ms": 32.04,
+    "single_face_results_sampled": 460
+  },
+  "limitations": [
+    "Two-person visual behavior and closest-person authentication were confirmed by the user. The logged performance sample had at most one visible face, so14.76FPS is not a measured two-person rate.",
+    "Maximum16face handling is an implementation cap, not a measured16person performance result.",
+    "PAD remains disabled; live labels do not grant approval."
+  ],
+  "raw_images_stored": false,
+  "artifacts": [
+    "femto_bolt_live_backend_20261014.json",
+    "femto_bolt_live_ui_mock_20261014.json",
+    "femto_bolt_live_names_ui_20261014.json",
+    "femto_bolt_live_stream_20261014.json"
+  ]
+}

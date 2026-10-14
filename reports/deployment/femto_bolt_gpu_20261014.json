@@ -1,0 +1,265 @@
+{
+  "ready": true,
+  "kernel": "7.0.0-38-generic",
+  "stages": [
+    {
+      "name": "host_gpu",
+      "gpu": {
+        "index": "0",
+        "uuid": "GPU-61dcc1c6-b0d6-708a-46eb-48543268f6b3",
+        "name": "NVIDIA GeForce RTX 4060",
+        "total_mib": 8188,
+        "used_mib": 2046,
+        "free_mib": 5752
+      }
+    },
+    {
+      "name": "docker_gpu_runtime",
+      "device": "NVIDIA GeForce RTX 4060",
+      "torch": "2.12.0+cu130",
+      "cuda": "13.0",
+      "onnxruntime": "1.30.0",
+      "providers": [
+        "TensorrtExecutionProvider",
+        "CUDAExecutionProvider",
+        "CPUExecutionProvider"
+      ],
+      "tensorrt": "10.16.1.11",
+      "faiss": "1.14.1",
+      "torch_cuda_execution": true,
+      "faiss_gpu_search": true
+    },
+    {
+      "name": "platform_services",
+      "services": [
+        "db",
+        "db-standby1",
+        "db-standby2",
+        "kms",
+        "api-1",
+        "api-2",
+        "gateway"
+      ]
+    },
+    {
+      "name": "engine-1",
+      "health": {
+        "ok": true,
+        "versions": {
+          "detector": "scrfd_34g@2+trt16",
+          "pose": "6drepnet360@1",
+          "recog": "adaface_ir101_wf12m@1",
+          "align": "arcface5-112@1",
+          "pad": "pad_rgbdir@2",
+          "quality": "q@1"
+        },
+        "providers": [
+          "TensorrtExecutionProvider",
+          "CUDAExecutionProvider",
+          "CPUExecutionProvider"
+        ],
+        "warmup": {
+          "synthetic": true,
+          "detector": true,
+          "pose": true,
+          "recognition": true,
+          "pad": true,
+          "pose_batch": 8,
+          "recognition_batch": 8,
+          "pad_batch": 8,
+          "elapsed_ms": 1402.8
+        },
+        "batches": 0,
+        "frames": 0
+      },
+      "gpu": {
+        "index": "0",
+        "uuid": "GPU-61dcc1c6-b0d6-708a-46eb-48543268f6b3",
+        "name": "NVIDIA GeForce RTX 4060",
+        "total_mib": 8188,
+        "used_mib": 2065,
+        "free_mib": 5732
+      }
+    },
+    {
+      "name": "search-1",
+      "health": {
+        "ready": true,
+        "model_version": "adaface_ir101_wf12m@1",
+        "ntotal": 0,
+        "nsubjects": 0,
+        "applied_event_id": 0,
+        "tombstones": 0,
+        "build_seconds": 0.023
+      },
+      "gpu": {
+        "index": "0",
+        "uuid": "GPU-61dcc1c6-b0d6-708a-46eb-48543268f6b3",
+        "name": "NVIDIA GeForce RTX 4060",
+        "total_mib": 8188,
+        "used_mib": 2065,
+        "free_mib": 5732
+      }
+    },
+    {
+      "name": "engine-2",
+      "health": {
+        "ok": true,
+        "versions": {
+          "detector": "scrfd_34g@2+trt16",
+          "pose": "6drepnet360@1",
+          "recog": "adaface_ir101_wf12m@1",
+          "align": "arcface5-112@1",
+          "pad": "pad_rgbdir@2",
+          "quality": "q@1"
+        },
+        "providers": [
+          "TensorrtExecutionProvider",
+          "CUDAExecutionProvider",
+          "CPUExecutionProvider"
+        ],
+        "warmup": {
+          "synthetic": true,
+          "detector": true,
+          "pose": true,
+          "recognition": true,
+          "pad": true,
+          "pose_batch": 8,
+          "recognition_batch": 8,
+          "pad_batch": 8,
+          "elapsed_ms": 383.4
+        },
+        "batches": 0,
+        "frames": 0
+      },
+      "gpu": {
+        "index": "0",
+        "uuid": "GPU-61dcc1c6-b0d6-708a-46eb-48543268f6b3",
+        "name": "NVIDIA GeForce RTX 4060",
+        "total_mib": 8188,
+        "used_mib": 2056,
+        "free_mib": 5742
+      }
+    },
+    {
+      "name": "search-2",
+      "health": {
+        "ready": true,
+        "model_version": "adaface_ir101_wf12m@1",
+        "ntotal": 0,
+        "nsubjects": 0,
+        "applied_event_id": 0,
+        "tombstones": 0,
+        "build_seconds": 0.017
+      },
+      "gpu": {
+        "index": "0",
+        "uuid": "GPU-61dcc1c6-b0d6-708a-46eb-48543268f6b3",
+        "name": "NVIDIA GeForce RTX 4060",
+        "total_mib": 8188,
+        "used_mib": 2051,
+        "free_mib": 5747
+      }
+    }
+  ],
+  "scope": "GPU runtime and service readiness; real enrollment/PAD validation remains a separate check.",
+  "note": "No face enrollment was performed. Peak inference VRAM under live enrollment must be measured before increasing batch sizes or gallery capacity.",
+  "recorded_at": "2026-10-14T14:15:03.026725+09:00",
+  "warmup_memory": {
+    "measurement": "total GPU memory during sequential model startup and synthetic warm-up",
+    "peak_used_mib": 2046,
+    "last_used_mib": 2046,
+    "samples": 397
+  },
+  "sensor_calibration": "femto-bolt-v1-50beeef1ae82fb27",
+  "sensor_readiness": {
+    "engine-1": {
+      "ready": false,
+      "capture_ready": true,
+      "pad_validation": {
+        "ready": false,
+        "reasons": [
+          "pad_calibration_mismatch",
+          "pad_real_sensor_validation_missing"
+        ],
+        "model_version": "pad_rgbdir@2",
+        "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+        "model_calib_version": "gemini336-sim-v1",
+        "binding": {
+          "model_version": "pad_rgbdir@2",
+          "model_json_sha256": "531cef5f48dc88c9070786a6349a872092fb6be17fdf9bea7386b7a36e8c5ef7",
+          "weights_sha256": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18",
+          "pipeline_sha256": "3975d30b7343bfe06873a5bc149407a4b25795c809c7606fb789be77cbed9477",
+          "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5"
+        }
+      },
+      "versions": {
+        "detector": "scrfd_34g@2+trt16",
+        "pose": "6drepnet360@1",
+        "recog": "adaface_ir101_wf12m@1",
+        "align": "arcface5-112@1",
+        "pad": "pad_rgbdir@2",
+        "quality": "q@1"
+      },
+      "model_binding": {
+        "model_version": "pad_rgbdir@2",
+        "model_json_sha256": "531cef5f48dc88c9070786a6349a872092fb6be17fdf9bea7386b7a36e8c5ef7",
+        "weights_sha256": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18",
+        "pipeline_sha256": "3975d30b7343bfe06873a5bc149407a4b25795c809c7606fb789be77cbed9477",
+        "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5"
+      },
+      "calib_version": "femto-bolt-v1-50beeef1ae82fb27"
+    },
+    "engine-2": {
+      "ready": false,
+      "capture_ready": true,
+      "pad_validation": {
+        "ready": false,
+        "reasons": [
+          "pad_calibration_mismatch",
+          "pad_real_sensor_validation_missing"
+        ],
+        "model_version": "pad_rgbdir@2",
+        "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+        "model_calib_version": "gemini336-sim-v1",
+        "binding": {
+          "model_version": "pad_rgbdir@2",
+          "model_json_sha256": "531cef5f48dc88c9070786a6349a872092fb6be17fdf9bea7386b7a36e8c5ef7",
+          "weights_sha256": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18",
+          "pipeline_sha256": "3975d30b7343bfe06873a5bc149407a4b25795c809c7606fb789be77cbed9477",
+          "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5"
+        }
+      },
+      "versions": {
+        "detector": "scrfd_34g@2+trt16",
+        "pose": "6drepnet360@1",
+        "recog": "adaface_ir101_wf12m@1",
+        "align": "arcface5-112@1",
+        "pad": "pad_rgbdir@2",
+        "quality": "q@1"
+      },
+      "model_binding": {
+        "model_version": "pad_rgbdir@2",
+        "model_json_sha256": "531cef5f48dc88c9070786a6349a872092fb6be17fdf9bea7386b7a36e8c5ef7",
+        "weights_sha256": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18",
+        "pipeline_sha256": "3975d30b7343bfe06873a5bc149407a4b25795c809c7606fb789be77cbed9477",
+        "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5"
+      },
+      "calib_version": "femto-bolt-v1-50beeef1ae82fb27"
+    }
+  },
+  "tests": {
+    "files": [
+      "tests/test_engine_capture.py",
+      "tests/test_gpu_startup.py"
+    ],
+    "passed": 19,
+    "runtime": "faceauth:dev, current read-only source mounts"
+  },
+  "limitations": [
+    "GPU inference validation used only generated tensors, no camera frames or human samples.",
+    "PAD remains unapproved: active model is simulator-calibrated and matching real-sensor validation evidence is absent.",
+    "Search galleries are empty; the separate FAISS GPU probe verifies adding/searching generated vectors.",
+    "Measured memory is startup/synthetic warm-up usage, not a full live enrollment or populated-gallery load test."
+  ]
+}

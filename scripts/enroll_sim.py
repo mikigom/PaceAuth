@@ -32,7 +32,7 @@ import httpx  # noqa: E402
 import msgpack  # noqa: E402
 import numpy as np  # noqa: E402
 
-from faceauth.terminal.client import SECRETS, DeviceClient, make_account_assertion, synced_ts  # noqa: E402
+from faceauth.terminal.client import CALIB_VERSION, SECRETS, DeviceClient, make_account_assertion, synced_ts  # noqa: E402
 from faceauth.terminal.guide import CIRCLE_PROMPT, PROMPTS, TARGETS, Guide  # noqa: E402
 
 GATEWAY, ENGINE = "https://gateway:8443", "http://engine:8001"
@@ -69,8 +69,10 @@ def register(device_id):
 
 def same_person_min_cos(frames):
     """Diagnostics only (the API decides): min cosine of each kept frame's embedding to their normalised mean."""
-    r = httpx.post(f"{ENGINE}/v1/analyze", content=msgpack.packb({"mode": "enroll", "frames": frames}),
+    r = httpx.post(f"{ENGINE}/v1/analyze", content=msgpack.packb({"mode": "enroll", "frames": frames,
+                                                               "calib_version": CALIB_VERSION}),
                    headers={"Content-Type": "application/msgpack"}, timeout=120)
+    r.raise_for_status()
     an = msgpack.unpackb(r.content, raw=False)
     e = np.array([np.frombuffer(f["emb"], "<f4") for f in an["frames"] if f.get("emb")])
     if len(e) < 2:

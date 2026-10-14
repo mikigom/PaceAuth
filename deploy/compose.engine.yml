@@ -1,7 +1,7 @@
 # Engine: central GPU inference (faceauth/engine/main.py, docs/IMPLEMENTATION.md §3). Internal network only.
 # Loads models only from the signed registry at the versions active in model_versions; refuses CPU-placed graphs.
 # SCRFD runs as a TensorRT fp16 engine built at start into tmpfs (never persisted: no unsigned artifact on disk).
-# Two replicas on GPU 5 (Design §6: GPU inference replicated); the API spreads requests and fails over between them.
+# Replicas share FA_GPU_DEVICE_ID (Design §6); the API spreads requests and fails over between them.
 x-engine: &engine
     image: faceauth:dev
     user: "65534:65534"
@@ -22,11 +22,17 @@ x-engine: &engine
       FA_MODELS_DIR: /app/data/models
       FA_RELEASE_PUB: /run/secrets/release_pub
       FA_ADMIN_TOKEN_FILE: /run/secrets/admin_token
+      FA_ENGINE_TRT: ${FA_ENGINE_TRT:-1}
+      FA_ENGINE_DET_SESSIONS: ${FA_ENGINE_DET_SESSIONS:-2}
+      FA_ENGINE_CPU_THREADS: ${FA_ENGINE_CPU_THREADS:-6}
+      FA_ENGINE_RECOG_BATCH_SIZE: ${FA_ENGINE_RECOG_BATCH_SIZE:-128}
+      FA_ENGINE_POSE_BATCH_SIZE: ${FA_ENGINE_POSE_BATCH_SIZE:-64}
+      FA_PILOT_DISABLE_PAD: ${FA_PILOT_DISABLE_PAD:-0}
     secrets: [db_ro_password, release_pub, admin_token]
     deploy:
       resources:
         reservations:
-          devices: [{ driver: nvidia, device_ids: ["5"], capabilities: [gpu] }]
+          devices: [{ driver: nvidia, device_ids: ["${FA_GPU_DEVICE_ID:-0}"], capabilities: [gpu] }]
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8001/healthz"]
       interval: 5s

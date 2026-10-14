@@ -1,4 +1,4 @@
-"""Simulated terminal's device client: mTLS to the gateway + signed capture packets (docs/IMPLEMENTATION.md §6).
+"""Terminal device client: mTLS to the gateway + signed capture packets (docs/IMPLEMENTATION.md §6).
 
 Dev keys (scripts/init_secrets.py): secrets/devices/<id>.{crt,key} (mTLS client cert), <id>.ed25519 (packet
 signing key), secrets/ca.crt (gateway trust anchor). The server certificate is always verified against
@@ -8,6 +8,7 @@ import hashlib
 import ssl
 import time
 from pathlib import Path
+from urllib.parse import quote
 
 import httpx
 import msgpack
@@ -54,7 +55,12 @@ def synced_ts(indices, start_ms: int, fps: float = 30.0, max_skew_ms: int = 3, s
 
 def make_account_assertion(account_id: str, nonce: str, method: str = "password", ttl_s: int = 60,
                            key_path=SECRETS / "account.key") -> str:
-    """Simulated external account-ownership service (sims/tests only): {"acct","method","nonce","iat","exp"}."""
+    """Sign an account-ownership assertion bound to an API session challenge.
+
+    The caller must authenticate the account first. The LAN pilot calls this
+    after verifying its separate account password/session; simulations use it
+    for explicit fixtures. This helper itself does not verify credentials.
+    """
     key = serialization.load_pem_private_key(Path(key_path).read_bytes(), None)
     now = int(time.time())
     return token.sign(key, {"acct": account_id, "method": method, "nonce": nonce, "iat": now, "exp": now + ttl_s})
@@ -66,8 +72,13 @@ class DeviceClient:
     ts = [{"rgb","depth","ir"} ms] (see synced_ts). Non-2xx answers raise httpx.HTTPStatusError (fail closed)."""
 
     def __init__(self, base_url: str, device_id: str, secrets_dir=SECRETS, server_name: str = "gateway",
-                 calib_version: str = CALIB_VERSION, timeout: float = 10.0, transport=None):
+                 calib_version: str = CALIB_VERSION, timeout: float = 10.0, transport=None,
+                 final_timeout: float = 95.0):
         self.device_id, self.server_name, self.calib_version = device_id, server_name, calib_version
+        self.secrets_dir = Path(secrets_dir)
+        # Wait beyond the gateway's 90 s response deadline for a final decision. Keep connection/pool waits
+        # short and allow an enrollment packet's upload to finish within the gateway's 30 s body deadline.
+        self.final_timeout = httpx.Timeout(final_timeout, connect=min(timeout, 2.0), write=30.0, pool=timeout)
         self.key = serialization.load_pem_private_key(_device_file(secrets_dir, device_id, ".ed25519").read_bytes(), None)
         self.http = httpx.Client(base_url=base_url, verify=mtls_context(device_id, secrets_dir), timeout=timeout,
                                  transport=transport)  # transport: tests only
@@ -75,9 +86,10 @@ class DeviceClient:
     def close(self):
         self.http.close()
 
-    def _post(self, path: str, *, json=None, content: bytes | None = None):
+    def _post(self, path: str, *, json=None, content: bytes | None = None, final=False):
         headers = {"Content-Type": "application/msgpack"} if content is not None else None
         r = self.http.post(path, json=json, content=content, headers=headers,
+                           **({"timeout": self.final_timeout} if final else {}),
                            extensions={"sni_hostname": self.server_name})  # SNI + certificate name check
         r.raise_for_status()
         if "msgpack" in r.headers.get("content-type", ""):
@@ -94,13 +106,59 @@ class DeviceClient:
     def create_session(self, purpose: str, action_id: str) -> dict:
         return self._post("/v1/sessions", json={"purpose": purpose, "device_id": self.device_id, "action_id": action_id})
 
+    def readiness(self) -> dict:
+        response = self.http.get("/v1/terminal/readiness", params={"device_id": self.device_id},
+                                 extensions={"sni_hostname": self.server_name})
+        response.raise_for_status()
+        return response.json()
+
+    def _manage_accounts(self, method: str, path: str, body=None) -> dict:
+        """Server-only management credential; never sent to a browser or capture packet."""
+        credential = (self.secrets_dir / "admin_token").read_text().strip()
+        if not credential:
+            raise RuntimeError("account_management_unavailable")
+        response = self.http.request(method, path, json=body,
+                                     headers={"Authorization": "Bearer " + credential},
+                                     timeout=self.final_timeout,
+                                     extensions={"sni_hostname": self.server_name})
+        response.raise_for_status()
+        return response.json()
+
+    def account_summary(self, account_ids) -> dict:
+        return self._manage_accounts("POST", "/v1/admin/accounts/summary", {"account_ids": list(account_ids)})
+
+    def account_status(self, account_id: str, enabled: bool) -> dict:
+        return self._manage_accounts("POST", f"/v1/admin/accounts/{quote(account_id, safe='')}/status",
+                                     {"enabled": enabled})
+
+    def delete_account_face(self, account_id: str) -> dict:
+        return self._manage_accounts("DELETE", f"/v1/admin/accounts/{quote(account_id, safe='')}/face")
+
+    def capture_guide(self, session: dict, frame, ts: dict, purpose: str = "enroll") -> dict:
+        if purpose not in ("enroll", "auth"):
+            raise ValueError("capture purpose must be enroll or auth")
+        return self._post("/v1/capture/guide", content=self.packet(
+            session, [frame], [ts], extra={"capture_purpose": purpose}))
+
+    def recognize_live(self, session: dict, frame, ts: dict) -> dict:
+        """Read-only multi-person labels. The session must have purpose auth and action live-demo."""
+        return self._post("/v1/live/recognize", content=self.packet(
+            session, [frame], [ts], extra={"capture_purpose": "auth"}))
+
+    def observe(self, session: dict, frames, ts, captured_at_ms=None, purpose: str = "auth") -> dict:
+        if purpose not in ("auth", "enroll") or not 3 <= len(frames) <= (24 if purpose == "enroll" else 16):
+            raise ValueError("diagnostics require auth 3 to 16 or enroll 3 to 24 frames")
+        return self._post("/v1/capture/observe", content=self.packet(
+            session, frames, ts, captured_at_ms=captured_at_ms, extra={"capture_purpose": purpose}), final=True)
+
     def enroll(self, session: dict, frames, ts, labels, account_assertion: str, consent: dict, re_enroll: bool = False,
                captured_at_ms=None) -> dict:
         extra = {"account_assertion": account_assertion, "consent": consent, "re_enroll": bool(re_enroll)}
-        return self._post("/v1/enrollments", content=self.packet(session, frames, ts, labels, captured_at_ms, extra))
+        return self._post("/v1/enrollments", content=self.packet(session, frames, ts, labels, captured_at_ms, extra),
+                          final=True)
 
     def authenticate(self, session: dict, frames, ts, captured_at_ms=None) -> dict:
-        return self._post("/v1/authentications", content=self.packet(session, frames, ts, None, captured_at_ms))
+        return self._post("/v1/authentications", content=self.packet(session, frames, ts, None, captured_at_ms), final=True)
 
     def fallback(self, session: dict, assertion: str) -> dict:
         return self._post("/v1/fallback", json={"session_id": session["session_id"], "assertion": assertion})

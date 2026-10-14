@@ -209,17 +209,23 @@ class Replica:
                           " WHERE id > %s ORDER BY id LIMIT %s", (applied, POLL_LIMIT)).fetchall()
         if not ev:
             return applied, 0
-        add_ids = sorted({t for _, op, t, m in ev if op == "add" and m == mv and t not in g.row_of})
+        # A disabled account can be enabled again with the same template IDs.
+        # Replicas may receive both transitions together after polling/replication lag;
+        # the last operation for each ID must win, rather than every remove winning.
+        latest = {t: op for _, op, t, m in ev if m == mv}
+        add_ids = sorted(t for t, op in latest.items() if op == "add"
+                         and (t not in g.row_of or not g.alive[g.row_of[t]]))
         rows = conn.execute("SELECT id, subject_id::text, ciphertext FROM templates WHERE id = ANY(%s)"
                             " AND active AND model_version = %s AND ciphertext IS NOT NULL ORDER BY id",
                             (add_ids, mv)).fetchall() if add_ids else []
         dec = list(decrypt_rows(self.new_kms, [rows[i:i + KMS_BATCH] for i in range(0, len(rows), KMS_BATCH)]))
-        removes = [t for _, op, t, m in ev if op == "remove" and m == mv]
+        removes = [t for t, op in latest.items() if op == "remove"]
         with self.lock:
             try:
                 for tids, sids, vecs in dec:
                     if tids:
-                        g.add(tids, sids, vecs)
+                        # Only current active rows decrypted by KMS can restore a tombstone.
+                        g.add(tids, sids, vecs, allow_reactivation=True)
                 g.remove(removes)
             except Exception:
                 if self.gallery is g:

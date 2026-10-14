@@ -3,7 +3,8 @@ policy, step-up, non-biometric fallback, deletion and admin. Device traffic arri
 
 Invariants
 - Fail closed: any DB / engine / search / KMS error -> 503, never a relaxed decision path.
-- Devices never see candidates, scores or internal reasons (those go to sessions.reason + the audit log).
+- Decision responses never expose candidates or scores. Signed capture diagnostics expose only quality/PAD
+  measurements; they cannot approve authentication or store templates.
 - A session is consumed (UPDATE ... WHERE consumed_at IS NULL AND expires_at > now() RETURNING) in the same
   transaction as its decision, approval / step-up row and audit row; the audit row is always the LAST statement.
 - Template outbox events are written under pg_advisory_xact_lock(7001).
@@ -22,7 +23,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Literal
+from typing import Annotated, Literal
 from urllib.parse import unquote
 
 import psycopg
@@ -77,6 +78,7 @@ class Config:
         self.consent_version = e["FA_CONSENT_VERSION"]
         self.high_risk = {a.strip() for a in e.get("FA_HIGH_RISK_ACTIONS", "").split(",") if a.strip()}
         self.min_dirs = int(e.get("FA_ENROLL_MIN_DIRS", "9"))
+        self.pad_enabled = e.get("FA_PILOT_DISABLE_PAD", "0") != "1"
         # device identity headers are honoured only from these peers (hostnames or IPs): the gateway
         self.trusted_proxies = [h.strip() for h in e.get("FA_TRUSTED_PROXIES", "gateway").split(",") if h.strip()]
         self.approval_key = serialization.load_pem_private_key(
@@ -96,7 +98,8 @@ async def lifespan(_app):
                                check=AsyncConnectionPool.check_connection)
     await pool.open(wait=False)  # start even if the DB is down: requests then fail closed (503)
     C.cfg, C.pool = cfg, pool
-    C.deps = Deps(cfg.engine_urls, cfg.search_urls, cfg.kms_url, cfg.kms_token, cfg.admin_token)
+    C.deps = Deps(cfg.engine_urls, cfg.search_urls, cfg.kms_url, cfg.kms_token, cfg.admin_token,
+                  pad_enabled=cfg.pad_enabled)
     try:
         yield
     finally:
@@ -125,6 +128,32 @@ async def audit(conn, actor: str, event: str, *, subject_id=None, session_id=Non
 
 async def _one(conn, sql: str, params=()):
     return await (await conn.execute(sql, params)).fetchone()
+
+
+async def _account_lock(conn, account_id: str):
+    """Serialize controls, enroll commits and approvals even when no account row exists yet.
+
+    Account locks precede subject/session rows, then outbox (7001), then audit (7002).
+    The two-int namespace is separate from the global one-int outbox/audit locks.
+    """
+    await conn.execute("SELECT pg_advisory_xact_lock(7003, hashtext(%s))", (account_id,))
+
+
+async def _account_control(conn, account_id: str, *, lock=False):
+    if lock:
+        await _account_lock(conn, account_id)
+    return (await _one(conn, "SELECT enabled, enrollment_epoch FROM account_controls WHERE account_id = %s",
+                       (account_id,))) or {"enabled": True, "enrollment_epoch": 0}
+
+
+async def _locked_subject(conn, subject_id):
+    row = await _one(conn, "SELECT account_id FROM subjects WHERE id = %s", (subject_id,))
+    if row is None:
+        return None, False
+    control = await _account_control(conn, row["account_id"], lock=True)
+    subject = await _one(conn, "SELECT account_id, status, consent_version FROM subjects WHERE id = %s FOR SHARE",
+                         (subject_id,))
+    return subject, control["enabled"]
 
 
 def _admin(request: Request):
@@ -203,6 +232,8 @@ def _integrity(header: dict, sig: bytes, frames: list, dev: dict, purpose: str) 
         return errs  # nothing else in the header can be trusted
     if header.get("calib_version") != dev["calib_version"]:
         errs.append("calib_mismatch")
+    if not isinstance(header.get("challenge"), str) or not header["challenge"]:
+        errs.append("challenge_missing")
     if len(frames) > MAX_FRAMES[purpose]:
         errs.append("too_many_frames")
     return errs
@@ -245,6 +276,24 @@ def _check_model(an: dict, active):
     """Templates and probes of different model versions are never compared or stored."""
     if active is None or an["versions"]["recog"] != active:
         raise Unavailable(f"recognition model mismatch: engine {an['versions']['recog']!r}, active {active!r}")
+
+
+def _pad_validated(an: dict, calib_version: str) -> bool:
+    validation = an.get("pad_validation")
+    return (isinstance(validation, dict) and validation.get("ready") is True
+            and validation.get("calib_version") == calib_version and an.get("calib_version") == calib_version)
+
+
+def _pad_mode():
+    enabled = getattr(C.cfg, "pad_enabled", True)
+    return {"pad_enabled": enabled, "pad_mode": "enabled" if enabled else "disabled_pilot"}
+
+
+def _pad_required(an: dict) -> bool:
+    mode = _pad_mode()
+    if an.get("pad_enabled") is not mode["pad_enabled"] or an.get("pad_mode") != mode["pad_mode"]:
+        raise Unavailable("pad_mode_mismatch")
+    return mode["pad_enabled"]
 
 
 def _embeddings(an: dict):
@@ -299,7 +348,7 @@ async def _approve(conn, sess, device_id: str, subject_id, account_id: str, amr:
                         iat + APPROVAL_TTL))
     return token.sign(C.cfg.approval_key, {"aid": str(aid), "sid": str(sess["id"]), "dev": device_id,
                                            "act": sess["action_id"], "acct": account_id, "amr": amr,
-                                           "iat": iat, "exp": iat + APPROVAL_TTL})
+                                           "iat": iat, "exp": iat + APPROVAL_TTL, **_pad_mode()})
 
 
 async def _events(conn, op: str, template_ids: list):
@@ -334,6 +383,132 @@ async def create_session(body: SessionIn, request: Request):
     return {"session_id": str(sid), "challenge": challenge, "expires_at": row["expires_at"].isoformat()}
 
 
+@app.get("/v1/terminal/readiness")
+async def terminal_readiness(device_id: str, request: Request):
+    async with C.pool.connection() as conn:
+        dev = await _device(request, conn, device_id)
+        active = await _active_recog(conn)
+    return {**await C.deps.readiness(dev["calib_version"], active), "calib_version": dev["calib_version"]}
+
+
+async def _capture_packet(request: Request, diagnostic: bool):
+    header, sig, frames, sid = _packet(await request.body())
+    purpose = header.get("capture_purpose")
+    if (purpose not in ("enroll", "auth")
+            or not isinstance(header.get("challenge"), str) or not header["challenge"]
+            or (not diagnostic and len(frames) != 1)
+            or (diagnostic and not 3 <= len(frames) <= (24 if purpose == "enroll" else 16))):
+        raise HTTPException(400, "invalid_capture")
+    async with C.pool.connection() as conn:
+        dev = await _device(request, conn, header.get("device_id"))
+        sess, why = await _session(conn, sid, dev["id"], purpose, header["challenge"])
+        active = await _active_recog(conn)
+    if sess is None or why:
+        raise HTTPException(409, "session")
+    if await asyncio.to_thread(_integrity, header, sig, frames, dev, purpose):
+        raise HTTPException(400, "invalid_capture")
+    return header, frames, sess, dev, active
+
+
+@app.post("/v1/capture/guide")
+async def capture_guide(request: Request):
+    """Read-only measurement of one signed frame; the final enrollment/auth request consumes the session."""
+    header, frames, sess, dev, active = await _capture_packet(request, diagnostic=False)
+    an = await C.deps.analyze("guide", frames, dev["calib_version"], capture_purpose=header["capture_purpose"])
+    _check_model(an, active)
+    async with C.pool.connection() as conn:
+        current, why = await _session(conn, sess["id"], dev["id"], header["capture_purpose"], header["challenge"])
+    if current is None or why:
+        raise HTTPException(409, "session")
+    fields = ("ok", "reasons", "n_faces", "detected_faces", "selection", "bbox", "kps", "det_score", "pose",
+              "quality", "score")
+    return {"frame": {key: an["frames"][0].get(key) for key in fields}, "versions": an["versions"]}
+
+
+@app.post("/v1/live/recognize")
+async def recognize_live(request: Request):
+    """Read-only, PAD-free demo labels, one independent identity query per detected face.
+
+    A dedicated short-lived session bounds access but is reusable for streaming frames. No session
+    consumption, approval, biometric storage, identity scores, or raw frames result from this endpoint.
+    """
+    header, frames, sess, dev, active = await _capture_packet(request, diagnostic=False)
+    if header["capture_purpose"] != "auth" or sess["action_id"] != "live-demo":
+        raise HTTPException(409, "live_session_required")
+    an = await C.deps.analyze("live", frames, dev["calib_version"], capture_purpose="auth")
+    _check_model(an, active)
+    _pad_required(an)  # settings must still agree; a demo label never claims PAD was performed
+    frame = an["frames"][0]
+    faces = frame["faces"]
+
+    async def search_face(face):
+        if policy.frame_reasons([face]):
+            return []
+        return await C.deps.search(active, _embeddings({"frames": [face], "dim": an["dim"]}))
+
+    # Search averages probes within a request, so different people's embeddings must be separate calls.
+    matches = await asyncio.gather(*(search_face(face) for face in faces))
+    candidate_ids = list({r["subject_id"] for results in matches for r in results})
+    async with C.pool.connection() as conn, conn.transaction():
+        current, why = await _session(conn, sess["id"], dev["id"], "auth", header["challenge"])
+        if current is None or why or current["action_id"] != "live-demo":
+            raise HTTPException(409, "session")
+        if await _active_recog(conn) != active:
+            raise Unavailable("recognition model changed during live analysis")
+        # Recheck controls and the ledger after search: replicas may retain a disabled/revoked face.
+        owners = await (await conn.execute("SELECT DISTINCT account_id FROM subjects WHERE id = ANY(%s) "
+                                          "ORDER BY account_id", (candidate_ids,))).fetchall()
+        for owner in owners:
+            await _account_lock(conn, owner["account_id"])
+        rows = await (await conn.execute(
+            "SELECT s.id, s.account_id FROM subjects s LEFT JOIN account_controls a USING (account_id) "
+            "WHERE s.id = ANY(%s) AND s.status = 'active' AND coalesce(a.enabled, true) "
+            "AND s.consent_version = %s FOR SHARE OF s", (candidate_ids, C.cfg.consent_version))).fetchall()
+        accounts = {r["id"]: r["account_id"] for r in rows}
+        output = []
+        for face, results in zip(faces, matches):
+            bad = policy.frame_reasons([face])
+            item = {"bbox": face["bbox"], "status": "uncertain", "reason": "quality",
+                    "quality": {"ok": not bad, "reasons": list(face.get("reasons") or [])}}
+            if not bad:
+                eligible = [r for r in results if r["subject_id"] in accounts]
+                subject, reason, _, _ = policy.identify(eligible, C.cfg.t_id, C.cfg.margin)
+                item["reason"] = reason
+                item["status"] = "known" if subject is not None else "unknown" if reason == "no_match" else "uncertain"
+                if subject is not None:
+                    item["account_id"] = accounts[subject]
+            output.append(item)
+    return {"demo": True, "calib_version": dev["calib_version"], "image_size": frame["image_size"],
+            "faces": output, "truncated": frame["truncated"], "detected_faces": frame["n_faces"],
+            "pad_enabled": False, "pad_mode": "disabled_demo"}
+
+
+@app.post("/v1/capture/observe")
+async def capture_observe(request: Request):
+    """One-shot diagnostics only. Consume before inference so replay/concurrent auth can never approve."""
+    header, frames, sess, dev, active = await _capture_packet(request, diagnostic=True)
+    async with C.pool.connection() as conn, conn.transaction():
+        if not await _consume(conn, sess["id"], "observed", "pad_diagnostic"):
+            raise HTTPException(409, "session")
+        await audit(conn, _actor(dev), "capture_observed", session_id=sess["id"], device_id=dev["id"],
+                    detail={"frame_count": len(frames), "calib_version": dev["calib_version"],
+                            "capture_purpose": header["capture_purpose"]})
+    an = await C.deps.analyze("observe", frames, dev["calib_version"], capture_purpose=header["capture_purpose"])
+    _check_model(an, active)
+    # Never return embeddings, RGB-D-IR images, identity scores, or an approval from diagnostics.
+    pad_fields = ("score", "live", "nonresponse", "cnn", "checks", "failed")
+    measured = []
+    for frame in an["frames"]:
+        pad = frame.get("pad")
+        measured.append({"ok": frame.get("ok"), "reasons": frame.get("reasons", []),
+                         "quality": frame.get("quality", {}),
+                         "pad": {k: pad[k] for k in pad_fields if k in pad} if isinstance(pad, dict) else None})
+    return {"diagnostic": True, "capture_purpose": header["capture_purpose"],
+            "frames": measured, "versions": an["versions"],
+            "pad_validation": an.get("pad_validation"), "model_binding": an.get("model_binding"),
+            "calib_version": an.get("calib_version")}
+
+
 @app.post("/v1/authentications")
 async def authenticate(request: Request):
     header, sig, frames, sid = _packet(await request.body())
@@ -342,20 +517,29 @@ async def authenticate(request: Request):
         sess, why = await _session(conn, sid, dev["id"], "auth", header.get("challenge"))
         if sess is None:
             await audit(conn, _actor(dev), "auth_decision", session_id=sid, device_id=dev["id"],
-                        detail={"decision": "rejected", "reason": why})
-            return {"decision": "rejected", "reason": "session"}
+                        detail={"decision": "rejected", "reason": why, **_pad_mode()})
+            return {"decision": "rejected", "reason": "session", **_pad_mode()}
+        if sess["action_id"] == "live-demo":
+            raise HTTPException(409, "live_session_read_only")
         active = await _active_recog(conn)
     errs = await asyncio.to_thread(_integrity, header, sig, frames, dev, "auth")
     if why or errs:                                                    # 1. device / packet / session
         return await _auth_final(sess, dev, why or errs[0], {"errors": errs})
-    an = await C.deps.analyze("auth", frames)
+    an = await C.deps.analyze("auth", frames, dev["calib_version"])
     _check_model(an, active)
+    pad_required = _pad_required(an)
+    if pad_required and not _pad_validated(an, dev["calib_version"]):
+        return await _auth_final(sess, dev, "pad_validation_required")
     bad = policy.frame_reasons(an["frames"])
     if bad:                                                            # 2. all modalities, one face, quality
         return await _auth_final(sess, dev, "quality:" + ",".join(bad))
-    if not policy.pad_live(an["frames"]):                              # 3. PAD is final
+    if pad_required and not policy.pad_live(an["frames"]):            # 3. PAD, unless explicitly disabled for pilot
         return await _auth_final(sess, dev, "pad_fail")
-    subject, why, top1, top2 = policy.identify(await C.deps.search(active, _embeddings(an)), C.cfg.t_id,
+    embs = _embeddings(an)
+    consistent, min_cos = policy.same_person_sequence(embs, C.cfg.t_same)
+    if not consistent:
+        return await _auth_final(sess, dev, "same_person", {"min_pair_cos": round(min_cos, 4)})
+    subject, why, top1, top2 = policy.identify(await C.deps.search(active, embs), C.cfg.t_id,
                                                C.cfg.margin)               # 4. threshold AND margin
     scores = {"top1": round(top1, 4), "top2": round(top2, 4)}         # audit only, never returned
     return await _auth_final(sess, dev, why, scores, subject)
@@ -368,9 +552,8 @@ async def _auth_final(sess, dev, reason: str, detail=None, subject_id=None):
     async with C.pool.connection() as conn, conn.transaction():
         account = None
         if subject_id is not None:
-            s = await _one(conn, "SELECT account_id, status, consent_version FROM subjects WHERE id = %s FOR SHARE",
-                           (subject_id,))
-            if s and s["status"] == "active" and s["consent_version"] == C.cfg.consent_version:
+            s, enabled = await _locked_subject(conn, subject_id)
+            if s and enabled and s["status"] == "active" and s["consent_version"] == C.cfg.consent_version:
                 account = s["account_id"]
                 decision = "step_up" if sess["action_id"] in C.cfg.high_risk else "approved"
             else:
@@ -387,8 +570,8 @@ async def _auth_final(sess, dev, reason: str, detail=None, subject_id=None):
                                (stepup_id, sess["id"], subject_id, dev["id"], sess["action_id"], STEPUP_TTL))
         await audit(conn, _actor(dev), "auth_decision", subject_id=subject_id, session_id=sess["id"],
                     device_id=dev["id"], detail={"decision": decision, "reason": reason,
-                                                 "action_id": sess["action_id"], **(detail or {})})
-    return {"decision": decision, **out, "reason": policy.external(reason)}
+                                                 "action_id": sess["action_id"], **(detail or {}), **_pad_mode()})
+    return {"decision": decision, **out, "reason": policy.external(reason), **_pad_mode()}
 
 
 class AssertionIn(BaseModel):
@@ -402,17 +585,23 @@ async def complete_stepup(stepup_id: uuid.UUID, body: AssertionIn, request: Requ
         if st is None:
             return {"decision": "rejected", "reason": "session"}
         dev = await _device(request, conn, st["device_id"])
+        origin = await _one(conn, "SELECT detail FROM audit_log WHERE session_id = %s AND event = 'auth_decision' "
+                                 "AND detail->>'decision' = 'step_up' ORDER BY id DESC LIMIT 1", (st["session_id"],))
     a, why = _assertion(body.assertion, str(stepup_id))
     method = _factor(a)
     if why is None and method is None:
         why = "assertion_method"
+    # A pending face factor cannot change its PAD provenance across a pilot-mode switch.
+    original_mode = (origin or {}).get("detail", {})
+    if why is None and (original_mode.get("pad_enabled", True) is not _pad_mode()["pad_enabled"]
+                       or original_mode.get("pad_mode", "enabled") != _pad_mode()["pad_mode"]):
+        why = "session_pad_mode_changed"
     out = {"decision": "rejected"}
     async with C.pool.connection() as conn, conn.transaction():
-        s = await _one(conn, "SELECT account_id, status, consent_version FROM subjects WHERE id = %s FOR SHARE",
-                       (st["subject_id"],))
-        if why is None and a["acct"] != s["account_id"]:
+        s, enabled = await _locked_subject(conn, st["subject_id"])
+        if why is None and (s is None or a["acct"] != s["account_id"]):
             why = "assertion_account_mismatch"
-        if why is None and not (s["status"] == "active" and s["consent_version"] == C.cfg.consent_version):
+        if why is None and not (enabled and s["status"] == "active" and s["consent_version"] == C.cfg.consent_version):
             why = "subject_inactive"
         if why is None and await _one(conn, "UPDATE stepups SET completed_at = now() WHERE id = %s AND "
                                             "completed_at IS NULL AND expires_at > now() RETURNING id",
@@ -446,12 +635,16 @@ async def fallback(body: FallbackIn, request: Request):
             await audit(conn, _actor(dev), "fallback_decision", session_id=body.session_id, device_id=dev["id"],
                         detail={"decision": "rejected", "reason": why})
             return {"decision": "rejected", "reason": "session"}
+        if sess["action_id"] == "live-demo":
+            raise HTTPException(409, "live_session_read_only")
     a, why = _assertion(body.assertion, sess["challenge"])
     method = _factor(a)
     if why is None and method is None:
         why = "assertion_method"
     decision, out = ("rejected", {}) if why else ("approved", {})
     async with C.pool.connection() as conn, conn.transaction():
+        if why is None and not (await _account_control(conn, a["acct"], lock=True))["enabled"]:
+            decision, why = "rejected", "account_disabled"
         subject = None if why else await _one(conn, "SELECT id FROM subjects WHERE account_id = %s AND "
                                                     "status <> 'revoked'", (a["acct"],))
         if not await _consume(conn, sess["id"], decision, why or "ok"):
@@ -475,27 +668,33 @@ async def enroll(request: Request):
         sess, why = await _session(conn, sid, dev["id"], "enroll", header.get("challenge"))
         if sess is None:
             await audit(conn, _actor(dev), "enroll_decision", session_id=sid, device_id=dev["id"],
-                        detail={"status": "rejected", "reason": why})
-            return {"status": "rejected", "coverage": {}, "reason": "session"}
+                        detail={"status": "rejected", "reason": why, **_pad_mode()})
+            return {"status": "rejected", "coverage": {}, "reason": "session", **_pad_mode()}
         active = await _active_recog(conn)
         a, why_a = _assertion(header.get("account_assertion"), sess["challenge"])
         existing = a and await _one(conn, "SELECT id, status FROM subjects WHERE account_id = %s AND "
                                           "status <> 'revoked'", (a["acct"],))
+        control = await _account_control(conn, a["acct"]) if a else None
     errs = await asyncio.to_thread(_integrity, header, sig, frames, dev, "enroll")
     consent_at = _consent(header.get("consent"))
     why = why or (errs[0] if errs else None) or why_a or (None if consent_at else "consent")
     if why:
         return await _enroll_commit(sess, dev, why, detail={"errors": errs})
+    if not control["enabled"]:
+        return await _enroll_commit(sess, dev, "account_disabled")
     if existing and not (header.get("re_enroll") is True and existing["status"] == "active"):
         return await _enroll_commit(sess, dev, "already_enrolled")
-    an = await C.deps.analyze("enroll", frames)
+    an = await C.deps.analyze("enroll", frames, dev["calib_version"])
     _check_model(an, active)
+    pad_required = _pad_required(an)
+    if pad_required and not _pad_validated(an, dev["calib_version"]):
+        return await _enroll_commit(sess, dev, "pad_validation_required")
     fr = an["frames"]
     dirs, cov = policy.coverage([f.get("pose") if f.get("ok") is True else None for f in fr], _direction_of())
     bad = policy.frame_reasons(fr)
     if bad:
         return await _enroll_commit(sess, dev, "quality:" + ",".join(bad), cov)
-    if not policy.pad_live(fr):
+    if pad_required and not policy.pad_live(fr):
         return await _enroll_commit(sess, dev, "pad_fail", cov)
     if sum(cov.values()) < cfg.min_dirs:
         return await _enroll_commit(sess, dev, "coverage", cov)
@@ -511,7 +710,8 @@ async def enroll(request: Request):
     cts = await C.deps.encrypt(subject_id, [t.astype("<f4").tobytes() for t in policy.templates(embs, dirs)])
     store = {"subject_id": subject_id, "existing": own is not None, "account": a["acct"], "consent_at": consent_at,
              "status": "pending_review" if dups else "active", "ciphertexts": cts, "model_version": active,
-             "align_version": str(an["versions"].get("align") or "unknown"), "duplicates": dups}
+             "align_version": str(an["versions"].get("align") or "unknown"), "duplicates": dups,
+             "enrollment_epoch": control["enrollment_epoch"]}
     return await _enroll_commit(sess, dev, "review" if dups else "ok", cov,
                                 {"min_cos": round(low, 4), "duplicates": len(dups)}, store)
 
@@ -522,6 +722,11 @@ async def _enroll_commit(sess, dev, reason: str, coverage=None, detail=None, sto
     subject_id, out = (store or {}).get("subject_id"), {}
     decision = {"active": "enrolled", "pending_review": "pending_review"}.get(status, "rejected")
     async with C.pool.connection() as conn, conn.transaction():
+        if store:
+            control = await _account_control(conn, store["account"], lock=True)
+            if not control["enabled"] or control["enrollment_epoch"] != store["enrollment_epoch"]:
+                reason = "account_disabled" if not control["enabled"] else "account_changed"
+                status, decision, store = "rejected", "rejected", None
         if not await _consume(conn, sess["id"], decision, reason):
             status, reason, store = "rejected", "session_replayed", None
         elif store:
@@ -536,8 +741,8 @@ async def _enroll_commit(sess, dev, reason: str, coverage=None, detail=None, sto
         await audit(conn, _actor(dev), "enroll_decision", subject_id=subject_id if out else None,
                     session_id=sess["id"], device_id=dev["id"],
                     detail={"status": status, "reason": reason, **out, **(detail or {}),
-                            "directions": sum((coverage or {}).values())})
-    body = {"status": status, **out, "coverage": coverage or {}, "reason": policy.external(reason)}
+                            "directions": sum((coverage or {}).values()), **_pad_mode()})
+    body = {"status": status, **out, "coverage": coverage or {}, "reason": policy.external(reason), **_pad_mode()}
     return JSONResponse(body, status_code=409 if reason == "already_enrolled" else 200)
 
 
@@ -581,22 +786,41 @@ async def _delete_subject(subject_id: uuid.UUID, actor: str, why: str):
     """Revoke (approvals blocked at commit) + deactivate templates + NULL ciphertexts + remove events in one tx;
     then destroy the KMS key (crypto-shredding); then wait <= 5 s for every search replica to apply the events."""
     async with C.pool.connection() as conn, conn.transaction():
+        owner = await _one(conn, "SELECT account_id FROM subjects WHERE id = %s", (subject_id,))
+        if owner is None:
+            return None
+        await _account_lock(conn, owner["account_id"])
+        await _invalidate_enrollment(conn, owner["account_id"])
         s = await _one(conn, "SELECT status FROM subjects WHERE id = %s FOR UPDATE", (subject_id,))
         if s is None:
             return None
         await conn.execute("UPDATE subjects SET status = 'revoked', revoked_at = coalesce(revoked_at, now()), "
                            "updated_at = now() WHERE id = %s", (subject_id,))
         ids = [r["id"] for r in await (await conn.execute(
-            "UPDATE templates SET active = false, ciphertext = NULL WHERE subject_id = %s AND active RETURNING id",
+            "UPDATE templates SET active = false, ciphertext = NULL WHERE subject_id = %s "
+            "AND (active OR ciphertext IS NOT NULL) RETURNING id",
             (subject_id,))).fetchall()]
         if ids:
             await _events(conn, "remove", ids)
         await audit(conn, actor, "subject_revoked", subject_id=subject_id,
                     detail={"reason": why, "templates_deleted": len(ids), "previous_status": s["status"]})
-    kms = await C.deps.destroy_key(subject_id)
+    return await _finish_deletion([subject_id], len(ids), actor, require_key=False)
+
+
+async def _invalidate_enrollment(conn, account_id):
+    await conn.execute("INSERT INTO account_controls (account_id, enrollment_epoch) VALUES (%s, 1) "
+                       "ON CONFLICT (account_id) DO UPDATE SET enrollment_epoch = "
+                       "account_controls.enrollment_epoch + 1, updated_at = now()", (account_id,))
+
+
+async def _finish_deletion(subject_ids, deleted_count, actor, *, require_key=True):
+    """Retryable post-commit cleanup: revoked ledger blocks stale replicas even if KMS/index are down."""
+    destroyed = await asyncio.gather(*(C.deps.destroy_key(sid) for sid in subject_ids))
+    key_destroyed = all(isinstance(result, dict) and isinstance(result.get("destroyed"), bool)
+                        for result in destroyed)
     async with C.pool.connection() as conn:
-        target = (await _one(conn, "SELECT coalesce(max(id), 0) AS m FROM template_events WHERE subject_id = %s",
-                             (subject_id,)))["m"]
+        target = (await _one(conn, "SELECT coalesce(max(id), 0) AS m FROM template_events WHERE subject_id = ANY(%s)",
+                             (subject_ids,)))["m"]
     deadline, index_removed = time.monotonic() + 5.0, False
     while not index_removed:
         applied = await C.deps.applied_event_ids()
@@ -604,12 +828,14 @@ async def _delete_subject(subject_id: uuid.UUID, actor: str, why: str):
         if index_removed or time.monotonic() > deadline:
             break
         await asyncio.sleep(0.1)
-    result = {"revoked": True, "templates_deleted": len(ids), "index_removed": index_removed,
-              "key_destroyed": kms is not None}
+    result = {"revoked": True, "templates_deleted": deleted_count, "index_removed": index_removed,
+              "key_destroyed": key_destroyed}
     async with C.pool.connection() as conn:
-        await audit(conn, actor, "face_deleted", subject_id=subject_id,
-                    detail={**result, "kms_destroyed": bool(kms.get("destroyed")) if isinstance(kms, dict) else None,
+        await audit(conn, actor, "face_deleted", subject_id=subject_ids[0] if len(subject_ids) == 1 else None,
+                    detail={**result, "subjects": [str(sid) for sid in subject_ids],
                             "remove_event_id": target})
+    if require_key and not key_destroyed:
+        raise Unavailable("key destruction incomplete; retry account face deletion")
     return result
 
 
@@ -623,6 +849,90 @@ async def delete_face(subject_id: uuid.UUID, request: Request):
 
 
 # ---------------------------------------------------------------- admin (Bearer admin_token)
+
+AccountId = Annotated[str, Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9._-]+$")]
+
+
+class AccountSummaryIn(BaseModel):
+    account_ids: list[AccountId] = Field(max_length=500)
+
+
+class AccountStatusIn(BaseModel):
+    enabled: bool = Field(strict=True)
+
+
+async def _account_summaries(conn, account_ids):
+    rows = await (await conn.execute(
+        "SELECT requested.account_id, coalesce(c.enabled, true) AS enabled, s.id AS subject_id, "
+        "s.status, s.created_at AS enrolled_at, s.template_version FROM unnest(%s::text[]) "
+        "WITH ORDINALITY AS requested(account_id, ordinal) "
+        "LEFT JOIN account_controls c USING (account_id) LEFT JOIN LATERAL "
+        "(SELECT id, status, created_at, template_version FROM subjects WHERE account_id = requested.account_id "
+        "ORDER BY (status <> 'revoked') DESC, created_at DESC, id DESC LIMIT 1) s ON true "
+        "ORDER BY requested.ordinal", (list(dict.fromkeys(account_ids)),))).fetchall()
+    for row in rows:
+        status = row.pop("status")
+        row["face_status"] = ("disabled" if status == "active" and not row["enabled"] else status) or "none"
+    return rows
+
+
+@app.post("/v1/admin/accounts/summary")
+async def account_summary(body: AccountSummaryIn, request: Request):
+    _admin(request)
+    async with C.pool.connection() as conn:
+        return {"accounts": await _account_summaries(conn, body.account_ids)}
+
+
+@app.post("/v1/admin/accounts/{account_id}/status")
+async def account_status(account_id: AccountId, body: AccountStatusIn, request: Request):
+    _admin(request)
+    async with C.pool.connection() as conn, conn.transaction():
+        await _account_lock(conn, account_id)
+        await conn.execute("INSERT INTO account_controls (account_id, enabled, enrollment_epoch) VALUES (%s,%s,1) "
+                           "ON CONFLICT (account_id) DO UPDATE SET enabled = EXCLUDED.enabled, "
+                           "enrollment_epoch = account_controls.enrollment_epoch + "
+                           "(account_controls.enabled IS DISTINCT FROM EXCLUDED.enabled)::int, updated_at = now()",
+                           (account_id, body.enabled))
+        if body.enabled:
+            ids = [row["id"] for row in await (await conn.execute(
+                "UPDATE templates t SET active = true FROM subjects s WHERE t.subject_id = s.id "
+                "AND s.account_id = %s AND s.status = 'active' AND t.template_version = s.template_version "
+                "AND t.ciphertext IS NOT NULL AND NOT t.active RETURNING t.id", (account_id,))).fetchall()]
+        else:
+            ids = [row["id"] for row in await (await conn.execute(
+                "UPDATE templates t SET active = false FROM subjects s WHERE t.subject_id = s.id "
+                "AND s.account_id = %s AND t.active RETURNING t.id", (account_id,))).fetchall()]
+        if ids:
+            await _events(conn, "add" if body.enabled else "remove", ids)
+        result = (await _account_summaries(conn, [account_id]))[0]
+        await audit(conn, "admin", "account_status", detail={"account_id": account_id, "enabled": body.enabled,
+                                                             "templates_changed": len(ids)})
+    return {**result, "templates_changed": len(ids)}
+
+
+@app.delete("/v1/admin/accounts/{account_id}/face")
+async def account_delete_face(account_id: AccountId, request: Request):
+    _admin(request)
+    async with C.pool.connection() as conn, conn.transaction():
+        await _account_lock(conn, account_id)
+        await _invalidate_enrollment(conn, account_id)
+        subjects = await (await conn.execute("UPDATE subjects SET status = 'revoked', "
+            "revoked_at = coalesce(revoked_at, now()), updated_at = now() WHERE account_id = %s RETURNING id",
+            (account_id,))).fetchall()
+        subject_ids = [row["id"] for row in subjects]
+        ids = [row["id"] for row in await (await conn.execute(
+            "UPDATE templates SET active = false, ciphertext = NULL WHERE subject_id = ANY(%s) "
+            "AND (active OR ciphertext IS NOT NULL) RETURNING id", (subject_ids,))).fetchall()]
+        await conn.execute("UPDATE enrollment_reviews SET status = 'rejected', decided_at = now(), "
+                           "decided_by = 'account_management' WHERE subject_id = ANY(%s) AND status = 'open'",
+                           (subject_ids,))
+        if ids:
+            await _events(conn, "remove", ids)
+        await audit(conn, "admin", "account_faces_revoked", detail={"account_id": account_id,
+                    "subjects": [str(sid) for sid in subject_ids], "templates_deleted": len(ids)})
+    result = await _finish_deletion(subject_ids, len(ids), "admin")
+    return {"account_id": account_id, **result, "subjects_deleted": len(subject_ids)}
+
 
 class DeviceIn(BaseModel):
     device_id: str = Field(pattern=r"^[A-Za-z0-9._-]{1,64}$")
@@ -692,6 +1002,11 @@ async def decide_review(review_id: uuid.UUID, body: ReviewIn, request: Request):
     _admin(request)
     status = "approved" if body.decision == "approve" else "rejected"
     async with C.pool.connection() as conn, conn.transaction():
+        owner = await _one(conn, "SELECT s.account_id FROM enrollment_reviews r JOIN subjects s ON s.id = "
+                                "r.subject_id WHERE r.id = %s", (review_id,))
+        if owner is None:
+            raise HTTPException(409, "review_not_open")
+        control = await _account_control(conn, owner["account_id"], lock=True)
         r = await _one(conn, "UPDATE enrollment_reviews SET status = %s, decided_at = now(), decided_by = %s "
                              "WHERE id = %s AND status = 'open' RETURNING subject_id", (status, body.by, review_id))
         if r is None:
@@ -700,6 +1015,13 @@ async def decide_review(review_id: uuid.UUID, body: ReviewIn, request: Request):
             await conn.execute("UPDATE subjects SET status = 'active', updated_at = now() WHERE id = %s AND "
                                "status = 'pending_review' AND NOT EXISTS (SELECT 1 FROM enrollment_reviews "
                                "WHERE subject_id = %s AND status = 'open')", (r["subject_id"], r["subject_id"]))
+            if control["enabled"]:
+                added = [row["id"] for row in await (await conn.execute(
+                    "UPDATE templates t SET active = true FROM subjects s WHERE t.subject_id = s.id "
+                    "AND s.id = %s AND s.status = 'active' AND t.template_version = s.template_version "
+                    "AND t.ciphertext IS NOT NULL AND NOT t.active RETURNING t.id", (r["subject_id"],))).fetchall()]
+                if added:
+                    await _events(conn, "add", added)
         else:
             await conn.execute("UPDATE enrollment_reviews SET status = 'rejected', decided_at = now(), decided_by = %s "
                                "WHERE subject_id = %s AND status = 'open'", (body.by, r["subject_id"]))

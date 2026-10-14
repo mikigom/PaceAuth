@@ -1,0 +1,167 @@
+{
+  "recorded_at": "2026-10-14T14:36:00.654836+09:00",
+  "pad_enabled": false,
+  "pad_mode": "disabled_pilot",
+  "flag": "FA_PILOT_DISABLE_PAD=1",
+  "tests": {
+    "default_mode_api_mtls": 41,
+    "disabled_mode_api_mtls": 4,
+    "unit_mode_engine_startup_policy": 37,
+    "unit_skipped": 1
+  },
+  "services": {
+    "api-1": {
+      "ok": true
+    },
+    "api-2": {
+      "ok": true
+    },
+    "engine-1": {
+      "ok": true,
+      "versions": {
+        "detector": "scrfd_34g@2+trt16",
+        "pose": "6drepnet360@1",
+        "recog": "adaface_ir101_wf12m@1",
+        "align": "arcface5-112@1",
+        "pad": "pad_rgbdir@2",
+        "quality": "q@1"
+      },
+      "providers": [
+        "TensorrtExecutionProvider",
+        "CUDAExecutionProvider",
+        "CPUExecutionProvider"
+      ],
+      "pad_enabled": false,
+      "pad_mode": "disabled_pilot",
+      "warmup": {
+        "synthetic": true,
+        "detector": true,
+        "pose": true,
+        "recognition": true,
+        "pad": true,
+        "pose_batch": 8,
+        "recognition_batch": 8,
+        "pad_batch": 8,
+        "elapsed_ms": 370.2
+      },
+      "batches": 0,
+      "frames": 0,
+      "sensor_readiness": {
+        "ready": true,
+        "capture_ready": true,
+        "pad_validation": {
+          "ready": false,
+          "reasons": [
+            "pad_calibration_mismatch",
+            "pad_real_sensor_validation_missing"
+          ],
+          "model_version": "pad_rgbdir@2",
+          "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+          "model_calib_version": "gemini336-sim-v1",
+          "binding": {
+            "model_version": "pad_rgbdir@2",
+            "model_json_sha256": "531cef5f48dc88c9070786a6349a872092fb6be17fdf9bea7386b7a36e8c5ef7",
+            "weights_sha256": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18",
+            "pipeline_sha256": "6eeee18b6bf47734c7a5b31ba1ee803a8b6659cc963f2fa6bbb5e03e2783c051",
+            "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5"
+          }
+        },
+        "pad_enabled": false,
+        "pad_mode": "disabled_pilot",
+        "versions": {
+          "detector": "scrfd_34g@2+trt16",
+          "pose": "6drepnet360@1",
+          "recog": "adaface_ir101_wf12m@1",
+          "align": "arcface5-112@1",
+          "pad": "pad_rgbdir@2",
+          "quality": "q@1"
+        },
+        "model_binding": {
+          "model_version": "pad_rgbdir@2",
+          "model_json_sha256": "531cef5f48dc88c9070786a6349a872092fb6be17fdf9bea7386b7a36e8c5ef7",
+          "weights_sha256": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18",
+          "pipeline_sha256": "6eeee18b6bf47734c7a5b31ba1ee803a8b6659cc963f2fa6bbb5e03e2783c051",
+          "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5"
+        },
+        "calib_version": "femto-bolt-v1-50beeef1ae82fb27"
+      }
+    },
+    "engine-2": {
+      "ok": true,
+      "versions": {
+        "detector": "scrfd_34g@2+trt16",
+        "pose": "6drepnet360@1",
+        "recog": "adaface_ir101_wf12m@1",
+        "align": "arcface5-112@1",
+        "pad": "pad_rgbdir@2",
+        "quality": "q@1"
+      },
+      "providers": [
+        "TensorrtExecutionProvider",
+        "CUDAExecutionProvider",
+        "CPUExecutionProvider"
+      ],
+      "pad_enabled": false,
+      "pad_mode": "disabled_pilot",
+      "warmup": {
+        "synthetic": true,
+        "detector": true,
+        "pose": true,
+        "recognition": true,
+        "pad": true,
+        "pose_batch": 8,
+        "recognition_batch": 8,
+        "pad_batch": 8,
+        "elapsed_ms": 384.5
+      },
+      "batches": 0,
+      "frames": 0,
+      "sensor_readiness": {
+        "ready": true,
+        "capture_ready": true,
+        "pad_validation": {
+          "ready": false,
+          "reasons": [
+            "pad_calibration_mismatch",
+            "pad_real_sensor_validation_missing"
+          ],
+          "model_version": "pad_rgbdir@2",
+          "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+          "model_calib_version": "gemini336-sim-v1",
+          "binding": {
+            "model_version": "pad_rgbdir@2",
+            "model_json_sha256": "531cef5f48dc88c9070786a6349a872092fb6be17fdf9bea7386b7a36e8c5ef7",
+            "weights_sha256": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18",
+            "pipeline_sha256": "6eeee18b6bf47734c7a5b31ba1ee803a8b6659cc963f2fa6bbb5e03e2783c051",
+            "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5"
+          }
+        },
+        "pad_enabled": false,
+        "pad_mode": "disabled_pilot",
+        "versions": {
+          "detector": "scrfd_34g@2+trt16",
+          "pose": "6drepnet360@1",
+          "recog": "adaface_ir101_wf12m@1",
+          "align": "arcface5-112@1",
+          "pad": "pad_rgbdir@2",
+          "quality": "q@1"
+        },
+        "model_binding": {
+          "model_version": "pad_rgbdir@2",
+          "model_json_sha256": "531cef5f48dc88c9070786a6349a872092fb6be17fdf9bea7386b7a36e8c5ef7",
+          "weights_sha256": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18",
+          "pipeline_sha256": "6eeee18b6bf47734c7a5b31ba1ee803a8b6659cc963f2fa6bbb5e03e2783c051",
+          "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5"
+        },
+        "calib_version": "femto-bolt-v1-50beeef1ae82fb27"
+      }
+    }
+  },
+  "notes": [
+    "Explicit user-requested PAD opt-out for LAN pilot.",
+    "No original images or captures used during this deployment; production face capture remains user-triggered.",
+    "PAD validation has not been completed and is not represented as completed."
+  ],
+  "gpu_memory": "NVIDIA GeForce RTX 4060, 2318, 8188",
+  "ready": true
+}

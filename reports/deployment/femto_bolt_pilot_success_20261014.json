@@ -1,0 +1,40 @@
+{
+  "recorded_at": "2026-10-14T05:40:26.169915+00:00",
+  "deployment_url": "http://192.168.2.218:8080",
+  "pad_enabled": false,
+  "pad_mode": "disabled_pilot",
+  "participant_report": "Registration and face matching both succeeded.",
+  "verified_server_events": [
+    {
+      "at": "2026-10-14T05:39:31.810342+00:00",
+      "event": "enroll_decision",
+      "status": "active",
+      "reason": "ok",
+      "directions": 9,
+      "pad_enabled": false,
+      "pad_mode": "disabled_pilot"
+    },
+    {
+      "at": "2026-10-14T05:39:40.096787+00:00",
+      "event": "auth_decision",
+      "decision": "approved",
+      "reason": "ok",
+      "pad_enabled": false,
+      "pad_mode": "disabled_pilot"
+    }
+  ],
+  "storage_counts": {
+    "active_subjects": 1,
+    "active_templates": 4,
+    "encrypted_active_templates": 4
+  },
+  "limitations": [
+    "One consenting participant completed the actual sensor and web flow; recognition accuracy across users or conditions is not established.",
+    "PAD was intentionally disabled and no liveness or spoof-resistance validation is claimed."
+  ],
+  "artifacts": [
+    "femto_bolt_pad_disabled_backend_20261014.json",
+    "femto_bolt_pad_disabled_ui_20261014.json",
+    "femto_bolt_pad_disabled_20261014.json"
+  ]
+}

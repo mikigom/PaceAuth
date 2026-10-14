@@ -15,6 +15,23 @@ def unit(x):
     return (x / np.linalg.norm(x, axis=-1, keepdims=True)).astype(np.float32)
 
 
+@pytest.mark.parametrize("gpu", DEVICES)
+def test_explicit_reactivation_requires_fresh_vectors_and_is_idempotent(gpu):
+    gallery = Gallery(gpu=gpu)
+    old, fresh = np.eye(4, dtype=np.float32)[:2]
+    assert gallery.add([12], ["account"], old[None]) == 1
+    assert gallery.remove([12]) == 1
+    assert gallery.add([12], ["account"], fresh[None]) == 0  # old/default add never restores a tombstone
+    assert gallery.add([12, 12], ["account", "account"], np.vstack([fresh, fresh]),
+                       allow_reactivation=True) == 1
+    assert gallery.add([12], ["account"], fresh[None], allow_reactivation=True) == 0
+    assert (gallery.ntotal, gallery.nsubjects, gallery.n) == (1, 1, 2)
+    assert gallery.search(fresh[None], 1)[0][0][1] == pytest.approx(1.0)
+    assert gallery.search(old[None], 1)[0][0][1] == pytest.approx(0.0)
+    assert gallery.remove([12]) == 1 and gallery.remove([12]) == 0
+    assert (gallery.ntotal, gallery.nsubjects) == (0, 0)
+
+
 def brute(X, sids, Q):
     """Full subject ranking per query: [(subject, max score)] descending (float64)."""
     S = Q.astype(np.float64) @ X.astype(np.float64).T

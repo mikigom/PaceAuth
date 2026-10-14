@@ -94,6 +94,13 @@ def test_same_person_and_templates():
     assert np.allclose(t[2], _unit(embs[:2].mean(0))) and np.allclose(t[3], t[2])
 
 
+def test_auth_sequence_rejects_cross_person_mean_that_enrollment_mean_check_accepts():
+    mixed = np.asarray([[1, 0], [0, 1], [1, 0], [0, 1]], np.float32)
+    assert policy.same_person(mixed, 0.5)[0]
+    assert not policy.same_person_sequence(mixed, 0.5)[0]
+    assert policy.same_person_sequence(np.asarray([[1, 0], [1, 0], [1, 0]], np.float32), 0.5)[0]
+
+
 @pytest.mark.skipif(not (S / "approval.key").exists(), reason="needs dev secrets (scripts/init_secrets.py)")
 def test_app_fails_closed_when_db_is_down(monkeypatch):
     from fastapi.testclient import TestClient

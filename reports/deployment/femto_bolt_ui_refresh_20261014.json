@@ -1,0 +1,48 @@
+{
+  "deployed_at": "2026-10-14T06:23:25.026972+00:00",
+  "url": "http://192.168.2.218:8080",
+  "scope": [
+    "ui/live.html",
+    "ui/live.css",
+    "ui/live.js",
+    "docs/FEMTO_BOLT.md"
+  ],
+  "source_sha256": {
+    "live.html": "53b91b77d380972b16714d1887360edd6b05deded1944a40472d389d57bce24b",
+    "live.css": "1008dde89f29d6252d4eae9581b9e6a684c81bc5a55af8721d3bfc60acb04980",
+    "live.js": "89278d59d2852e2670a8a55a0d5cd20eadd0f12ab448d6b19db3edd2b737a806"
+  },
+  "verification": {
+    "mock_browser_passed": true,
+    "mock_checks": 48,
+    "actual_browser_passed": true,
+    "actual_checks": 19,
+    "actual_performance": {
+      "seconds": 10.000200000000186,
+      "preview_received": 287,
+      "preview_unique_sequences": 287,
+      "preview_receive_fps": 28.699426011479236,
+      "preview_display_fps": 28.799424011519235,
+      "recognition_responses": 149,
+      "recognition_unique_sequences": 145,
+      "recognition_update_fps": 14.499710005799614,
+      "recognition_reported_fps_mean": 14.73825503355704,
+      "recognition_latency_ms_mean": 16.724832214765105,
+      "recognition_frame_age_ms_max": 309,
+      "max_faces_seen": 0,
+      "preview_ui_fps": "30.0 fps",
+      "recognition_ui_fps": "15.0"
+    },
+    "camera_state": "streaming",
+    "sensor_fps": 30.0,
+    "auth_ready": true,
+    "pad_enabled": false
+  },
+  "human_media_persisted": false,
+  "actual_authentication_requested_in_ui_smoke": false,
+  "synthetic_screenshots": "/tmp/paceauth-toss-ui",
+  "reports": [
+    "femto_bolt_toss_ui_mock_20261014.json",
+    "femto_bolt_toss_ui_actual_20261014.json"
+  ]
+}

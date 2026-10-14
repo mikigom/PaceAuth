@@ -1,0 +1,64 @@
+{
+  "test_account_id": "[redacted smoke-test account]",
+  "checks": {
+    "preview_visible": true,
+    "initial_logged_out": true,
+    "initial_capture_disabled": true,
+    "mode_descriptions": true,
+    "signup_logged_in": true,
+    "password_cleared": true,
+    "consent_unchecked": true,
+    "logged_in_capture_disabled": true,
+    "cookie_httponly": true,
+    "session_survives_reload": true,
+    "logout": true,
+    "wrong_password_rejected": true,
+    "password_login": true,
+    "final_logged_out": true,
+    "final_consent_unchecked": true,
+    "no_capture_requests": true,
+    "mobile_no_horizontal_overflow": true
+  },
+  "captures_requested": 0,
+  "observation_modes": [
+    "diagnostic",
+    "auth",
+    "enroll"
+  ],
+  "preview": {
+    "seconds": 6.0005,
+    "received": 180,
+    "displayed": 181,
+    "unique_sequences": 180,
+    "max_frame_age_ms": 4,
+    "capture_fps_text": "30.1 fps",
+    "display_fps_text": "30.0 fps",
+    "measured_display_fps": 30.16,
+    "measured_receive_fps": 30.0
+  },
+  "js_errors": [],
+  "readiness": {
+    "ready": false,
+    "capture_ready": true,
+    "blockers": [
+      {
+        "code": "pad_calibration_mismatch",
+        "message": "이 센서의 위조 방지 검증이 완료되지 않았습니다."
+      },
+      {
+        "code": "pad_real_sensor_validation_missing",
+        "message": "이 센서의 위조 방지 검증이 완료되지 않았습니다."
+      }
+    ],
+    "camera_fps": 30.1
+  },
+  "passed": true,
+  "browser": "Google Chrome 143.0.7499.146 (headless CDP)",
+  "tested_at": "2026-10-14T05:10:40.240439+00:00",
+  "test_account_cleanup": {
+    "removed_accounts": 1,
+    "removed_sessions": 0,
+    "all_test_sessions_already_logged_out": true
+  },
+  "media_persisted": false
+}

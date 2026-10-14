@@ -76,7 +76,8 @@ def _render(task):
 
 
 def analyze(http, frames, mode="enroll"):
-    r = http.post(f"{ENGINE}/v1/analyze", content=msgpack.packb({"mode": mode, "frames": frames}),
+    r = http.post(f"{ENGINE}/v1/analyze", content=msgpack.packb({"mode": mode, "frames": frames,
+                                                              "calib_version": CALIB_VERSION}),
                   headers={"Content-Type": "application/msgpack"}, timeout=120)
     r.raise_for_status()
     return msgpack.unpackb(r.content, raw=False)

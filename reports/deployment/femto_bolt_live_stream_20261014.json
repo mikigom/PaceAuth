@@ -1,0 +1,33 @@
+{
+  "measured_at": "2026-10-14T06:01:14.728007+00:00",
+  "duration_s": 45.01,
+  "unique_results": 650,
+  "states": {
+    "running": 715,
+    "paused": 15
+  },
+  "per_face_count": {
+    "1": {
+      "samples": 460,
+      "fps": 14.76,
+      "latency_ms": 32.04,
+      "age_ms": 76.63,
+      "max_age_ms": 192,
+      "max_known": 1,
+      "max_unknown": 0,
+      "max_uncertain": 1
+    },
+    "0": {
+      "samples": 190,
+      "fps": 15.01,
+      "latency_ms": 21.21,
+      "age_ms": 68.24,
+      "max_age_ms": 109,
+      "max_known": 0,
+      "max_unknown": 0,
+      "max_uncertain": 0
+    }
+  },
+  "raw_images_stored": false,
+  "names_or_identity_identifiers_stored": false
+}

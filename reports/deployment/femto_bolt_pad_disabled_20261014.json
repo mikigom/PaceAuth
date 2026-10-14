@@ -1,0 +1,27 @@
+{
+  "probe": "synthetic_no_face_over_actual_mtls_gpu",
+  "actual_human_capture": false,
+  "raw_images_stored": false,
+  "readiness": {
+    "ready": true,
+    "capture_ready": true,
+    "pad_enabled": false,
+    "pad_mode": "disabled_pilot"
+  },
+  "sensor_fps": 30.0,
+  "response": {
+    "decision": "rejected",
+    "reason": "retry",
+    "pad_enabled": false,
+    "pad_mode": "disabled_pilot"
+  },
+  "latency_ms": 42.5,
+  "audit": {
+    "decision": "rejected",
+    "reason": "quality:no_face",
+    "pad_enabled": false,
+    "pad_mode": "disabled_pilot"
+  },
+  "measured_at": "2026-10-14T05:38:00.812897+00:00",
+  "purpose": "Verify PAD-off deployment still rejects a synthetic no-face packet through actual mTLS and GPU; this does not verify human enrollment or identity success."
+}

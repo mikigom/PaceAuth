@@ -1,0 +1,174 @@
+{
+  "date": "2026-10-14",
+  "recorded_at": "2026-10-14T05:26:51.521927+00:00",
+  "scope": "First32 consented real-sensor diagnostic presentations, participant-labelled live; not deployment accuracy validation",
+  "binding": {
+    "model_version": "pad_rgbdir@2",
+    "model_json_sha256": "531cef5f48dc88c9070786a6349a872092fb6be17fdf9bea7386b7a36e8c5ef7",
+    "weights_sha256": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18",
+    "pipeline_sha256": "3975d30b7343bfe06873a5bc149407a4b25795c809c7606fb789be77cbed9477",
+    "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5"
+  },
+  "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+  "observation_sha256": "03c02996012c0a8edea7b39d5fdb88d5be1c2b67d0c4a681d8536edd609eb6b7",
+  "subjects": 1,
+  "aggregate": {
+    "presentations": 32,
+    "frames": 160,
+    "quality_pass_frames": 136,
+    "pad_live_frames": 0,
+    "physics_pass_frames": 128,
+    "quality_reasons": {
+      "pose_out_of_range": 24
+    },
+    "physical_failures": {
+      "shading_corr": 32
+    },
+    "cnn": {
+      "min": 0.0000017126682223533862,
+      "median": 0.03977367468178272,
+      "max": 0.9992576241493225
+    },
+    "depth_mm": {
+      "min": 401,
+      "median": 496.5,
+      "max": 667
+    },
+    "depth_valid_ratio": {
+      "min": 0.8750219298245614,
+      "median": 0.9166612716571196,
+      "max": 0.9623469623469624
+    },
+    "face_core_ir_median": {
+      "min": 159,
+      "median": 179,
+      "max": 194
+    }
+  },
+  "distance_cohorts": {
+    "under500mm": {
+      "presentations": 17,
+      "frames": 85,
+      "quality_pass_frames": 81,
+      "pad_live_frames": 0,
+      "physics_pass_frames": 74,
+      "quality_reasons": {
+        "pose_out_of_range": 4
+      },
+      "physical_failures": {
+        "shading_corr": 11
+      },
+      "cnn": {
+        "min": 0.0000017126682223533862,
+        "median": 0.004331232514232397,
+        "max": 0.9992576241493225
+      },
+      "depth_mm": {
+        "min": 401,
+        "median": 480,
+        "max": 498
+      },
+      "depth_valid_ratio": {
+        "min": 0.8750219298245614,
+        "median": 0.9117647058823529,
+        "max": 0.9361871939053147
+      },
+      "face_core_ir_median": {
+        "min": 177,
+        "median": 184.5,
+        "max": 194
+      }
+    },
+    "500to600mm": {
+      "presentations": 13,
+      "frames": 65,
+      "quality_pass_frames": 45,
+      "pad_live_frames": 0,
+      "physics_pass_frames": 45,
+      "quality_reasons": {
+        "pose_out_of_range": 20
+      },
+      "physical_failures": {
+        "shading_corr": 20
+      },
+      "cnn": {
+        "min": 0.000012494841939769685,
+        "median": 0.40692612528800964,
+        "max": 0.9990563988685608
+      },
+      "depth_mm": {
+        "min": 504,
+        "median": 540,
+        "max": 589
+      },
+      "depth_valid_ratio": {
+        "min": 0.8867700585535686,
+        "median": 0.9390621183749899,
+        "max": 0.9591592617908408
+      },
+      "face_core_ir_median": {
+        "min": 159,
+        "median": 177,
+        "max": 180
+      }
+    },
+    "600to700mm": {
+      "presentations": 2,
+      "frames": 10,
+      "quality_pass_frames": 10,
+      "pad_live_frames": 0,
+      "physics_pass_frames": 9,
+      "quality_reasons": {},
+      "physical_failures": {
+        "shading_corr": 1
+      },
+      "cnn": {
+        "min": 0.000034824424801627174,
+        "median": 0.006838120520114899,
+        "max": 0.2648540735244751
+      },
+      "depth_mm": {
+        "min": 643,
+        "median": 654,
+        "max": 667
+      },
+      "depth_valid_ratio": {
+        "min": 0.897252518028488,
+        "median": 0.9281882358317463,
+        "max": 0.9623469623469624
+      },
+      "face_core_ir_median": {
+        "min": 163,
+        "median": 165,
+        "max": 172
+      }
+    }
+  },
+  "current_threshold": 0.9994763731956482,
+  "eligible_for_review": false,
+  "model_or_threshold_changed": false,
+  "raw_images_saved": false,
+  "runtime_audit": {
+    "weight_hash_matches": true,
+    "training_runtime_input_tensor_max_abs_diff": 0,
+    "pad_dtype": "float32",
+    "all_pad_layers_eval": true,
+    "generated_ten_case_cpu_gpu_max_probability_diff": 1.1920928955078125e-7,
+    "batch_singleton_max_probability_diff": 1.09e-12,
+    "generated_live_accepted": 2,
+    "generated_attacks_rejected": 8,
+    "scope": "Synthetic fixtures only; does not establish physical PAD performance"
+  },
+  "findings": [
+    "All160 observed frames failed the unchanged PAD threshold.",
+    "At600to700mm both presentations had acceptable quality but failed PAD; distance alone does not resolve the issue.",
+    "Known input domain differences include log-mapped real IR vs simulated IR, actualToF geometry/noise, and estimated landmarks. The dominant cause is not isolated.",
+    "Focal length is used by physics shading only, not the CNN input; changingfx cannot repair the low CNN scores by itself."
+  ],
+  "limitations": [
+    "One participant; calibration diagnostic trials only. Adjacent frames are not independent presentations.",
+    "No attack presentations or held-out test set.",
+    "Model remains trained on simulated data and calibrated to Gemini simulation.",
+    "Score-only records cannot retrainCNN or replay alternative preprocessing."
+  ]
+}

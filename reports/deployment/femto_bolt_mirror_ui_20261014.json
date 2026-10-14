@@ -1,0 +1,89 @@
+{
+  "tested_url": "http://192.168.2.218:8080",
+  "checks": {
+    "rgb_depth_ir_mirrored": true,
+    "text_and_guide_unmirrored": true,
+    "preview_parent_unmirrored": true,
+    "subject_left_to_right_grid": true,
+    "logged_out": true,
+    "consent_unchecked": true,
+    "no_post_requests": true,
+    "no_operation_started": true
+  },
+  "captures_requested": 0,
+  "read_only": true,
+  "media_persisted": false,
+  "views": {
+    "rgb": {
+      "received": 151,
+      "displayed": 151,
+      "unique_sequences": 151,
+      "max_frame_age_ms": 0,
+      "display_fps_text": "30.0 fps",
+      "seconds": 5.0,
+      "receive_fps": 30.2,
+      "display_fps": 30.2,
+      "transform": {
+        "a": -1,
+        "b": 0,
+        "c": 0,
+        "d": 1,
+        "e": 0,
+        "f": 0
+      }
+    },
+    "depth": {
+      "received": 150,
+      "displayed": 151,
+      "unique_sequences": 150,
+      "max_frame_age_ms": 8,
+      "display_fps_text": "30.0 fps",
+      "seconds": 5.0,
+      "receive_fps": 30.0,
+      "display_fps": 30.2,
+      "transform": {
+        "a": -1,
+        "b": 0,
+        "c": 0,
+        "d": 1,
+        "e": 0,
+        "f": 0
+      }
+    },
+    "ir": {
+      "received": 150,
+      "displayed": 150,
+      "unique_sequences": 150,
+      "max_frame_age_ms": 0,
+      "display_fps_text": "30.0 fps",
+      "seconds": 5.0,
+      "receive_fps": 30.0,
+      "display_fps": 30.0,
+      "transform": {
+        "a": -1,
+        "b": 0,
+        "c": 0,
+        "d": 1,
+        "e": 0,
+        "f": 0
+      }
+    }
+  },
+  "guide_columns": [
+    {
+      "direction": "L",
+      "x": 75
+    },
+    {
+      "direction": "C",
+      "x": 342.03125
+    },
+    {
+      "direction": "R",
+      "x": 609.0625
+    }
+  ],
+  "camera_fps": 30.1,
+  "js_errors": [],
+  "passed": true
+}

@@ -1,4 +1,4 @@
-# One image for every service; only engine/search get a GPU (device 5) via compose.
+# One image for every service; compose selects the GPU with FA_GPU_DEVICE_ID.
 FROM pytorch/pytorch:2.12.0-cuda13.0-cudnn9-devel
 ENV PIP_BREAK_SYSTEM_PACKAGES=1 PIP_NO_CACHE_DIR=1 PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/app
 RUN apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 openssl curl postgresql-client \
@@ -14,3 +14,6 @@ COPY faceauth /app/faceauth
 COPY eval /app/eval
 COPY scripts /app/scripts
 COPY tests /app/tests
+# spin is an unused source-build tool bundled in the PyTorch image. Its click
+# constraint conflicts with the pinned Hub client's runtime CLI dependencies.
+RUN pip uninstall -y spin && pip check

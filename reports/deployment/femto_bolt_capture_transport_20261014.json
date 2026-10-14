@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-14",
+  "scope": "Synthetic mTLS capture transport and actual GPU no-face inference; not physical PAD validation",
+  "device": "dev-001",
+  "calibration": "femto-bolt-v1-50beeef1ae82fb27",
+  "session_action": "deployment-synthetic-smoke",
+  "input": "Generated blank RGB, constant depth and IR arrays, in memory only",
+  "guide_latency_ms": 48.3,
+  "guide_reasons": ["no_face"],
+  "observe_latency_ms": 44.6,
+  "observe_frames": 3,
+  "observe_reasons": ["no_face"],
+  "diagnostic": true,
+  "capture_purpose": "auth",
+  "pad_validation_ready": false,
+  "embeddings_returned": false,
+  "approval_token_returned": false,
+  "raw_images_persisted": false,
+  "physical_study_observations_created": false,
+  "versions": {
+    "detector": "scrfd_34g@2+trt16",
+    "pose": "6drepnet360@1",
+    "recog": "adaface_ir101_wf12m@1",
+    "align": "arcface5-112@1",
+    "pad": "pad_rgbdir@2",
+    "quality": "q@1"
+  }
+}

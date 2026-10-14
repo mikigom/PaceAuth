@@ -1,0 +1,215 @@
+{
+  "date_local": "2026-10-14",
+  "timezone": "Asia/Seoul",
+  "device": {
+    "model": "Orbbec Femto Bolt",
+    "serial": "[redacted]",
+    "firmware": "1.0.9",
+    "sdk": "pyorbbecsdk2==2.1.2 / OrbbecSDK 2.9.3",
+    "negotiated_usb_mbps": 480
+  },
+  "conditions": {
+    "color": "1280x720 MJPG",
+    "depth_ir_format": "Y16",
+    "OPENBLAS_NUM_THREADS": 1,
+    "OMP_NUM_THREADS": 1,
+    "LP_NUM_THREADS": 4,
+    "raw_images_saved": false,
+    "container_read_only": true,
+    "container_cap_drop": "ALL",
+    "container_no_new_privileges": true
+  },
+  "synchronized_adapter_trials": [
+    {
+      "depth_size": [
+        640,
+        576
+      ],
+      "fps_requested": 15,
+      "render_device": null,
+      "wall_s": 42.43,
+      "frames": 7,
+      "successful_frame_rate": 0.145,
+      "timeouts": 12,
+      "cpu_percent_one_core_100": 94.8,
+      "registration_mean_ms": 6.42,
+      "rgb_decode_mean_ms": 1.86,
+      "max_sync_skew_ms": 2.0
+    },
+    {
+      "depth_size": [
+        640,
+        576
+      ],
+      "fps_requested": 30,
+      "render_device": null,
+      "wall_s": 42.75,
+      "frames": 1,
+      "successful_frame_rate": 0,
+      "timeouts": 14,
+      "cpu_percent_one_core_100": 99.5,
+      "registration_mean_ms": 9.29,
+      "rgb_decode_mean_ms": 3.5,
+      "max_sync_skew_ms": 1.0
+    },
+    {
+      "depth_size": [
+        640,
+        576
+      ],
+      "fps_requested": 15,
+      "render_device": "/dev/dri/renderD128 (AMD gfx1036)",
+      "wall_s": 30.01,
+      "frames": 17,
+      "successful_frame_rate": 0.552,
+      "timeouts": 7,
+      "cpu_percent_one_core_100": 4.4,
+      "registration_mean_ms": 5.41,
+      "rgb_decode_mean_ms": 1.85,
+      "max_sync_skew_ms": 2.0
+    },
+    {
+      "depth_size": [
+        640,
+        576
+      ],
+      "fps_requested": 30,
+      "render_device": "/dev/dri/renderD128 (AMD gfx1036)",
+      "wall_s": 30.87,
+      "frames": 1,
+      "successful_frame_rate": 0,
+      "timeouts": 10,
+      "cpu_percent_one_core_100": 3.2,
+      "registration_mean_ms": 8.78,
+      "rgb_decode_mean_ms": 3.26,
+      "max_sync_skew_ms": 1.0
+    }
+  ],
+  "unaggregated_modality_trials": [
+    {
+      "mode": "all",
+      "fps_requested": 15,
+      "depth_size": [
+        640,
+        576
+      ],
+      "wall_s": 30.03,
+      "counts": {
+        "rgb": 437,
+        "depth": 196,
+        "ir": 196
+      },
+      "observed_fps": {
+        "rgb": 14.905,
+        "depth": 6.7,
+        "ir": 6.7
+      },
+      "cpu_percent_one_core_100": 100.0,
+      "rgb_samples_matching_depth_within15ms": 192
+    },
+    {
+      "mode": "color_only",
+      "fps_requested": 30,
+      "wall_s": 30.03,
+      "counts": {
+        "rgb": 879
+      },
+      "observed_fps": {
+        "rgb": 30.103
+      },
+      "cpu_percent_one_core_100": 0.6
+    },
+    {
+      "mode": "depth_ir_only",
+      "fps_requested": 15,
+      "depth_size": [
+        640,
+        576
+      ],
+      "wall_s": 30.13,
+      "counts": {
+        "depth": 201,
+        "ir": 201
+      },
+      "observed_fps": {
+        "depth": 6.791,
+        "ir": 6.791
+      },
+      "cpu_percent_one_core_100": 96.9
+    },
+    {
+      "mode": "all",
+      "fps_requested": 15,
+      "depth_size": [
+        320,
+        288
+      ],
+      "wall_s": 30.03,
+      "counts": {
+        "rgb": 437,
+        "depth": 197,
+        "ir": 197
+      },
+      "observed_fps": {
+        "rgb": 14.854,
+        "depth": 6.699,
+        "ir": 6.699
+      },
+      "cpu_percent_one_core_100": 28.0,
+      "rgb_samples_matching_depth_within15ms": 191
+    },
+    {
+      "mode": "all",
+      "fps_requested": 30,
+      "depth_size": [
+        320,
+        288
+      ],
+      "wall_s": 30.03,
+      "counts": {
+        "rgb": 893,
+        "depth": 195,
+        "ir": 195
+      },
+      "observed_fps": {
+        "rgb": 30.101,
+        "depth": 6.59,
+        "ir": 6.59
+      },
+      "cpu_percent_one_core_100": 29.1,
+      "rgb_samples_matching_depth_within15ms": 193
+    }
+  ],
+  "method_notes": [
+    "Synchronized adapter trials use FULL_FRAME_REQUIRE plus SDK frame sync and enforce <=15ms actual timestamp skew.",
+    "Unaggregated trials use ANY_SITUATION with frame sync disabled; rates count unique device timestamp/index pairs, not authentication-valid packets.",
+    "Every process restarted camera once; no automatic reconnect during trial. Startup shader time may affect initial frames.",
+    "No Docker CPU quota/cpuset restriction: cpu.max=max 100000, cpuset=0-15.",
+    "First synchronized software trials predate mathematically equivalent z-buffer optimization; both were dominated by SDK wait, not registration.",
+    "CPU percent is process CPU seconds / wall seconds *100; 100% means one logical core."
+  ],
+  "sources": {
+    "sdk_source": "https://github.com/orbbec/OrbbecSDK_v2/blob/2f6561c28255d805b34aa00a690199ce40e96c81/src/device/femtobolt/rawphase/RawPhaseStreamer.cpp#L69-L72",
+    "sdk_raw_profile": "https://github.com/orbbec/OrbbecSDK_v2/blob/2f6561c28255d805b34aa00a690199ce40e96c81/src/device/femtobolt/rawphase/RawPhaseStreamer.cpp#L166",
+    "sdk_raw_bits": "https://github.com/orbbec/OrbbecSDK_v2/blob/2f6561c28255d805b34aa00a690199ce40e96c81/src/device/femtobolt/rawphase/RawPhaseStreamer.cpp#L261",
+    "sdk_tag": "v2.9.3",
+    "sdk_commit": "2f6561c28255d805b34aa00a690199ce40e96c81"
+  },
+  "raw_profile_arithmetic": {
+    "width": 7680,
+    "height": 434,
+    "bytes_per_pixel": 2,
+    "bytes_per_frame": 6666240,
+    "bytes_per_second_at_15fps": 99993600,
+    "bits_per_second_at_15fps": 799948800
+  },
+  "restoration": {
+    "compose": "compose.live.yml",
+    "service": "terminal",
+    "fps": 5,
+    "verified_state": "streaming",
+    "verified_frames_since_restart": 137,
+    "verified_observed_fps": 5.0,
+    "verified_frame_age_ms": 43
+  }
+}

@@ -91,6 +91,16 @@ def same_person(embs: np.ndarray, t_same: float) -> tuple:
     return bool(low >= t_same), low
 
 
+def same_person_sequence(embs: np.ndarray, t_same: float) -> tuple:
+    """All selected authentication frames must match each other, even when the largest face changes.
+
+    Similarity to their mean is insufficient: two unrelated identities can each have 0.707 similarity
+    to their average. Pairwise comparison prevents cross-person averaging before identity search.
+    """
+    low = float((embs @ embs.T).min())
+    return bool(low >= t_same), low
+
+
 def templates(embs: np.ndarray, dirs: list) -> list:
     """4 templates: normalised mean of each slot group's frames; a missing group gets the overall mean."""
     overall = unit(embs.mean(0))

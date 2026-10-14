@@ -1,0 +1,263 @@
+{
+  "timestamp_utc": "2026-10-14T05:59:59.478884+00:00",
+  "date": "2026-10-14",
+  "scope": "Deployed live-recognition backend and largest-visible-face authentication; synthetic frames only.",
+  "pad_enabled": false,
+  "deployment": {
+    "recreated": [
+      "api-1",
+      "api-2",
+      "engine-1",
+      "engine-2"
+    ],
+    "engines_warmed_sequentially": true,
+    "search_restarted": false,
+    "database_restarted": false,
+    "secrets_or_models_changed": false
+  },
+  "source_sha256": {
+    "faceauth/engine/main.py": "ae51a6eb1cbd633d12907623403fc5531b174bfe82ec418250734889746fefc7",
+    "faceauth/api/app.py": "7c42daa3d32aaf79e01a72c671158a2879841bdc872b6a5abf80ba580f18f3db",
+    "faceauth/api/clients.py": "437f4bb4f5c5296c500632f4d6ce58e0a3126600e42ba9ad6a2486616164358e",
+    "faceauth/api/policy.py": "ffa3c79218981ebb904f20109f10844bb5b23d935384c19cb7c37195674e4209",
+    "faceauth/terminal/client.py": "66754e41cf35f305ea9bd1f731bafac2c92d8fb282576788cfedfd347b8a7a63"
+  },
+  "internal": {
+    "apis": {
+      "api-1": {
+        "healthy": true,
+        "live_endpoint_present": true,
+        "unsigned_request_status": 400
+      },
+      "api-2": {
+        "healthy": true,
+        "live_endpoint_present": true,
+        "unsigned_request_status": 400
+      }
+    },
+    "engines": {
+      "engine-1": {
+        "health": {
+          "ok": true,
+          "versions": {
+            "detector": "scrfd_34g@2+trt16",
+            "pose": "6drepnet360@1",
+            "recog": "adaface_ir101_wf12m@1",
+            "align": "arcface5-112@1",
+            "pad": "pad_rgbdir@2",
+            "quality": "q@1"
+          },
+          "providers": [
+            "TensorrtExecutionProvider",
+            "CUDAExecutionProvider",
+            "CPUExecutionProvider"
+          ],
+          "pad_enabled": false,
+          "pad_mode": "disabled_pilot",
+          "warmup": {
+            "synthetic": true,
+            "detector": true,
+            "pose": true,
+            "recognition": true,
+            "pad": true,
+            "pose_batch": 8,
+            "recognition_batch": 8,
+            "pad_batch": 8,
+            "elapsed_ms": 380.6
+          },
+          "batches": 152,
+          "frames": 152
+        },
+        "readiness": {
+          "ready": true,
+          "capture_ready": true,
+          "pad_enabled": false,
+          "pad_mode": "disabled_pilot",
+          "pad_validation_ready": false,
+          "model_binding": {
+            "model_version": "pad_rgbdir@2",
+            "model_json_sha256": "531cef5f48dc88c9070786a6349a872092fb6be17fdf9bea7386b7a36e8c5ef7",
+            "weights_sha256": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18",
+            "pipeline_sha256": "74ec58eab7581a284f721c03d3bf9c4c26e16bb47ace27b0af13946224293e2b",
+            "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5"
+          }
+        },
+        "synthetic_modes": {
+          "live": {
+            "accepted": true,
+            "frame": {
+              "ok": true,
+              "reasons": [],
+              "faces": [],
+              "n_faces": 0,
+              "image_size": [
+                640,
+                480
+              ],
+              "truncated": false
+            },
+            "latency_ms": 6.4
+          },
+          "auth": {
+            "accepted": true,
+            "frame": {
+              "n_faces": 0,
+              "bbox": null,
+              "kps": null,
+              "det_score": 0.0,
+              "pose": null,
+              "pad": null,
+              "emb": null,
+              "quality": {},
+              "ok": false,
+              "reasons": [
+                "no_face"
+              ],
+              "detected_faces": 0,
+              "selection": "largest"
+            },
+            "latency_ms": 6.1
+          }
+        }
+      },
+      "engine-2": {
+        "health": {
+          "ok": true,
+          "versions": {
+            "detector": "scrfd_34g@2+trt16",
+            "pose": "6drepnet360@1",
+            "recog": "adaface_ir101_wf12m@1",
+            "align": "arcface5-112@1",
+            "pad": "pad_rgbdir@2",
+            "quality": "q@1"
+          },
+          "providers": [
+            "TensorrtExecutionProvider",
+            "CUDAExecutionProvider",
+            "CPUExecutionProvider"
+          ],
+          "pad_enabled": false,
+          "pad_mode": "disabled_pilot",
+          "warmup": {
+            "synthetic": true,
+            "detector": true,
+            "pose": true,
+            "recognition": true,
+            "pad": true,
+            "pose_batch": 8,
+            "recognition_batch": 8,
+            "pad_batch": 8,
+            "elapsed_ms": 374.0
+          },
+          "batches": 137,
+          "frames": 137
+        },
+        "readiness": {
+          "ready": true,
+          "capture_ready": true,
+          "pad_enabled": false,
+          "pad_mode": "disabled_pilot",
+          "pad_validation_ready": false,
+          "model_binding": {
+            "model_version": "pad_rgbdir@2",
+            "model_json_sha256": "531cef5f48dc88c9070786a6349a872092fb6be17fdf9bea7386b7a36e8c5ef7",
+            "weights_sha256": "70d422117eda163b52171074611775f7e48b932695fe0cbbd2c8bc9d35a4ce18",
+            "pipeline_sha256": "74ec58eab7581a284f721c03d3bf9c4c26e16bb47ace27b0af13946224293e2b",
+            "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5"
+          }
+        },
+        "synthetic_modes": {
+          "live": {
+            "accepted": true,
+            "frame": {
+              "ok": true,
+              "reasons": [],
+              "faces": [],
+              "n_faces": 0,
+              "image_size": [
+                640,
+                480
+              ],
+              "truncated": false
+            },
+            "latency_ms": 6.6
+          },
+          "auth": {
+            "accepted": true,
+            "frame": {
+              "n_faces": 0,
+              "bbox": null,
+              "kps": null,
+              "det_score": 0.0,
+              "pose": null,
+              "pad": null,
+              "emb": null,
+              "quality": {},
+              "ok": false,
+              "reasons": [
+                "no_face"
+              ],
+              "detected_faces": 0,
+              "selection": "largest"
+            },
+            "latency_ms": 6.8
+          }
+        }
+      }
+    },
+    "search": {
+      "search-1": {
+        "ready": true,
+        "model_version": "adaface_ir101_wf12m@1",
+        "ntotal": 4,
+        "nsubjects": 1,
+        "applied_event_id": 4,
+        "tombstones": 0,
+        "build_seconds": 0.023
+      },
+      "search-2": {
+        "ready": true,
+        "model_version": "adaface_ir101_wf12m@1",
+        "ntotal": 4,
+        "nsubjects": 1,
+        "applied_event_id": 4,
+        "tombstones": 0,
+        "build_seconds": 0.017
+      }
+    }
+  },
+  "mutual_tls_live_probe": {
+    "ready": true,
+    "mutual_tls": true,
+    "signed_capture_packet": true,
+    "synthetic_no_face_result": {
+      "demo": true,
+      "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+      "image_size": [
+        640,
+        480
+      ],
+      "faces": [],
+      "truncated": false,
+      "detected_faces": 0,
+      "pad_enabled": false,
+      "pad_mode": "disabled_demo"
+    },
+    "latency_ms": 11.5,
+    "approval_token_returned": false,
+    "human_capture": false
+  },
+  "gpu_snapshot": "NVIDIA GeForce RTX 4060, 580.178.04, 8188, 3319",
+  "checks": {
+    "engine_unit_tests": 36,
+    "raw_images_persisted": false,
+    "biometric_enrollment_created": false,
+    "actual_human_multiple_face_accuracy_measured": false
+  },
+  "limits": [
+    "Live max16 detected foreground faces per frame.",
+    "Live identity quality permits350–3000mm; authentication/enrollment retain350–1000mm.",
+    "Synthetic blank frames verify transport and no-face behavior, not human recognition accuracy or peak multi-face throughput.",
+    "PAD remains explicitly disabled for this pilot; PAD validation remains unqualified."
+  ]
+}

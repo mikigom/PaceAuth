@@ -39,6 +39,8 @@ x-api: &api
     FA_HIGH_RISK_ACTIONS: ${FA_HIGH_RISK_ACTIONS:-transfer_high,account_change}
     FA_ENROLL_MIN_DIRS: ${FA_ENROLL_MIN_DIRS:-9}
     FA_TRUSTED_PROXIES: gateway
+    # Explicit, temporary pilot opt-out; production/default keeps PAD enabled.
+    FA_PILOT_DISABLE_PAD: ${FA_PILOT_DISABLE_PAD:-0}
   secrets: [approval_key, approval_pub, account_pub, admin_token, kms_token_api, db_api_password]
   healthcheck:
     test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/healthz"]
@@ -94,5 +96,6 @@ services:
       FA_RECOG_MODEL: ${FA_RECOG_MODEL:-kprpe_vitb_wf12m}
       FAKE_DB_DSN: "host=db dbname=faceauth user=faceauth_api"
       FA_SECRETS_DIR: /run/secrets
+      FA_PILOT_DISABLE_PAD: ${FA_PILOT_DISABLE_PAD:-0}
     secrets: [db_api_password, kms_token_api, kms_token_search]
     networks: { internal: { aliases: [engine, engine-1, engine-2, search-1, search-2, kms] } }

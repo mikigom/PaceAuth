@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "checks": {
+    "automatic_multiple_faces_while_logged_out": true,
+    "separate_recognition_fps": true,
+    "mirrored_box_coordinates": true,
+    "readable_unmirrored_name": true,
+    "known_unknown_uncertain_colors": true,
+    "unknown_uncertain_hide_prior_names": true,
+    "overlay_matches_image_rectangle": true,
+    "signup_display_name": true,
+    "profile_edit_survives_status_poll": true,
+    "profile_name_save": true,
+    "profile_edit_requires_no_biometric_consent": true,
+    "login_contract_unchanged": true,
+    "all_three_modalities_aligned": true,
+    "known_name_removed_on_unknown": true,
+    "name_html_escaped": true,
+    "stale_results_clear_names": true,
+    "future_frame_results_not_overlaid": true,
+    "network_delay_expires_overlay": true,
+    "slow_recognition_keeps_preview_flowing": true,
+    "no_overlapping_recognition_requests": true,
+    "operations_pause_overlay": true,
+    "hidden_page_stops_polling_and_clears": true,
+    "visible_page_recovers": true,
+    "mobile_no_overflow": true,
+    "only_requested_account_mutations": true
+  },
+  "js_errors": [],
+  "backend": "isolated mocked API; no real accounts/consent/capture",
+  "media_persisted": false
+}

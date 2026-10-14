@@ -109,6 +109,13 @@ def wait_index():
     wait_search(lambda st: st["ready"] and st["applied_event_id"] >= top)
 
 
+def decision_body(body):
+    """Ignore the added explicit mode fields while checking legacy decision contracts."""
+    if "pad_enabled" in body:
+        assert body["pad_enabled"] is True and body["pad_mode"] == "enabled"
+    return {k: v for k, v in body.items() if k not in ("pad_enabled", "pad_mode")}
+
+
 def reason_of(session):
     return q1("SELECT reason FROM sessions WHERE id = %s", session["session_id"])[0]
 
@@ -288,7 +295,7 @@ def test_session_is_bound_to_its_device(dev):
     assert r.json()["status"] == "active"
     s = dev.session()
     r = other.post("/v1/authentications", content=other.packet(s, [frame(ident)] * 3))  # B uses A's session
-    assert r.json() == {"decision": "rejected", "reason": "session"}
+    assert decision_body(r.json()) == {"decision": "rejected", "reason": "session"}
     assert q1("SELECT consumed_at FROM sessions WHERE id = %s", s["session_id"])[0] is None  # B cannot burn it
     r = dev.post("/v1/authentications", content=dev.packet(s, [frame(ident)] * 3))
     assert r.json()["decision"] == "approved"
@@ -434,7 +441,7 @@ def test_large_enrollment_packet_passes_gateway(dev):
 
 def test_auth_unregistered_person_rejected(dev):
     r, s = auth(dev, uid("stranger"))
-    assert r.json() == {"decision": "rejected", "reason": "not_recognized"}
+    assert decision_body(r.json()) == {"decision": "rejected", "reason": "not_recognized"}
     assert reason_of(s) == "no_match"
 
 
@@ -443,14 +450,19 @@ def test_auth_ambiguous_candidates_rejected(dev):
     assert enroll(dev, a)[0].json()["status"] == "active"
     assert enroll(dev, {a: 1.0, uid("amb-b"): 0.1})[0].json()["status"] == "pending_review"
     r, s = auth(dev, a)
-    assert r.json() == {"decision": "rejected", "reason": "not_recognized"}
+    assert decision_body(r.json()) == {"decision": "rejected", "reason": "not_recognized"}
     assert reason_of(s) == "ambiguous"   # top-1 was above T_ID but the margin to top-2 was not
 
 
-def test_auth_multi_face_rejected(dev):
+def test_auth_multi_face_selects_largest(dev):
+    ident = uid("multi")
+    _, acct, _ = enroll(dev, ident)
     s = dev.session()
-    r = dev.post("/v1/authentications", content=dev.packet(s, [frame("m"), frame("m", faces=2), frame("m")]))
-    assert r.json() == {"decision": "rejected", "reason": "retry"} and reason_of(s) == "quality:multi_face"
+    people = [{"id": uid("bystander"), "bbox": [0, 0, 100, 100]},
+              {"id": ident, "bbox": [200, 100, 500, 450]}]
+    r = dev.post("/v1/authentications", content=dev.packet(s, [frame(ident, people=people)] * 3))
+    assert r.json()["decision"] == "approved", r.text
+    check_approval(r.json()["approval_token"], dev, "pay", acct, ["face"], s)
 
 
 def test_auth_missing_modality_never_falls_back_to_rgb(dev):
@@ -460,7 +472,7 @@ def test_auth_missing_modality_never_falls_back_to_rgb(dev):
     frames = [frame(ident) for _ in range(3)]
     frames[1]["ir"] = b""
     r = dev.post("/v1/authentications", content=dev.packet(s, frames))
-    assert r.json() == {"decision": "rejected", "reason": "denied"} and reason_of(s) == "missing_modality"
+    assert decision_body(r.json()) == {"decision": "rejected", "reason": "denied"} and reason_of(s) == "missing_modality"
 
 
 def test_auth_unsynchronised_frames(dev):
@@ -477,7 +489,7 @@ def test_auth_injection_without_device_key(dev):
     s = dev.session()
     forged = dev.packet(s, [frame(ident)] * 3, key=ed25519.Ed25519PrivateKey.generate())  # attacker's key
     r = dev.post("/v1/authentications", content=forged)
-    assert r.json() == {"decision": "rejected", "reason": "denied"} and reason_of(s) == "bad_signature"
+    assert decision_body(r.json()) == {"decision": "rejected", "reason": "denied"} and reason_of(s) == "bad_signature"
 
 
 def test_auth_tampered_frame_hash_mismatch(dev):
@@ -502,7 +514,7 @@ def test_auth_replayed_packet(dev):
     s = dev.session()
     pkt = dev.packet(s, [frame(ident)] * 3)
     assert dev.post("/v1/authentications", content=pkt).json()["decision"] == "approved"
-    assert dev.post("/v1/authentications", content=pkt).json() == {"decision": "rejected", "reason": "session"}
+    assert decision_body(dev.post("/v1/authentications", content=pkt).json()) == {"decision": "rejected", "reason": "session"}
     assert q1("SELECT count(*) FROM approvals WHERE session_id = %s", s["session_id"])[0] == 1
 
 
@@ -511,7 +523,7 @@ def test_auth_reused_challenge(dev):
     enroll(dev, ident)
     old, new = dev.session(), dev.session()
     r = dev.post("/v1/authentications", content=dev.packet(new, [frame(ident)] * 3, challenge=old["challenge"]))
-    assert r.json() == {"decision": "rejected", "reason": "session"} and reason_of(new) == "challenge_mismatch"
+    assert decision_body(r.json()) == {"decision": "rejected", "reason": "session"} and reason_of(new) == "challenge_mismatch"
 
 
 def test_auth_expired_session(dev):
@@ -521,7 +533,7 @@ def test_auth_expired_session(dev):
     with db() as c:
         c.execute("UPDATE sessions SET expires_at = now() - interval '1 second' WHERE id = %s", (s["session_id"],))
     r = dev.post("/v1/authentications", content=dev.packet(s, [frame(ident)] * 3))
-    assert r.json() == {"decision": "rejected", "reason": "session"}
+    assert decision_body(r.json()) == {"decision": "rejected", "reason": "session"}
 
 
 @fakes_only
@@ -534,7 +546,7 @@ def test_revoked_subject_rejected_even_if_index_still_returns_it(dev):
         out = admin("DELETE", f"/v1/subjects/{sid}/face").json()
         assert out["revoked"] and out["key_destroyed"] and out["index_removed"] is False
         r, s = auth(dev, ident)
-        assert r.json() == {"decision": "rejected", "reason": "not_recognized"}
+        assert decision_body(r.json()) == {"decision": "rejected", "reason": "not_recognized"}
         assert reason_of(s) == "subject_inactive"   # identified by the index, refused by the DB ledger
     finally:
         fakes(search_frozen=False)
@@ -548,7 +560,7 @@ def test_high_risk_action_requires_step_up(dev):
     assert body["decision"] == "step_up" and "approval_token" not in body and body["step_up_id"], body
     stid = body["step_up_id"]
     bad = dev.post(f"/v1/stepups/{stid}/complete", json={"assertion": assertion(acct, "wrong", "otp")})
-    assert bad.json() == {"decision": "rejected", "reason": "denied"}
+    assert decision_body(bad.json()) == {"decision": "rejected", "reason": "denied"}
     face_only = dev.post(f"/v1/stepups/{stid}/complete", json={"assertion": assertion(acct, stid, "face")})
     assert face_only.json()["decision"] == "rejected"          # the added factor must not be the face again
     other = dev.post(f"/v1/stepups/{stid}/complete", json={"assertion": assertion("someone-else", stid, "otp")})
@@ -557,7 +569,7 @@ def test_high_risk_action_requires_step_up(dev):
     assert ok["decision"] == "approved", ok
     check_approval(ok["approval_token"], dev, HIGH_RISK, acct, ["face", "otp"], s)
     again = dev.post(f"/v1/stepups/{stid}/complete", json={"assertion": assertion(acct, stid, "otp")})
-    assert again.json() == {"decision": "rejected", "reason": "session"}
+    assert decision_body(again.json()) == {"decision": "rejected", "reason": "session"}
 
 
 def test_non_biometric_fallback(dev):
@@ -572,10 +584,10 @@ def test_non_biometric_fallback(dev):
     assert q1("SELECT subject_id IS NULL, account_id, amr FROM approvals WHERE id = %s", p["aid"]) == (True, acct, ["pin"])
     again = dev.post("/v1/fallback", json={"session_id": s["session_id"],
                                            "assertion": assertion(acct, s["challenge"], "pin")})
-    assert again.json() == {"decision": "rejected", "reason": "session"}
+    assert decision_body(again.json()) == {"decision": "rejected", "reason": "session"}
     s2 = dev.session()
     r = dev.post("/v1/fallback", json={"session_id": s2["session_id"], "assertion": assertion(acct, "x", "pin")})
-    assert r.json() == {"decision": "rejected", "reason": "denied"}
+    assert decision_body(r.json()) == {"decision": "rejected", "reason": "denied"}
     ident = uid("fb")                                   # enrolled customer: approval row references the subject
     _, acct2, _ = enroll(dev, ident)
     s3 = dev.session()
@@ -655,6 +667,108 @@ def test_model_activation_and_rollback(dev):
         wait_search(lambda st: st["ready"] and st["model_version"] == f"{RECOG}@test")
     assert auth(dev, ident)[0].json()["decision"] == "approved"
     assert admin("POST", f"/v1/admin/models/{RECOG}/activate", json={"version": "nope"}).status_code == 404
+
+
+# ------------------------------------------------------------------ signed capture diagnostics (explicit measurements, never decisions)
+
+def capture(dev, path, session, frames, *, purpose="auth", **kw):
+    # Diagnostics intentionally expose quality/PAD measurements. Keep decision-response secrecy assertions
+    # below scoped to decision endpoints; independently assert no embeddings/identity/raw modalities here.
+    return dev.http.post("/v1/capture/" + path, headers={"Content-Type": "application/msgpack"},
+                         content=dev.packet(session, frames, extra={"capture_purpose": purpose}, **kw))
+
+
+def test_capture_guide_is_signed_bound_and_does_not_consume(dev):
+    s = dev.session("enroll")
+    for _ in range(2):
+        r = capture(dev, "guide", s, [frame("guide")], purpose="enroll")
+        assert r.status_code == 200, r.text
+        f = r.json()["frame"]
+        assert f["ok"] and f["score"] > 0 and f["pose"] == [0, 0, 0]
+        assert not set(f) & {"pad", "emb", "rgb", "depth", "ir", "subject_id"}
+        assert q1("SELECT consumed_at FROM sessions WHERE id=%s", s["session_id"])[0] is None
+    for kw in ({"calib": "wrong"}, {"key": ed25519.Ed25519PrivateKey.generate()}):
+        assert capture(dev, "guide", s, [frame("guide")], purpose="enroll", **kw).status_code == 400
+    assert capture(dev, "guide", s, [frame("guide")], purpose="enroll", challenge="wrong").status_code == 409
+    assert capture(dev, "guide", s, [frame("guide")], purpose="auth").status_code == 409
+    assert capture(dev, "guide", s, [frame("guide")] * 2, purpose="enroll").status_code == 400
+
+
+def test_signed_auth_packet_without_challenge_is_rejected(dev):
+    s = dev.session()
+    r = dev.post("/v1/authentications", content=dev.packet(s, [frame("missing-challenge")],
+                                                         extra={"challenge": None}))
+    assert r.status_code == 200 and r.json()["decision"] == "rejected"
+    assert reason_of(s) == "challenge_missing"
+
+
+def test_capture_observe_is_single_use_and_never_authenticates(dev):
+    s = dev.session()
+    r = capture(dev, "observe", s, [frame("diagnostic") for _ in range(3)])
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["diagnostic"] is True and body["calib_version"] == CALIB and body["model_binding"]
+    assert len(body["frames"]) == 3 and body["frames"][0]["pad"]["cnn"] > 0
+    assert not {k for k, _ in _walk(body)} & {"emb", "subject_id", "approval_token"}
+    assert all(not set(f) & {"rgb", "depth", "ir"} for f in body["frames"])
+    assert q1("SELECT decision,reason FROM sessions WHERE id=%s", s["session_id"]) == ("observed", "pad_diagnostic")
+    assert capture(dev, "observe", s, [frame("diagnostic") for _ in range(3)]).status_code == 409
+    auth_reply = dev.post("/v1/authentications", content=dev.packet(s, [frame("diagnostic")]))
+    assert decision_body(auth_reply.json()) == {"decision": "rejected", "reason": "session"}
+
+
+def test_enrollment_observation_consumes_enroll_session_without_templates(dev):
+    s = dev.session("enroll")
+    before = q1("SELECT count(*) FROM templates")[0]
+    frames = [frame("diagnostic-enroll", POSES[d]) for d in POSES for _ in range(2)]
+    assert len(frames) == 18
+    assert capture(dev, "observe", s, frames, purpose="auth").status_code == 400  # auth frame limit
+    assert capture(dev, "observe", s, frames[:3], purpose="auth").status_code == 409  # session purpose
+    assert capture(dev, "observe", s, frames[:2], purpose="enroll").status_code == 400
+    assert capture(dev, "observe", s, frames * 2, purpose="enroll").status_code == 400
+    assert q1("SELECT consumed_at FROM sessions WHERE id=%s", s["session_id"])[0] is None
+    r = capture(dev, "observe", s, frames, purpose="enroll")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["capture_purpose"] == "enroll" and len(body["frames"]) == 18
+    assert not {k for k, _ in _walk(body)} & {"emb", "subject_id", "approval_token"}
+    assert q1("SELECT count(*) FROM templates")[0] == before
+    assert q1("SELECT decision FROM sessions WHERE id=%s", s["session_id"])[0] == "observed"
+    assert capture(dev, "observe", s, frames, purpose="enroll").status_code == 409
+
+
+@fakes_only
+def test_capture_readiness_and_api_gate_missing_validation(dev):
+    try:
+        fakes(pad_ready=False)
+        state = dev.http.get("/v1/terminal/readiness", params={"device_id": dev.id})
+        assert state.status_code == 200, state.text
+        assert not state.json()["ready"] and state.json()["capture_ready"]
+        assert state.json()["blockers"][0]["code"] == "pad_real_sensor_validation_missing"
+        # The fake still returns perfect per-frame PAD + embeddings: the API must independently gate them.
+        a, s = auth(dev, "unvalidated")
+        assert a.json()["decision"] == "rejected" and reason_of(s) == "pad_validation_required"
+        e, _, s = enroll(dev, "unvalidated")
+        assert e.json()["status"] == "rejected" and reason_of(s) == "pad_validation_required"
+        s = dev.session()
+        assert capture(dev, "guide", s, [frame("unvalidated")]).status_code == 200
+        observation = capture(dev, "observe", s, [frame("unvalidated") for _ in range(3)])
+        assert observation.status_code == 200 and observation.json()["pad_validation"]["ready"] is False
+    finally:
+        fakes(pad_ready=True)
+
+
+@fakes_only
+def test_observe_failure_consumes_diagnostic_session(dev):
+    s = dev.session()
+    try:
+        fakes(engine_fail=True)
+        assert capture(dev, "observe", s, [frame("offline") for _ in range(3)]).status_code == 503
+        state = dev.http.get("/v1/terminal/readiness", params={"device_id": dev.id}).json()
+        assert state["ready"] is False and state["capture_ready"] is False
+    finally:
+        fakes(engine_fail=False)
+    assert capture(dev, "observe", s, [frame("offline") for _ in range(3)]).status_code == 409
 
 
 # ------------------------------------------------------------------ run last

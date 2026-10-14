@@ -1,18 +1,23 @@
-"""Simulated terminal: rotation-guided enrollment, then 1:N authentication, against a running stack.
+"""Terminal CLI: rotation-guided enrollment and 1:N authentication against a running stack.
 
     # inside the compose networks (tester service); --register = admin registration of the device first.
     # Until data/models/registry.json is built and signed, add --unsigned-models (dev only).
     python scripts/terminal_demo.py --gateway https://gateway:8443 --device dev-001 --account acct-0001 \
         --register --source biwi --enroll-seq 01 --auth-seq 01
     python scripts/terminal_demo.py ... --source sim --images face_*.jpg --auth-images probe.jpg
+    # Real Femto Bolt. Stop any camera-preview service before taking ownership of USB.
+    python scripts/terminal_demo.py ... --source orbbec --fps 30 --register
     # terminal pipeline only (no server): per-frame analysis + latency
     python scripts/terminal_demo.py --smoke img1.jpg img2.jpg ...
 
 Frames: SensorSim (faceauth.sim.sensor, imported lazily) renders RGB-D-IR for subjects taken from BIWI
-sequences (faceauth.sim.biwi: real head rotation) or a face image list. Raw frames stay in memory.
+sequences (faceauth.sim.biwi: real head rotation) or a face image list. --source orbbec uses real,
+calibrated RGB-D-IR frames and their device timestamps. Raw frames stay in memory.
+Account ownership / step-up assertions remain an explicit CLI demo using secrets/account.key.
 Exit code: 0 approved, 1 enrollment failed, 2 authentication not approved.
 """
 import argparse
+from contextlib import ExitStack, closing
 import datetime
 import sys
 import time
@@ -54,9 +59,28 @@ def _render(sim, pipe, photo, n, seed, distance_mm) -> list:
 
 
 def frame_source(args, phase: str, pipe):
-    """Yields (index on the 30 fps sensor clock, {"rgb","depth","ir"} | None) for phase 'enroll' | 'auth'.
-    Subjects come from BIWI sequences (real head rotation) or a face image list; SensorSim renders the
-    RGB-D-IR frames (gemini336-sim-v1). Both modules are imported lazily."""
+    """Yield (index, frame) for phase 'enroll' | 'auth'; Orbbec frames include real capture metadata.
+    Simulation indices use a 30 fps clock; its SensorSim/BIWI imports stay on the simulation branch."""
+    if args.source == "orbbec":
+        # The caller has already obtained the session challenge. A new pipeline
+        # prevents buffered frames from a previous session entering this capture.
+        sensor = args.sensor
+        deadline = time.monotonic() + (args.timeout if phase == "enroll" else args.auth_timeout)
+        try:
+            sensor.start()
+            if sensor.calib_version != args.calib_version:
+                raise RuntimeError("Camera calibration changed after device registration; register the current calibration")
+            idx = 0
+            while time.monotonic() < deadline and (phase != "auth" or idx < args.auth_max_frames):
+                remaining_ms = max(1, int((deadline - time.monotonic()) * 1000))
+                frame = sensor.read(timeout_ms=min(args.frame_timeout_ms, remaining_ms))
+                if time.monotonic() >= deadline:
+                    break
+                yield idx, frame
+                idx += 1
+        finally:
+            sensor.stop()
+        return
     from faceauth.sim.sensor import SensorSim
     sim = SensorSim(seed=args.seed)
     if args.source == "biwi":
@@ -74,6 +98,27 @@ def frame_source(args, phase: str, pipe):
                 idx += 1
 
 
+def capture_ref(args, idx, encoded, frame):
+    """Keep only encoded images and packet metadata in the guide/auth selection."""
+    metadata = None
+    if args.source == "orbbec":
+        if frame["calib_version"] != args.calib_version:
+            raise RuntimeError("Capture calibration differs from the registered device")
+        metadata = {"ts_ms": dict(frame["ts_ms"]), "captured_at_ms": int(frame["captured_at_ms"])}
+    return idx, encoded, metadata
+
+
+def packet_capture(args, refs, start_ms):
+    """Return frames, timestamps and first capture time; real captures never use synced_ts()."""
+    if args.source == "orbbec":
+        timestamps = [dict(ref[2]["ts_ms"]) for ref in refs]
+        captured_at_ms = refs[0][2]["captured_at_ms"]
+    else:
+        timestamps = synced_ts([ref[0] for ref in refs], start_ms)
+        captured_at_ms = start_ms
+    return [ref[1] for ref in refs], timestamps, captured_at_ms
+
+
 def shown(out: dict) -> dict:
     """Server answer for printing, bearer approval token elided."""
     return {k: (v[:12] + "..." if k == "approval_token" else v) for k, v in out.items()}
@@ -88,26 +133,29 @@ def enroll(args, client: DeviceClient, pipe: Pipeline) -> bool:
     # account ownership is proven before capture; the assertion must outlive the enrollment session (TTL 180 s)
     assertion = make_account_assertion(args.account, session["challenge"], "password", ttl_s=180)
     guide, last, start_ms, t0 = Guide(timeout_s=args.timeout), None, int(time.time() * 1000), time.perf_counter()
-    for idx, f in frame_source(args, "enroll", pipe):
-        if f is None:  # nobody the sensor could see
-            s = guide.feed(None, False, t=idx / FPS, reasons=("no_face",))
-        else:  # analyse what will be sent; sensor time drives the guide timeout
-            enc, rgb = wire_frame(f["rgb"], f["depth"], f["ir"])
-            s = pipe.feed(guide, rgb, (idx, enc), t=idx / FPS)[1]
-        if (s["prompt"], s["coverage"]) != last:
-            last = (s["prompt"], s["coverage"])
-            print(f"[{idx:4d}] {s['prompt']:<28s} {coverage_line(s['coverage'])}")
-        if s["done"] or s["timed_out"]:
-            break
+    with closing(frame_source(args, "enroll", pipe)) as source:
+        for idx, f in source:
+            if f is None:  # nobody the simulator could see
+                s = guide.feed(None, False, t=idx / FPS, reasons=("no_face",))
+            else:  # analyse what will be sent; real capture time drives the guide
+                enc, rgb = wire_frame(f["rgb"], f["depth"], f["ir"])
+                capture_t = f["captured_at_ms"] / 1000 if args.source == "orbbec" else idx / FPS
+                s = pipe.feed(guide, rgb, capture_ref(args, idx, enc, f), t=capture_t)[1]
+            if (s["prompt"], s["coverage"]) != last:
+                last = (s["prompt"], s["coverage"])
+                print(f"[{idx:4d}] {s['prompt']:<28s} {coverage_line(s['coverage'])}")
+            if s["done"] or s["timed_out"]:
+                break
     if not guide.done:
         print("enrollment capture incomplete:", coverage_line(guide.coverage()))
         return False
     print(f"capture done in {time.perf_counter() - t0:.1f}s wall")
     kept = guide.frames()
-    frames = [enc for _, (_, enc) in kept]
-    ts = synced_ts([idx for _, (idx, _) in kept], start_ms)
+    frames, ts, captured_at_ms = packet_capture(args, [ref for _, ref in kept], start_ms)
     consent = {"version": args.consent_version, "agreed_at": datetime.datetime.now(datetime.timezone.utc).isoformat()}
-    out = client.enroll(session, frames, ts, [d for d, _ in kept], assertion, consent, re_enroll=args.re_enroll)
+    real_capture = {"captured_at_ms": captured_at_ms} if args.source == "orbbec" else {}
+    out = client.enroll(session, frames, ts, [d for d, _ in kept], assertion, consent,
+                        re_enroll=args.re_enroll, **real_capture)
     print("enroll ->", out)
     return out.get("status") == "active"
 
@@ -115,21 +163,22 @@ def enroll(args, client: DeviceClient, pipe: Pipeline) -> bool:
 def authenticate(args, client: DeviceClient, pipe: Pipeline) -> str:
     session = client.create_session("auth", args.action)
     start_ms, t0, results, seen, sel = int(time.time() * 1000), time.perf_counter(), [], [], []
-    for idx, f in frame_source(args, "auth", pipe):
-        if idx >= args.auth_max_frames:
-            break
-        if f is not None:
-            enc, rgb = wire_frame(f["rgb"], f["depth"], f["ir"])
-            results.append(pipe.analyze(rgb))
-            seen.append((idx, enc))
-            sel = select_auth(results)
-            if sel:
+    with closing(frame_source(args, "auth", pipe)) as source:
+        for idx, f in source:
+            if idx >= args.auth_max_frames:
                 break
+            if f is not None:
+                enc, rgb = wire_frame(f["rgb"], f["depth"], f["ir"])
+                results.append(pipe.analyze(rgb))
+                seen.append(capture_ref(args, idx, enc, f))
+                sel = select_auth(results)
+                if sel:
+                    break
     if not sel:
         print("authentication capture failed: fewer than 3 usable frames")
         return "capture_failed"
-    out = client.authenticate(session, [seen[i][1] for i in sel], synced_ts([seen[i][0] for i in sel], start_ms),
-                              captured_at_ms=start_ms)
+    frames, ts, captured_at_ms = packet_capture(args, [seen[i] for i in sel], start_ms)
+    out = client.authenticate(session, frames, ts, captured_at_ms=captured_at_ms)
     print(f"auth -> {out.get('decision')} ({out.get('reason')}) in {1000 * (time.perf_counter() - t0):.0f} ms "
           f"from first frame; frames {[seen[i][0] for i in sel]}")
     sid = session["session_id"]
@@ -196,13 +245,39 @@ def smoke(args) -> None:
     print(f"yaw sign agrees with SCRFD nose/eye geometry on {sum(signs)}/{len(signs)} faces with |yaw| > 10")
 
 
+def run(args):
+    """Run one CLI transaction, always releasing USB and HTTP resources."""
+    pipe = Pipeline.load(args.models, args.torch_device, verify=not args.unsigned_models)
+    with ExitStack() as resources:
+        client_options = {}
+        if args.source == "orbbec":
+            from faceauth.terminal.orbbec import FemtoBoltSensor
+            args.sensor = FemtoBoltSensor(serial=args.serial, fps=args.fps)
+            resources.callback(args.sensor.stop)
+            args.sensor.start()
+            args.calib_version = args.sensor.calib_version
+            args.sensor.stop()  # each actual capture starts after its server challenge exists
+            client_options["calib_version"] = args.calib_version
+        client = DeviceClient(args.gateway, args.device, **client_options)
+        resources.callback(client.close)
+        if args.register:
+            register(args, client)
+        if not args.skip_enroll and not enroll(args, client, pipe):
+            return 1
+        return 0 if authenticate(args, client, pipe) == "approved" else 2
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--gateway", default="https://gateway:8443")
     ap.add_argument("--device", default="dev-001")
     ap.add_argument("--account", default="acct-0001")
     ap.add_argument("--action", default="door-open", help="action_id of the authentication session")
-    ap.add_argument("--source", choices=("sim", "biwi"))
+    ap.add_argument("--source", choices=("sim", "biwi", "orbbec"))
+    ap.add_argument("--serial", help="Femto Bolt serial number (required only when multiple cameras are attached)")
+    ap.add_argument("--fps", type=int, choices=(5, 15, 30), default=30, help="Femto Bolt stream FPS; 30 requires USB3 and GPU depth processing")
+    ap.add_argument("--frame-timeout-ms", type=int, default=10000, help="maximum wait for a real synchronized frame")
+    ap.add_argument("--auth-timeout", type=float, default=20.0, help="real authentication capture deadline in seconds")
     ap.add_argument("--images", nargs="*", default=[], help="face images of one person for --source sim")
     ap.add_argument("--auth-images", nargs="*", default=[], help="authentication images (default: --images)")
     ap.add_argument("--repeat", type=int, default=3, help="sensor frames rendered per image (--source sim)")
@@ -231,13 +306,9 @@ def main():
         ap.error("--source is required (or --smoke)")
     if args.source == "sim" and not args.images:
         ap.error("--source sim needs --images")
-    pipe = Pipeline.load(args.models, args.torch_device, verify=not args.unsigned_models)
-    client = DeviceClient(args.gateway, args.device)
-    if args.register:
-        register(args, client)
-    if not args.skip_enroll and not enroll(args, client, pipe):
-        sys.exit(1)
-    sys.exit(0 if authenticate(args, client, pipe) == "approved" else 2)
+    if min(args.timeout, args.auth_timeout, args.auth_max_frames, args.frame_timeout_ms) <= 0:
+        ap.error("capture timeouts and --auth-max-frames must be positive")
+    sys.exit(run(args))
 
 
 if __name__ == "__main__":
