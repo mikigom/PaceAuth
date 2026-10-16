@@ -1,0 +1,318 @@
+{
+  "tested_at": "2026-10-15T10:30:01.580530+00:00",
+  "source_sha256": {
+    "live.html": "34a2fdd81fedeb887f317a66cfc93ad4b3df44f0e169e3b2c3bba464b751858d",
+    "live.css": "79462dbc6e5e671a97616fca5d53f635a68385e525cad2d95a5e5958570cea75",
+    "live.js": "cf8370ec9fdb790a9fd8fc4c4963cb2207bbbbd829f54a3533172dce39bdaf44"
+  },
+  "passed": true,
+  "checks": {
+    "pad_test_auth_fresh_selects_expected_flow": true,
+    "pad_test_auth_no_implicit_participant_consent_or_capture": true,
+    "pad_test_auth_single_camera_beside_form": true,
+    "pad_test_auth_summary_matches_actual_selectors": true,
+    "pad_test_auth_poll_does_not_reapply_preset": true,
+    "pad_test_enroll_fresh_selects_expected_flow": true,
+    "pad_test_enroll_no_implicit_participant_consent_or_capture": true,
+    "pad_test_enroll_single_camera_beside_form": true,
+    "pad_test_enroll_summary_matches_actual_selectors": true,
+    "pad_test_enroll_poll_does_not_reapply_preset": true,
+    "pad_calibration_auth_fresh_selects_expected_flow": true,
+    "pad_calibration_auth_no_implicit_participant_consent_or_capture": true,
+    "pad_calibration_auth_single_camera_beside_form": true,
+    "pad_calibration_auth_summary_matches_actual_selectors": true,
+    "pad_calibration_auth_poll_does_not_reapply_preset": true,
+    "pad_calibration_enroll_fresh_selects_expected_flow": true,
+    "pad_calibration_enroll_no_implicit_participant_consent_or_capture": true,
+    "pad_calibration_enroll_single_camera_beside_form": true,
+    "pad_calibration_enroll_summary_matches_actual_selectors": true,
+    "pad_calibration_enroll_poll_does_not_reapply_preset": true,
+    "pad_fresh_selects_expected_flow": true,
+    "pad_no_implicit_participant_consent_or_capture": true,
+    "pad_single_camera_beside_form": true,
+    "pad_summary_matches_actual_selectors": true,
+    "pad_poll_does_not_reapply_preset": true,
+    "auth_button_preserves_attack_kind_and_instrument": true,
+    "auth_button_no_implicit_participant_consent_or_capture": true,
+    "enroll_button_selects_live_9_direction_test": true,
+    "enroll_button_no_implicit_participant_consent_or_capture": true,
+    "diagnostic_test_warning_visible_and_described": true,
+    "diagnostic_test_summary_matches_actual_selectors": true,
+    "split_change_hides_irrelevant_test_warning": true,
+    "kind_print_summary_refreshes": true,
+    "kind_replay_summary_refreshes": true,
+    "kind_live_summary_refreshes": true,
+    "explicit_preset_preserves_selected_account_and_local_consent": true,
+    "auth_preset_explicit_submit_sends_exact_scope": true,
+    "active_capture_disables_presets": true,
+    "programmatic_button_during_capture_does_not_change_scope": true,
+    "pad_test_enroll_busy_hash_does_not_change_capture": true,
+    "pad_calibration_auth_busy_hash_does_not_change_capture": true,
+    "pad_calibration_enroll_busy_hash_does_not_change_capture": true,
+    "pad_test_auth_busy_hash_does_not_change_capture": true,
+    "busy_hash_not_deferred_after_completion": true,
+    "observe_success_not_authentication_approval": true,
+    "enroll_after_completion_preserves_account_and_consent": true,
+    "enroll_preset_submit_sends_live_9_direction_test_no_instrument": true,
+    "only_two_explicit_observe_submissions": true,
+    "single_preview_loop_during_presets_and_capture": true,
+    "pad_calibration_auth_in_page_forces_live_and_preserves_prerequisites": true,
+    "pad_calibration_enroll_in_page_forces_live_and_preserves_prerequisites": true,
+    "preset_buttons_reachable_below_sticky_camera_without_overflow_320": true,
+    "preset_buttons_reachable_below_sticky_camera_without_overflow_390": true,
+    "preset_buttons_reachable_below_sticky_camera_without_overflow_1440": true,
+    "no_unrequested_photo_consent": true
+  },
+  "details": {
+    "320": {
+      "out": {
+        "observation-preset-auth": {
+          "rect": {
+            "x": 28,
+            "y": 691.65625,
+            "width": 128,
+            "height": 48,
+            "top": 691.65625,
+            "right": 156,
+            "bottom": 739.65625,
+            "left": 28
+          },
+          "hidden": false,
+          "hit": "observation-preset-auth",
+          "hitText": "인증 촬영 시험"
+        },
+        "observation-preset-enroll": {
+          "rect": {
+            "x": 164,
+            "y": 691.65625,
+            "width": 128,
+            "height": 48,
+            "top": 691.65625,
+            "right": 292,
+            "bottom": 739.65625,
+            "left": 164
+          },
+          "hidden": false,
+          "hit": "observation-preset-enroll",
+          "hitText": "실제 사람 등록 시험"
+        },
+        "camera-preview-card": {
+          "rect": {
+            "x": 12,
+            "y": 8,
+            "width": 296,
+            "height": 214,
+            "top": 8,
+            "right": 308,
+            "bottom": 222,
+            "left": 12
+          },
+          "hidden": false,
+          "hit": "preview-image",
+          "hitText": ""
+        },
+        "pad-operation-slot": {
+          "rect": {
+            "x": 12,
+            "y": 234,
+            "width": 296,
+            "height": 234.78125,
+            "top": 234,
+            "right": 308,
+            "bottom": 468.78125,
+            "left": 12
+          },
+          "hidden": false,
+          "hit": "operation-description",
+          "hitText": "측정 거리 65.0cm · 실제 사람 판정이나 인증 통과 결과가 아니에요. 원본 영상은 저"
+        },
+        "operation-panel": {
+          "rect": {
+            "x": 12,
+            "y": 234,
+            "width": 296,
+            "height": 234.78125,
+            "top": 234,
+            "right": 308,
+            "bottom": 468.78125,
+            "left": 12
+          },
+          "hidden": false,
+          "hit": "operation-description",
+          "hitText": "측정 거리 65.0cm · 실제 사람 판정이나 인증 통과 결과가 아니에요. 원본 영상은 저"
+        }
+      },
+      "scrollY": 527,
+      "innerHeight": 740,
+      "scrollWidth": 320,
+      "innerWidth": 320
+    },
+    "390": {
+      "out": {
+        "observation-preset-auth": {
+          "rect": {
+            "x": 32,
+            "y": 796.0625,
+            "width": 159,
+            "height": 48,
+            "top": 796.0625,
+            "right": 191,
+            "bottom": 844.0625,
+            "left": 32
+          },
+          "hidden": false,
+          "hit": "observation-preset-auth",
+          "hitText": "인증 촬영 시험"
+        },
+        "observation-preset-enroll": {
+          "rect": {
+            "x": 199,
+            "y": 796.0625,
+            "width": 159,
+            "height": 48,
+            "top": 796.0625,
+            "right": 358,
+            "bottom": 844.0625,
+            "left": 199
+          },
+          "hidden": false,
+          "hit": "observation-preset-enroll",
+          "hitText": "실제 사람 등록 시험"
+        },
+        "camera-preview-card": {
+          "rect": {
+            "x": 16,
+            "y": 8,
+            "width": 358,
+            "height": 214,
+            "top": 8,
+            "right": 374,
+            "bottom": 222,
+            "left": 16
+          },
+          "hidden": false,
+          "hit": "preview-image",
+          "hitText": ""
+        },
+        "pad-operation-slot": {
+          "rect": {
+            "x": 16,
+            "y": 234,
+            "width": 358,
+            "height": 234.78125,
+            "top": 234,
+            "right": 374,
+            "bottom": 468.78125,
+            "left": 16
+          },
+          "hidden": false,
+          "hit": "operation-description",
+          "hitText": "측정 거리 65.0cm · 실제 사람 판정이나 인증 통과 결과가 아니에요. 원본 영상은 저"
+        },
+        "operation-panel": {
+          "rect": {
+            "x": 16,
+            "y": 234,
+            "width": 358,
+            "height": 234.78125,
+            "top": 234,
+            "right": 374,
+            "bottom": 468.78125,
+            "left": 16
+          },
+          "hidden": false,
+          "hit": "operation-description",
+          "hitText": "측정 거리 65.0cm · 실제 사람 판정이나 인증 통과 결과가 아니에요. 원본 영상은 저"
+        }
+      },
+      "scrollY": 370,
+      "innerHeight": 844,
+      "scrollWidth": 390,
+      "innerWidth": 390
+    },
+    "1440": {
+      "out": {
+        "observation-preset-auth": {
+          "rect": {
+            "x": 792.8125,
+            "y": 683.171875,
+            "width": 238.828125,
+            "height": 48,
+            "top": 683.171875,
+            "right": 1031.640625,
+            "bottom": 731.171875,
+            "left": 792.8125
+          },
+          "hidden": false,
+          "hit": "observation-preset-auth",
+          "hitText": "인증 촬영 시험"
+        },
+        "observation-preset-enroll": {
+          "rect": {
+            "x": 1039.640625,
+            "y": 683.171875,
+            "width": 238.84375,
+            "height": 48,
+            "top": 683.171875,
+            "right": 1278.484375,
+            "bottom": 731.171875,
+            "left": 1039.640625
+          },
+          "hidden": false,
+          "hit": "observation-preset-enroll",
+          "hitText": "실제 사람 등록 시험"
+        },
+        "camera-preview-card": {
+          "rect": {
+            "x": 120.5,
+            "y": 270.984375,
+            "width": 618.3125,
+            "height": 635.671875,
+            "top": 270.984375,
+            "right": 738.8125,
+            "bottom": 906.65625,
+            "left": 120.5
+          },
+          "hidden": false,
+          "hit": "preview-image",
+          "hitText": ""
+        },
+        "pad-operation-slot": {
+          "rect": {
+            "x": 120.5,
+            "y": 985.84375,
+            "width": 618.3125,
+            "height": 303.390625,
+            "top": 985.84375,
+            "right": 738.8125,
+            "bottom": 1289.234375,
+            "left": 120.5
+          },
+          "hidden": false
+        },
+        "operation-panel": {
+          "rect": {
+            "x": 120.5,
+            "y": 985.84375,
+            "width": 618.3125,
+            "height": 303.390625,
+            "top": 985.84375,
+            "right": 738.8125,
+            "bottom": 1289.234375,
+            "left": 120.5
+          },
+          "hidden": false
+        }
+      },
+      "scrollY": 0,
+      "innerHeight": 1080,
+      "scrollWidth": 1425,
+      "innerWidth": 1440
+    }
+  },
+  "screenshots": [],
+  "js_errors": [],
+  "backend": "isolated mocked API; no real accounts, consent or capture",
+  "human_media_persisted": false,
+  "synthetic_media_persisted": false
+}

@@ -1,0 +1,54 @@
+{
+  "source_rows": 90,
+  "source_sha256": "d7af267b1eb4f444c59c060736f967487ee1a2a7eb92395600de9c08dd298416",
+  "frozen_profile_sha256": "907454b8797ec94c9688b6252f271d851ef4e336ef7a4c6f83b9154a858f770d",
+  "mode_counts": {
+    "auth": 4
+  },
+  "new_calibration": [
+    {
+      "mode": "auth",
+      "presentations": 4,
+      "frames": 12,
+      "valid_frames": 12,
+      "accepted_by_frozen_profile": 4,
+      "quality_reasons": {},
+      "ranges": {
+        "depth_median_mm": {
+          "min": 414.0,
+          "max": 432.0
+        },
+        "plane_residual_mm": {
+          "min": 9.657317743198451,
+          "max": 10.564512978649079
+        },
+        "quadratic_residual_mm": {
+          "min": 4.8270695976663385,
+          "max": 5.822735473849256
+        },
+        "nose_protrusion_mm": {
+          "min": 10.02864942032977,
+          "max": 17.973487264845545
+        }
+      }
+    },
+    {
+      "mode": "enroll",
+      "presentations": 0,
+      "frames": 0,
+      "valid_frames": 0,
+      "accepted_by_frozen_profile": 0,
+      "quality_reasons": {},
+      "ranges": {
+        "depth_median_mm": null,
+        "plane_residual_mm": null,
+        "quadratic_residual_mm": null,
+        "nose_protrusion_mm": null
+      }
+    }
+  ],
+  "pad_activated": false,
+  "profile_refitted": false,
+  "previous_test_failure_retained": true,
+  "reviewed_at": "2026-10-15T10:20:09.552016+00:00"
+}

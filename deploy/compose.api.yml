@@ -41,6 +41,8 @@ x-api: &api
     FA_TRUSTED_PROXIES: gateway
     # Explicit, temporary pilot opt-out; production/default keeps PAD enabled.
     FA_PILOT_DISABLE_PAD: ${FA_PILOT_DISABLE_PAD:-0}
+    FA_PAD_MODE: ${FA_PAD_MODE:-}
+    FA_FEMTO_PAD_PROFILE_SHA256: ${FA_FEMTO_PAD_PROFILE_SHA256:-}
   secrets: [approval_key, approval_pub, account_pub, admin_token, kms_token_api, db_api_password]
   healthcheck:
     test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/healthz"]

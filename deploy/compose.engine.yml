@@ -11,7 +11,7 @@ x-engine: &engine
     networks: [internal]
     dns_opt: ["timeout:1", "attempts:1"]
     restart: unless-stopped
-    volumes: ["./faceauth:/app/faceauth:ro", "./data/models:/app/data/models:ro"]
+    volumes: ["./faceauth:/app/faceauth:ro", "./data/models:/app/data/models:ro", "./deploy/pad:/app/deploy/pad:ro"]
     command: ["uvicorn", "faceauth.engine.main:app", "--host", "0.0.0.0", "--port", "8001", "--no-access-log",
               "--no-server-header"]
     environment:
@@ -28,6 +28,9 @@ x-engine: &engine
       FA_ENGINE_RECOG_BATCH_SIZE: ${FA_ENGINE_RECOG_BATCH_SIZE:-128}
       FA_ENGINE_POSE_BATCH_SIZE: ${FA_ENGINE_POSE_BATCH_SIZE:-64}
       FA_PILOT_DISABLE_PAD: ${FA_PILOT_DISABLE_PAD:-0}
+      FA_PAD_MODE: ${FA_PAD_MODE:-}
+      FA_FEMTO_PAD_PROFILE: ${FA_FEMTO_PAD_PROFILE:-}
+      FA_FEMTO_PAD_PROFILE_SHA256: ${FA_FEMTO_PAD_PROFILE_SHA256:-}
     secrets: [db_ro_password, release_pub, admin_token]
     deploy:
       resources:

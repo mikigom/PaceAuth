@@ -1,0 +1,253 @@
+{
+  "reviewed_at": "2026-10-15T10:07:31.842232+00:00",
+  "source_rows": 86,
+  "source_sha256": "32f808f56659d1c32ed4306b420c18e7e03dbee887b0fdc50906c2d0e7e38e4b",
+  "legacy_excluded": 32,
+  "correction_count": 6,
+  "correction_sha256": "ae8dd32b025b06485e47ff9c56caab339175d215e1be3345d913ee72de4dd4a0",
+  "correction_path": "/var/lib/paceauth/pad-observations-corrections.jsonl",
+  "derived_observations_path": "/var/lib/paceauth/pad-evaluations/observations-fd9c39dbc55f18fd.jsonl",
+  "derived_observations_sha256": "fd9c39dbc55f18fd4168d136da5d2e5c20ce4d542239ecbb6f524377cdb7e658",
+  "evaluated_profile_path": "/var/lib/paceauth/pad-evaluations/evaluation-c37d058b675033e2.json",
+  "evaluated_profile_sha256": "c37d058b675033e22abcedb6786691c71ee7343ea355bc29c005dfef9f24f985",
+  "frozen_profile_path": "/var/lib/paceauth/pad-profiles/calibration-907454b8797ec94c.json",
+  "frozen_profile_sha256": "907454b8797ec94c9688b6252f271d851ef4e336ef7a4c6f83b9154a858f770d",
+  "frozen_profile_unchanged": true,
+  "capture_facts_preserved": true,
+  "test_summary": {
+    "live": {
+      "presentations": 6,
+      "accepted": 5,
+      "nonresponses": 0,
+      "responding": 6,
+      "error_metric": "bpcer",
+      "errors": 1,
+      "error_rate": 0.16666666666666666,
+      "error_upper95": 0.5818034092520259,
+      "nonresponse_upper95": 0.39303776899708276
+    },
+    "print": {
+      "presentations": 8,
+      "accepted": 0,
+      "nonresponses": 1,
+      "responding": 7,
+      "error_metric": "apcer",
+      "errors": 0,
+      "error_rate": 0.0,
+      "error_upper95": 0.3481636551311609,
+      "nonresponse_upper95": 0.47067940860113155
+    },
+    "replay": {
+      "presentations": 3,
+      "accepted": 0,
+      "nonresponses": 0,
+      "responding": 3,
+      "error_metric": "apcer",
+      "errors": 0,
+      "error_rate": 0.0,
+      "error_upper95": 0.6315968501359613,
+      "nonresponse_upper95": 0.6315968501359613
+    }
+  },
+  "by_mode": {
+    "auth": {
+      "live": {
+        "presentations": 0,
+        "accepted": 0,
+        "nonresponses": 0,
+        "responding": 0,
+        "error_metric": "bpcer",
+        "errors": 0,
+        "error_rate": null,
+        "error_upper95": null,
+        "nonresponse_upper95": null
+      },
+      "print": {
+        "presentations": 0,
+        "accepted": 0,
+        "nonresponses": 0,
+        "responding": 0,
+        "error_metric": "apcer",
+        "errors": 0,
+        "error_rate": null,
+        "error_upper95": null,
+        "nonresponse_upper95": null
+      },
+      "replay": {
+        "presentations": 0,
+        "accepted": 0,
+        "nonresponses": 0,
+        "responding": 0,
+        "error_metric": "apcer",
+        "errors": 0,
+        "error_rate": null,
+        "error_upper95": null,
+        "nonresponse_upper95": null
+      }
+    },
+    "enroll": {
+      "live": {
+        "presentations": 0,
+        "accepted": 0,
+        "nonresponses": 0,
+        "responding": 0,
+        "error_metric": "bpcer",
+        "errors": 0,
+        "error_rate": null,
+        "error_upper95": null,
+        "nonresponse_upper95": null
+      },
+      "print": {
+        "presentations": 0,
+        "accepted": 0,
+        "nonresponses": 0,
+        "responding": 0,
+        "error_metric": "apcer",
+        "errors": 0,
+        "error_rate": null,
+        "error_upper95": null,
+        "nonresponse_upper95": null
+      },
+      "replay": {
+        "presentations": 0,
+        "accepted": 0,
+        "nonresponses": 0,
+        "responding": 0,
+        "error_metric": "apcer",
+        "errors": 0,
+        "error_rate": null,
+        "error_upper95": null,
+        "nonresponse_upper95": null
+      }
+    },
+    "diagnostic": {
+      "live": {
+        "presentations": 6,
+        "accepted": 5,
+        "nonresponses": 0,
+        "responding": 6,
+        "error_metric": "bpcer",
+        "errors": 1,
+        "error_rate": 0.16666666666666666,
+        "error_upper95": 0.5818034092520259,
+        "nonresponse_upper95": 0.39303776899708276
+      },
+      "print": {
+        "presentations": 8,
+        "accepted": 0,
+        "nonresponses": 1,
+        "responding": 7,
+        "error_metric": "apcer",
+        "errors": 0,
+        "error_rate": 0.0,
+        "error_upper95": 0.3481636551311609,
+        "nonresponse_upper95": 0.47067940860113155
+      },
+      "replay": {
+        "presentations": 3,
+        "accepted": 0,
+        "nonresponses": 0,
+        "responding": 3,
+        "error_metric": "apcer",
+        "errors": 0,
+        "error_rate": 0.0,
+        "error_upper95": 0.6315968501359613,
+        "nonresponse_upper95": 0.6315968501359613
+      }
+    },
+    "unspecified": {
+      "live": {
+        "presentations": 0,
+        "accepted": 0,
+        "nonresponses": 0,
+        "responding": 0,
+        "error_metric": "bpcer",
+        "errors": 0,
+        "error_rate": null,
+        "error_upper95": null,
+        "nonresponse_upper95": null
+      },
+      "print": {
+        "presentations": 0,
+        "accepted": 0,
+        "nonresponses": 0,
+        "responding": 0,
+        "error_metric": "apcer",
+        "errors": 0,
+        "error_rate": null,
+        "error_upper95": null,
+        "nonresponse_upper95": null
+      },
+      "replay": {
+        "presentations": 0,
+        "accepted": 0,
+        "nonresponses": 0,
+        "responding": 0,
+        "error_metric": "apcer",
+        "errors": 0,
+        "error_rate": null,
+        "error_upper95": null,
+        "nonresponse_upper95": null
+      }
+    }
+  },
+  "subject_overlap": true,
+  "instrument_overlap": true,
+  "eligible_for_local_pilot": false,
+  "reasons": [
+    "pilot_live_not_all_accepted",
+    "pilot_live_auth_missing",
+    "pilot_live_enroll_missing",
+    "pilot_print_auth_not_verified",
+    "pilot_replay_auth_not_verified"
+  ],
+  "runtime_status": {
+    "ready": false,
+    "reasons": [
+      "pilot_live_not_all_accepted",
+      "pilot_live_auth_missing",
+      "pilot_live_enroll_missing",
+      "pilot_print_auth_not_verified",
+      "pilot_replay_auth_not_verified"
+    ],
+    "profile_sha256": "c37d058b675033e22abcedb6786691c71ee7343ea355bc29c005dfef9f24f985",
+    "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+    "scope": [
+      "print",
+      "replay"
+    ],
+    "experimental": true,
+    "production_validated": false
+  },
+  "test_presentations": 17,
+  "pad_activated": false,
+  "failure_analysis": {
+    "live_rejected_presentations": 1,
+    "failed_frames_in_rejected_presentation": 5,
+    "failed_feature": "nose_protrusion_mm",
+    "nose_protrusion_range_mm": [
+      -8.154,
+      2.177
+    ],
+    "plane_residual_range_mm": [
+      9.76,
+      10.27
+    ],
+    "depth_range_mm": [
+      455,
+      456
+    ],
+    "capture_quality_reason": "pose_out_of_range",
+    "interpretation": "Authentication pose range was exceeded; actual enrollment angle performance is still unknown. Do not omit this failure or relax the frozen threshold."
+  },
+  "next_step": {
+    "purpose": "diagnose selected live capture paths, not approval",
+    "split": "calibration",
+    "kind": "live",
+    "new_presentations": {
+      "auth": 1,
+      "enroll": 1
+    },
+    "preserve_frozen_profile_and_failed_test": true
+  }
+}

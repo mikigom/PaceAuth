@@ -1,0 +1,62 @@
+{
+  "tested_at": "2026-10-15T10:30:07.092330+00:00",
+  "source_sha256": {
+    "live.html": "34a2fdd81fedeb887f317a66cfc93ad4b3df44f0e169e3b2c3bba464b751858d",
+    "live.css": "79462dbc6e5e671a97616fca5d53f635a68385e525cad2d95a5e5958570cea75",
+    "live.js": "cf8370ec9fdb790a9fd8fc4c4963cb2207bbbbd829f54a3533172dce39bdaf44"
+  },
+  "passed": true,
+  "checks": {
+    "pad_calibration_enroll_completed_restore_applies_pending_preset": true,
+    "pad_calibration_enroll_completed_restore_opens_pad": true,
+    "pad_calibration_enroll_completed_restore_never_consents_or_captures": true,
+    "completed_restore_explicit_submit_posts_live_enroll_calibration": true,
+    "pad_calibration_enroll_completed_restore_applies_at_most_once": true,
+    "pad_calibration_auth_completed_restore_applies_pending_preset": true,
+    "pad_calibration_auth_completed_restore_opens_pad": true,
+    "pad_calibration_auth_completed_restore_never_consents_or_captures": true,
+    "pad_calibration_auth_completed_restore_applies_at_most_once": true,
+    "slow_account_loading_does_not_lose_completed_restore_link": true,
+    "realtime_hash_after_completed_restore_applies_enroll": true,
+    "genuinely_active_restore_does_not_apply_requested_preset": true,
+    "genuinely_active_restore_never_creates_capture": true,
+    "active_restore_link_not_deferred_until_capture_finishes": true,
+    "restored_failed_allows_requested_enroll_without_capture": true,
+    "restored_cancelled_allows_requested_enroll_without_capture": true,
+    "restored_None_allows_requested_enroll_without_capture": true,
+    "restore_error_keeps_preset_pending_without_capture": true,
+    "recovered_completed_restore_applies_original_preset": true,
+    "pad_test_auth_completed_restore_applies_once": true,
+    "pad_test_enroll_completed_restore_applies_once": true,
+    "pad_completed_restore_applies_once": true
+  },
+  "details": {
+    "pad_calibration_enroll": {
+      "selection": [
+        "enroll",
+        "live",
+        "calibration"
+      ],
+      "view": "pad",
+      "hash": "#pad-calibration-enroll",
+      "restoreCalls": 1,
+      "posts": 0
+    },
+    "pad_calibration_auth": {
+      "selection": [
+        "auth",
+        "live",
+        "calibration"
+      ],
+      "view": "pad",
+      "hash": "#pad-calibration-auth",
+      "restoreCalls": 1,
+      "posts": 0
+    }
+  },
+  "screenshots": [],
+  "js_errors": [],
+  "backend": "isolated mocked API; no real accounts, consent or capture",
+  "human_media_persisted": false,
+  "synthetic_media_persisted": false
+}

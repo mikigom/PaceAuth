@@ -8,9 +8,18 @@
     ir: { label: "적외선", alt: "좌우 반전된 카메라 적외선 영상", description: "적외선으로 보는 내 모습 · 좌우 반전" },
   };
   const observationModes = {
-    diagnostic: { label: "센서 진단", description: "정면에서 5개 프레임의 진단 점수를 수집합니다. 인증·등록 촬영의 운영 검증 표본과 구분됩니다." },
+    diagnostic: { label: "깊이·IR 측정", description: "정면에서 5개 프레임의 깊이 형상·적외선 수치를 수집해요. 측정이 어려운 프레임도 기록하며, 인증·등록의 최종 검증과 구분돼요." },
     auth: { label: "인증 촬영 검증", description: "인증과 같은 정면 촬영 절차로 판별 점수를 수집합니다. 얼굴 인증을 승인하지 않습니다." },
     enroll: { label: "등록 촬영 검증", description: "등록과 같은 9방향 촬영 절차로 판별 점수를 수집합니다. 얼굴을 등록하거나 계정에 얼굴 특징을 저장하지 않습니다." },
+  };
+  const padLinkPresets = {
+    "#pad": null, "#pad-test-auth": "auth", "#pad-test-enroll": "enroll",
+    "#pad-calibration-auth": "calibration-auth", "#pad-calibration-enroll": "calibration-enroll",
+    "#pad-test-live-auth": "test-live-auth", "#pad-test-live-enroll": "test-live-enroll",
+    "#pad-test-print-auth": "test-print-auth", "#pad-test-replay-auth": "test-replay-auth",
+  };
+  const explicitTestKinds = {
+    "test-live-auth": "live", "test-live-enroll": "live", "test-print-auth": "print", "test-replay-auth": "replay",
   };
   const image = $("preview-image");
   let selectedView = "rgb";
@@ -30,6 +39,7 @@
   let authBusy = false;
   let operationBusy = false;
   let operationController = null;
+  let operationGeneration = 0;
   let currentOperation = null;
   let operationId = null;
   let dismissedOperationId = null;
@@ -50,6 +60,10 @@
   let facesRenderKey = null;
   let displayedCaptureAt = null;
   let mainView = "live";
+  let padLinkPending = Object.hasOwn(padLinkPresets, window.location.hash) ? window.location.hash : null;
+  let observationAvailable = false;
+  let observationPickerKey = null;
+  const studyCodePattern = /^[a-zA-Z0-9_.-]{1,64}$/;
   let managedAccounts = [];
   let accountsLoaded = false;
   let accountsLoading = false;
@@ -63,6 +77,25 @@
   let accountsRenderKey = null;
   let detailRenderKey = null;
   let enrollmentTarget = null;
+  let enrollmentIntent = false;
+  let liveConsolePresentation = false;
+  let identificationArmed = false;
+  let identificationStopped = false;
+  let identificationCandidate = null;
+  let identificationCandidateSince = 0;
+  let identificationNextAttemptAt = 0;
+  let identificationResultUntil = 0;
+  let identificationSettledId = null;
+  let identificationRun = 0;
+  let identificationOperationRun = null;
+  let identificationDeadlineAt = 0;
+  let identificationDeadlineWall = 0;
+  let identificationDeadlineTimer = null;
+  const IDENTIFICATION_WINDOW_MS = 10000;
+  const IDENTIFICATION_STABLE_MS = 600;
+  const IDENTIFICATION_RETRY_MS = 750;
+  const IDENTIFICATION_SUCCESS_MS = 4500;
+  const IDENTIFICATION_FADE_MS = 320;
   let refreshedOperationId = null;
   let deletionTarget = null;
   let deletionKind = "account";
@@ -185,7 +218,9 @@
       && ["known", "unknown", "uncertain"].includes(face.status)) : [];
     liveMessage(faces.length ? `${faces.length}명을 찾았어요${data.truncated ? " · 일부 얼굴만 표시 중" : ""} · 가장 큰 얼굴로 인증해요.`
       : "카메라를 바라보면 얼굴과 이름이 표시돼요.");
-    const key = JSON.stringify([data.sequence, size, faces]);
+    const immersive = identificationView();
+    const viewport = image.getBoundingClientRect();
+    const key = JSON.stringify([data.sequence, size, faces, immersive, viewport.width, viewport.height]);
     if (key === facesRenderKey) return;
     clearFaceOverlay();
     facesRenderKey = key;
@@ -193,6 +228,15 @@
     const overlay = $("face-overlay");
     overlay.setAttribute("viewBox", `0 0 ${width} ${height}`);
     overlay.toggleAttribute("hidden", false);
+    // Keep captions readable in screen pixels when cover crops the sensor view.
+    // Box coordinates still use the exact mirrored sensor image projection.
+    const scale = immersive ? Math.max(viewport.width / width, viewport.height / height) : 1;
+    const visibleWidth = immersive ? viewport.width / scale : width;
+    const visibleHeight = immersive ? viewport.height / scale : height;
+    const left = (width - visibleWidth) / 2, top = (height - visibleHeight) / 2;
+    const padding = 8 / scale, labelHeight = 28 / scale, margin = 4 / scale;
+    const toolbarBottom = immersive ? document.querySelector(".preview-toolbar").getBoundingClientRect().bottom : 0;
+    const captionTop = immersive ? top + Math.max(8, toolbarBottom - viewport.top + 8) / scale : top + margin;
     const svg = (tag, attrs) => {
       const element = document.createElementNS(SVG_NS, tag);
       for (const [name, value] of Object.entries(attrs)) element.setAttribute(name, String(value));
@@ -206,6 +250,8 @@
       if (x2 <= x1 || y2 <= y1) continue;
       // Mirror coordinates once; keep SVG text in its ordinary reading direction.
       const x = width - x2;
+      if (immersive && (x + x2 - x1 <= left || x >= left + visibleWidth
+        || y2 <= top || y1 >= top + visibleHeight)) continue;
       const group = svg("g", { class: "face-mark", "data-status": face.status, "data-primary": face.primary === true });
       const box = svg("rect", { class: "face-box", x, y: y1, width: x2 - x1, height: y2 - y1, rx: 5 });
       const name = face.status === "known" && typeof face.display_name === "string" ? face.display_name : face.status === "unknown" ? "미등록" : "확인 중";
@@ -213,19 +259,30 @@
       const caption = `${characters.slice(0, 24).join("")}${characters.length > 24 ? "…" : ""}${face.primary === true ? " · 인증 우선 대상" : ""}`;
       const title = svg("title", {});
       title.textContent = `${name}${face.primary === true ? " · 인증 우선 대상" : ""}`;
-      const background = svg("rect", { class: "face-label-bg", rx: 4, height: 28 });
+      const background = svg("rect", { class: "face-label-bg", rx: 4 / scale, height: labelHeight });
       const label = svg("text", { class: "face-label", "dominant-baseline": "middle" });
+      if (immersive) label.style.fontSize = `${14 / scale}px`;
       label.textContent = caption;
       group.append(title, box, background, label);
       overlay.append(group);
-      const labelWidth = Math.min(width - 8, Math.ceil(label.getComputedTextLength()) + 16);
-      const labelX = Math.max(4, Math.min(x, width - labelWidth - 4));
-      const labelY = Math.max(4, y1 >= 32 ? y1 - 31 : Math.min(y1 + 4, height - 32));
+      const maxLabelWidth = visibleWidth - margin * 2;
+      if (immersive) {
+        const shortened = Array.from(caption);
+        while (shortened.length > 1 && label.getComputedTextLength() + padding * 2 > maxLabelWidth) {
+          shortened.pop();
+          label.textContent = `${shortened.join("")}…`;
+        }
+      }
+      const labelWidth = Math.min(maxLabelWidth, label.getComputedTextLength() + padding * 2);
+      const labelX = Math.max(left + margin, Math.min(x, left + visibleWidth - labelWidth - margin));
+      const preferredY = y1 - labelHeight - 3 / scale;
+      const labelY = Math.max(captionTop, Math.min(preferredY >= captionTop ? preferredY : y1 + margin,
+        top + visibleHeight - labelHeight - margin));
       background.setAttribute("x", labelX);
       background.setAttribute("y", labelY);
       background.setAttribute("width", labelWidth);
-      label.setAttribute("x", labelX + 8);
-      label.setAttribute("y", labelY + 14);
+      label.setAttribute("x", labelX + padding);
+      label.setAttribute("y", labelY + labelHeight / 2);
     }
   }
 
@@ -321,36 +378,318 @@
       : auth.account?.authenticated === true && auth.account.enabled !== false;
   }
 
-  function canStart() {
+  function canStart(kind = "enroll") {
     const auth = authState();
-    return auth.enabled === true && auth.ready === true && participantReady()
+    const ready = kind === "enroll" ? auth.enrollment_ready ?? auth.ready : auth.ready;
+    return auth.enabled === true && ready === true && participantReady()
       && consentReady() && $("biometric-consent").checked && isStreaming()
       && (!enrollmentTarget || (isAdmin() && enrollmentTarget.enabled !== false))
+      && !identificationArmed && !authBusy && !activeOperation() && !operationUncertain;
+  }
+
+  function identificationView() {
+    return (liveConsolePresentation || identificationArmed) && mainView === "live" && !enrollmentIntent;
+  }
+
+  function identificationGallery() {
+    return managedAccounts.filter(account => account.enabled !== false && account.face_status === "active");
+  }
+
+  function canIdentify() {
+    const auth = authState();
+    return consoleMode() && auth.console_ready === true && auth.management_allowed === true
+      && auth.enabled === true && auth.ready === true && accountsReady && identificationGallery().length > 0
+      && isStreaming()
       && !authBusy && !activeOperation() && !operationUncertain;
   }
 
+  function identifyText(id, value) {
+    if ($(id).textContent !== value) $(id).textContent = value;
+  }
+
+  function identificationRemainingMs(now = performance.now()) {
+    // The monotonic clock prevents wall-clock changes extending a run; the
+    // wall clock also counts time spent in a suspended tab or sleeping host.
+    return identificationArmed ? Math.max(0, Math.min(
+      identificationDeadlineAt - now, identificationDeadlineWall - Date.now(),
+    )) : 0;
+  }
+
+  function expireIdentification(now = performance.now()) {
+    if (!identificationArmed || identificationRemainingMs(now) > 0) return false;
+    stopIdentification(false);
+    return true;
+  }
+
+  function renderIdentification() {
+    expireIdentification();
+    const visible = identificationView();
+    const entering = visible && document.body.dataset.identificationMode !== "true";
+    document.body.dataset.identificationMode = String(visible);
+    // Move the existing controls, not copies: handlers and operation state stay
+    // shared with enrollment, while Live keeps all feedback on the camera.
+    for (const [element, slot, home] of [
+      [$("identification-result"), "live-result-slot", "identification-result-home"],
+      [document.querySelector(".auth-actions"), "live-controls-slot", "auth-actions-home"],
+      [$("auth-feedback"), "live-feedback-slot", "auth-feedback-home"],
+      [document.querySelector(".service-mode"), "live-service-slot", "service-mode-home"],
+    ]) {
+      if (visible) {
+        if (element.parentElement !== $(slot)) $(slot).append(element);
+      } else if (element !== $("auth-feedback") || !enrollmentMode) {
+        if ($(home).nextElementSibling !== element) $(home).after(element);
+      }
+    }
+    $("face-overlay").setAttribute("preserveAspectRatio", visible ? "xMidYMid slice" : "xMidYMid meet");
+    if (entering && selectedView !== "rgb") document.querySelector('[data-view="rgb"]').click();
+    if (!visible) {
+      $("identification-result").hidden = true;
+      $("live-waiting-cue").hidden = true;
+      document.body.dataset.livePhase = "idle";
+      document.querySelector(".skip-link").href = "#auth-heading";
+      return;
+    }
+    const operation = currentOperation?.kind === "identify" && currentOperation.id !== dismissedOperationId ? currentOperation : null;
+    const result = operation?.result || {};
+    const running = identificationArmed && operation && activeStates.has(operation.state);
+    const now = performance.now();
+    let state = "idle", title = identificationStopped ? "인증 대기를 멈췄어요" : "이름을 고르지 않아도 돼요";
+    let description = "인증을 시작하면 10초 동안 등록된 얼굴을 기다려요.";
+    let badgeText = "1:N 얼굴 인식", name = "";
+    if (operationUncertain && identificationArmed) {
+      state = "inconclusive"; title = "진행 상황을 확인하고 있어요";
+      description = "연결이 돌아오면 이번 요청의 결과부터 확인해요."; badgeText = "연결 확인 중";
+    } else if (running) {
+      state = "scanning"; badgeText = "얼굴 확인 중";
+      title = operation.state === "processing" ? "등록된 얼굴과 비교하고 있어요" : "잠시만 정면을 바라봐 주세요";
+      description = identificationStopped ? "대기 중지를 요청했어요. 진행 중인 확인 결과를 기다려 주세요."
+        : operation.guide?.prompt || "가장 크게 보이는 얼굴을 전체 등록 정보에서 찾아요.";
+    } else if (now < identificationResultUntil && operation?.id === identificationSettledId
+      && operation?.state === "succeeded" && result.decision === "approved"
+      && typeof result.matched_account_id === "string" && result.matched_account_id
+      && typeof result.matched_display_name === "string" && result.matched_display_name) {
+      state = "approved"; badgeText = "승인"; name = result.matched_display_name;
+      title = "확인됐어요";
+      description = "등록된 얼굴로 확인했어요.";
+    } else if (identificationArmed) {
+      state = "scanning"; badgeText = "인증 대기 중"; title = "등록된 얼굴을 기다리고 있어요";
+      description = "카메라를 바라봐 주세요. 여러 명이면 가장 가까이 보이는 얼굴을 확인해요.";
+      const faceAge = facesAgeAtReceipt + now - facesReceivedAt;
+      const faceStreamReady = latestFaces?.enabled === true && latestFaces.state === "running"
+        && finite(faceAge) && faceAge < MAX_FACE_AGE_MS && frameDisplayed;
+      if (!isStreaming() || authState().ready !== true || !accountsReady || !identificationGallery().length || !faceStreamReady) {
+        state = "inconclusive"; badgeText = "연결 대기"; title = "카메라와 서비스를 확인하고 있어요";
+        description = accountsReady && !identificationGallery().length ? "활성화된 등록 얼굴이 없어 대기를 잠시 멈췄어요."
+          : "새 영상과 얼굴 인식이 준비되면 대기를 이어가요.";
+      } else if (document.hidden) {
+        description = "이 화면으로 돌아오면 새로운 영상으로 확인을 이어가요.";
+      }
+    } else if (!accountsReady) {
+      description = "등록 정보를 불러오고 있어요. 준비되면 인증을 시작할 수 있어요.";
+    } else if (!identificationGallery().length) {
+      title = "첫 얼굴을 등록해 주세요";
+      description = "계정 관리에서 얼굴을 등록하고 활성화하면 1:N 인증을 체험할 수 있어요.";
+    }
+    const hero = $("identification-result");
+    const resultVisible = state === "approved" && now < identificationResultUntil;
+    // Only an approval received inside this run's budget gets a presentation.
+    // Every other outcome silently returns to waiting until the same deadline.
+    hero.dataset.presence = !resultVisible ? "hidden"
+      : identificationResultUntil - now <= IDENTIFICATION_FADE_MS ? "leaving" : "visible";
+    hero.hidden = !resultVisible;
+    hero.dataset.state = state;
+    hero.dataset.armed = String(identificationArmed);
+    hero.setAttribute("aria-busy", String(state === "scanning"));
+    identifyText("identification-kicker", "전체 등록 정보에서 찾는 1:N 인증");
+    identifyText("identification-title", title);
+    identifyText("identification-description", description);
+    identifyText("identification-badge", badgeText);
+    identifyText("identification-name", name);
+    $("identification-name").hidden = !name;
+    $("identification-gallery-summary").hidden = !accountsReady;
+    identifyText("identification-count", identificationGallery().length.toLocaleString("ko-KR"));
+    $("stop-identification").hidden = !identificationArmed;
+    $("stop-identification").disabled = false;
+    $("stop-identification").textContent = `대기 중지 · ${Math.ceil(identificationRemainingMs() / 1000)}초`;
+    $("start-authenticate").hidden = identificationArmed;
+    $("start-authenticate").textContent = state === "approved" ? "다음 사람 인증" : "인증 시작";
+    $("start-authenticate").disabled = !canIdentify();
+    let phase = "idle", cueLabel = "", cueDetail = "";
+    if (resultVisible) {
+      phase = state;
+    } else if (operationUncertain && identificationArmed) {
+      phase = "paused"; cueLabel = "연결 확인 중";
+      cueDetail = "연결이 돌아오면 진행 중인 요청부터 확인해요.";
+    } else if (identificationArmed && (running || (authBusy && lastOperationKind === "identify"))) {
+      phase = !isStreaming() || authState().ready !== true ? "paused" : "checking";
+      cueLabel = phase === "paused" ? "연결 확인 중" : identificationStopped ? "중지 확인 중" : "얼굴 확인 중";
+      cueDetail = phase === "paused" ? "연결이 돌아오면 진행 중인 요청부터 확인해요."
+        : identificationStopped ? "진행 중인 확인 결과를 기다려 주세요."
+        : operation?.state === "processing" ? "등록된 얼굴과 비교하고 있어요."
+        : operation?.guide?.prompt || "잠시만 정면을 바라봐 주세요.";
+    } else if (identificationArmed) {
+      phase = state === "inconclusive" ? "paused" : "waiting";
+      cueLabel = phase === "paused" ? badgeText === "연결 대기" ? "연결 확인 중" : "다시 확인 중" : "인증 대기 중";
+      cueDetail = phase === "paused" ? description : "";
+    } else if (!accountsReady || !identificationGallery().length || authState().ready !== true || !isStreaming()) {
+      phase = "paused";
+      cueLabel = !accountsReady ? "등록 정보 확인 중" : !identificationGallery().length ? "얼굴을 등록해 주세요" : "연결 확인 중";
+      cueDetail = accountsReady && !identificationGallery().length ? "계정 관리에서 얼굴을 등록할 수 있어요." : "";
+    }
+    document.body.dataset.livePhase = phase;
+    const cue = $("live-waiting-cue");
+    cue.hidden = !["waiting", "checking", "paused"].includes(phase);
+    cue.dataset.state = cue.hidden ? "waiting" : phase;
+    identifyText("live-waiting-label", cueLabel);
+    identifyText("live-waiting-detail", cueDetail);
+    $("live-waiting-detail").hidden = !cueDetail;
+    document.querySelector(".skip-link").href = $("stop-identification").hidden ? "#start-authenticate" : "#stop-identification";
+    // The result hero and stop control cover the complete identification flow.
+    // Keep the legacy capture card for enrollment and PAD collection only.
+    $("operation-panel").hidden = true;
+    $("retry-operation").hidden = true;
+    if (operation?.kind === "identify") $("dismiss-operation").hidden = identificationArmed || Boolean(running) || operationUncertain;
+  }
+
+  function startIdentification() {
+    if (!canIdentify() || identificationArmed) return;
+    operationGeneration += 1;
+    enrollmentIntent = false;
+    identificationArmed = true;
+    identificationRun += 1;
+    identificationOperationRun = null;
+    identificationDeadlineAt = performance.now() + IDENTIFICATION_WINDOW_MS;
+    identificationDeadlineWall = Date.now() + IDENTIFICATION_WINDOW_MS;
+    clearTimeout(identificationDeadlineTimer);
+    identificationDeadlineTimer = setTimeout(() => {
+      if (expireIdentification()) renderAuth();
+    }, IDENTIFICATION_WINDOW_MS);
+    identificationStopped = false;
+    identificationCandidate = null;
+    identificationNextAttemptAt = 0;
+    identificationResultUntil = 0;
+    dismissedOperationId = operationId || dismissedOperationId;
+    currentOperation = null;
+    operationId = null;
+    lastOperationKind = "identify";
+    feedback("");
+    renderAuth();
+    $("stop-identification").focus({ preventScroll: true });
+  }
+
+  function stopIdentification(render = true) {
+    identificationArmed = false;
+    identificationStopped = true;
+    identificationRun += 1;
+    identificationDeadlineAt = 0;
+    identificationDeadlineWall = 0;
+    clearTimeout(identificationDeadlineTimer);
+    identificationDeadlineTimer = null;
+    identificationCandidate = null;
+    identificationResultUntil = 0;
+    feedback("");
+    // Keep the request identifier until the server confirms it has stopped.
+    // Cleanup cannot display a result or start another recognition run.
+    if (currentOperation?.kind === "identify" && activeOperation()) void cancelOperation();
+    if (render) renderAuth();
+  }
+
+  function tickIdentification(now = performance.now()) {
+    expireIdentification(now);
+    if (identificationView()) renderIdentification();
+    if (!identificationArmed) return;
+    if (!identificationView() || !canIdentify() || document.hidden || now < identificationNextAttemptAt) {
+      identificationCandidate = null;
+      return;
+    }
+    const data = latestFaces;
+    const age = facesAgeAtReceipt + now - facesReceivedAt;
+    const aligned = frameDisplayed && data?.enabled === true && data.state === "running"
+      && finite(age) && age < MAX_FACE_AGE_MS && Array.isArray(data.image_size)
+      && data.image_size[0] === image.naturalWidth && data.image_size[1] === image.naturalHeight
+      && Number.isSafeInteger(data.sequence) && data.sequence <= Number(lastSequence)
+      && displayedCaptureAt !== null && Math.abs(displayedCaptureAt - (facesReceivedAt - facesAgeAtReceipt)) < MAX_FACE_AGE_MS;
+    const primary = aligned && Array.isArray(data.faces) ? data.faces.find(face => face.primary === true) : null;
+    // Live labels only decide when to request a fresh signed capture. They can
+    // never grant approval or supply the name displayed in the result.
+    const candidate = primary?.status === "known" && Number.isSafeInteger(primary.track_id) && primary.track_id > 0
+      ? primary.track_id : null;
+    if (!candidate) { identificationCandidate = null; return; }
+    if (candidate !== identificationCandidate) {
+      identificationCandidate = candidate;
+      identificationCandidateSince = now;
+      return;
+    }
+    if (now - identificationCandidateSince < IDENTIFICATION_STABLE_MS) return;
+    identificationCandidate = null;
+    identificationNextAttemptAt = now + IDENTIFICATION_RETRY_MS;
+    void startOperation("identify");
+  }
+
   function canObserve() {
+    return observationBlocker() === "";
+  }
+
+  function observationBlocker() {
     const auth = authState();
-    return auth.enabled === true && auth.capture_ready === true && participantReady()
-      && consentReady() && $("biometric-consent").checked && isStreaming()
-      && (consoleMode() || !enrollmentTarget) && !authBusy && !activeOperation() && !operationUncertain;
+    if (!latestStatus) return "서버 연결을 확인하고 있어요. 연결되면 다시 시도할 수 있어요.";
+    if (auth.enabled !== true) return "표본 수집 서비스가 아직 준비되지 않았어요.";
+    if (identificationArmed) return "1:N 인증 대기를 중지한 뒤 표본을 수집해 주세요.";
+    if (authBusy || operationUncertain) return "촬영 요청의 결과를 확인하고 있어요. 잠시 기다려 주세요.";
+    if (activeOperation()) return "진행 중인 촬영이 끝나면 다음 표본을 수집할 수 있어요.";
+    if (auth.capture_ready !== true) return "센서와 분석 서비스의 준비가 완료되어야 수집할 수 있어요.";
+    if (!isStreaming()) return "카메라의 최신 영상을 기다리고 있어요. 센서 연결을 확인해 주세요.";
+    if (consoleMode()) {
+      if (auth.console_ready !== true || auth.management_allowed !== true) return "관리자 연결을 확인하고 있어요.";
+      if (!accountsReady) return "계정 목록을 불러오고 있어요. 잠시 기다려 주세요.";
+      if (!enrollmentTarget || enrollmentTarget.enabled === false) return "위에서 표본 수집에 사용할 계정을 선택해 주세요.";
+    } else {
+      if (!participantReady()) return "계정으로 로그인한 뒤 표본을 수집할 수 있어요.";
+      if (enrollmentTarget) return "다른 사람의 등록 선택을 해제한 뒤 내 계정으로 수집해 주세요.";
+    }
+    if (!consentReady()) return "표본 수집·생체정보 처리 안내를 불러오고 있어요.";
+    if (!$("observation-consent").checked) return "위의 ‘PAD 검증용 수치 표본 수집’ 동의 항목을 확인해 주세요.";
+    const subject = $("observation-subject").value;
+    if (!subject) return "대상 코드를 입력해 주세요. 예: subject-001";
+    if (!studyCodePattern.test(subject)) return "대상 코드는 이름 대신 subject-001처럼 입력해 주세요. 영문·숫자·점·밑줄·하이픈만 사용할 수 있어요.";
+    if ($("observation-kind").value !== "live") {
+      const instrument = $("observation-instrument").value;
+      if (!instrument) return "공격 매체 코드를 입력해 주세요. 예: phone-001 또는 print-001";
+      if (!studyCodePattern.test(instrument)) return "공격 매체 코드에는 공백 없이 영문·숫자·점·밑줄·하이픈만 사용할 수 있어요.";
+    }
+    return "";
   }
 
   function feedback(message, tone = "warning") {
+    // Live attempts are intentionally silent; connection state uses the small
+    // waiting cue, while enrollment and collection retain their own feedback.
+    if (identificationView() && lastOperationKind === "identify") message = "";
     $("auth-feedback").textContent = message;
     $("auth-feedback").hidden = !message;
     $("auth-feedback").dataset.tone = tone;
+    if (lastOperationKind === "observe") {
+      $("observation-feedback").textContent = message;
+      $("observation-feedback").hidden = !message;
+      $("observation-feedback").dataset.tone = tone;
+    }
   }
 
   function renderAuth() {
     const auth = authState();
+    // Preserve only the camera layout during a temporary status outage.
+    // canIdentify still requires fresh readiness and an active console session.
+    if (typeof auth.console_mode === "boolean") liveConsolePresentation = auth.console_mode;
     const enabled = auth.enabled === true;
     const console = consoleMode();
     const padDisabled = enabled && auth.pad_enabled === false;
+    const padPilot = enabled && auth.pad_mode === "femto_geometry_pilot";
+    const padExperiment = enabled && auth.pad_mode === "femto_geometry_experimental";
     const signedIn = auth.account?.authenticated === true;
     const sessionReady = console ? auth.console_ready === true : signedIn;
     const accountId = sessionReady ? sessionOwner() : null;
     if (enabled && (!sessionReady || (signedAccountId !== null && signedAccountId !== accountId))) {
+      identificationArmed = false;
+      identificationCandidate = null;
       currentOperation = null;
       operationId = null;
       operationUncertain = false;
@@ -359,11 +698,17 @@
       $("operation-panel").hidden = true;
       $("biometric-consent").checked = false;
       $("photo-consent").checked = false;
+      $("observation-consent").checked = false;
       resetAccountManagement();
     }
     if (enabled) signedAccountId = accountId;
-    const busy = authBusy || Boolean(activeOperation()) || operationUncertain;
-    const blockers = Array.isArray(auth.blockers) ? auth.blockers : [];
+    const busy = authBusy || identificationArmed || Boolean(activeOperation()) || operationUncertain;
+    const identifying = identificationView();
+    const preparingEnrollment = mainView === "live" && !identifying && (enrollmentIntent || currentOperation?.kind === "enroll");
+    const enrollmentPadDisabled = preparingEnrollment && auth.enrollment_pad_enabled === false;
+    const workflowReady = preparingEnrollment ? auth.enrollment_ready ?? auth.ready : auth.ready;
+    const workflowBlockers = preparingEnrollment ? auth.enrollment_blockers ?? auth.blockers : auth.blockers;
+    const blockers = Array.isArray(workflowBlockers) ? workflowBlockers : [];
     const list = $("auth-blockers");
     list.replaceChildren();
     for (const blocker of blockers) {
@@ -372,29 +717,40 @@
       list.append(item);
     }
     list.hidden = blockers.length === 0;
-    $("auth-workflow").hidden = !enabled;
+    $("auth-workflow").hidden = !enabled && !identificationArmed && currentOperation?.kind !== "identify";
     document.body.dataset.authEnabled = String(enabled);
     document.body.dataset.consoleMode = String(console);
     document.body.dataset.accountState = sessionReady ? "signed-in" : "guest";
     document.body.dataset.accountMode = accountMode;
     $("pilot-notice").hidden = !enabled || auth.pilot !== true;
-    $("pad-disabled-notice").hidden = !padDisabled;
-    $("page-title").textContent = enabled ? "얼굴로, 간편하게" : "카메라를 만나보세요";
+    $("pad-disabled-notice").hidden = identifying || (!enrollmentPadDisabled && !padDisabled && !padPilot && !padExperiment);
+    $("pad-disabled-notice").querySelector("strong").textContent = enrollmentPadDisabled ? "등록 시 PAD 검사 안 함" : padExperiment
+      ? "실험용 PAD 켜짐 · 실측 미검증"
+      : padPilot ? "깊이 PAD · 시험 적용" : "위조 방지 검사 꺼짐";
+    $("pad-disabled-notice").querySelector("span").textContent = enrollmentPadDisabled
+      ? "정면과 여러 방향의 얼굴 특징을 저장해요. 인증할 때는 PAD 설정을 따릅니다."
+      : padExperiment
+      ? "코 주변 깊이를 검사해요. 수정 버전은 실제 사진·화면 공격과 3D 가면으로 검증하지 않았어요."
+      : padPilot
+      ? "사진·화면 공격을 확인하는 시험 모드예요. 3D 가면은 검증하지 않았어요."
+      : "지금은 얼굴 일치만 확인하는 체험 모드예요.";
+    $("page-title").textContent = enabled ? identifying ? "다가오면, 알아봐요" : "얼굴로, 간편하게" : "카메라를 만나보세요";
     $("page-description").textContent = enabled
-      ? "등록부터 확인까지, 카메라 앞에서 한 번에."
+      ? identifying ? "인증을 시작하고 카메라를 바라봐 주세요. 등록된 사람을 찾아 확인해요." : "등록부터 확인까지, 카메라 앞에서 한 번에."
       : "카메라를 연결하면 실시간으로 내 모습을 볼 수 있어요.";
-    document.title = enabled ? "PaceAuth · 얼굴 등록 · 인증" : "PaceAuth · 카메라 테스트";
+    document.title = enabled ? identifying ? "PaceAuth · 1:N 얼굴 인증" : "PaceAuth · 얼굴 등록 · 인증" : "PaceAuth · 카메라 테스트";
     $("footer-mode").textContent = enabled ? "얼굴 인식 체험" : "카메라 미리보기";
     document.querySelector(".device-label").lastChild.textContent = console ? "관리 · 데모" : "내부망 체험";
     $("pilot-notice").textContent = console ? "등록한 계정으로 얼굴 일치를 체험하는 데모예요. 실제 서비스의 계정 본인 확인을 대신하지 않습니다."
       : "체험용 테스트 계정을 사용하며, 실제 서비스의 계정 본인 확인을 대신하지 않습니다.";
     $("auth-heading").textContent = console ? "누구나, 얼굴로 간편하게" : "내 얼굴로 시작하기";
     $("journey-account-label").textContent = console ? "계정 선택" : "계정";
-    if (auth.ready === true && enabled) {
-      badge("auth-state", padDisabled ? "PAD 꺼짐" : "준비 완료", padDisabled ? "warning" : "good");
-      $("auth-description").textContent = padDisabled
+    if (workflowReady === true && enabled) {
+      badge("auth-state", enrollmentPadDisabled ? "등록 준비 완료" : padDisabled ? "PAD 꺼짐" : padExperiment ? "실험용 PAD" : padPilot ? "깊이 PAD · 시험 적용" : "준비 완료", enrollmentPadDisabled ? "good" : padDisabled || padPilot || padExperiment ? "warning" : "good");
+      $("auth-description").textContent = enrollmentPadDisabled ? "정면과 여러 방향을 두 번씩 촬영해 얼굴을 등록해요." : padDisabled
         ? "얼굴을 등록하고 일치 여부를 확인해 보세요."
-        : "얼굴을 등록하고 간편하게 인증해 보세요.";
+        : padExperiment ? "얼굴 일치와 실험용 깊이 검사를 함께 사용해요. 실측 성능은 검증 전이에요."
+        : padPilot ? "얼굴 일치와 깊이 기반 위조 검사를 함께 확인해 보세요." : "얼굴을 등록하고 간편하게 인증해 보세요.";
     } else {
       badge("auth-state", "사용 준비 필요", "warning");
       $("auth-description").textContent = "얼굴 등록·인증을 사용하려면 아래 준비 항목을 완료해야 합니다.";
@@ -425,13 +781,14 @@
       $(id).disabled = !enabled || busy;
     }
     const revision = consentReady() ? `${auth.consent.version}\n${auth.consent.text}` : null;
-    if (revision !== consentRevision) {
+    if (latestStatus && revision !== consentRevision) {
       $("biometric-consent").checked = false;
       $("photo-consent").checked = false;
+      $("observation-consent").checked = false;
       consentRevision = revision;
     }
-    const hasParticipant = console ? Boolean(enrollmentTarget) : signedIn;
-    const flowStep = !hasParticipant ? "account" : !consentReady() || !$("biometric-consent").checked
+    const hasParticipant = console ? identifying ? sessionReady : Boolean(enrollmentTarget) : signedIn;
+    const flowStep = !hasParticipant ? "account" : identifying ? busy ? "busy" : "ready" : !consentReady() || !$("biometric-consent").checked
       ? "consent" : busy ? "busy" : "ready";
     document.body.dataset.flowStep = flowStep;
     for (const item of document.querySelectorAll(".journey-step[data-step]")) {
@@ -444,50 +801,64 @@
     $("biometric-consent").disabled = !enabled || !hasParticipant || !consentReady() || busy;
     $("photo-consent").disabled = !enabled || !hasParticipant || !consentReady() || busy;
     renderConsolePicker(busy);
-    $("enrollment-target").hidden = !enrollmentTarget;
+    $("enrollment-target").hidden = identifying || !enrollmentTarget;
     $("enrollment-target-label").textContent = console ? "선택한 계정" : "지금 얼굴을 등록할 사람";
     $("enrollment-target-name").textContent = enrollmentTarget?.display_name || enrollmentTarget?.account_id || "";
     $("enrollment-target-id").textContent = enrollmentTarget?.account_id || "";
     $("enrollment-target-note").textContent = console && enrollmentTarget?.face_status === "active"
-      ? "바로 인증할 수 있어요. 다시 등록하면 기존 얼굴과 사진을 새 촬영으로 바꿔요. 사진은 동의한 경우에만 저장해요."
+      ? "다시 등록하면 기존 얼굴과 사진을 새 촬영으로 바꿔요. 사진은 동의한 경우에만 저장해요."
       : enrollmentTarget && needsReEnrollment(enrollmentTarget)
       ? "기존 얼굴과 사진을 새 촬영으로 바꿔요. 사진 저장에 동의하지 않으면 새 사진은 저장하지 않아요. 본인이 안내를 읽고 동의해 주세요."
       : "등록할 본인이 안내를 읽고 동의한 뒤, 카메라 앞에 혼자 서 주세요.";
     $("clear-enrollment-target").disabled = busy;
     $("start-enroll").textContent = enrollmentTarget && needsReEnrollment(enrollmentTarget) ? "얼굴 다시 등록" : "얼굴 등록";
     $("start-enroll").disabled = !canStart();
-    $("start-authenticate").hidden = !console && Boolean(enrollmentTarget);
-    $("start-authenticate").disabled = !canStart() || (console && enrollmentTarget?.face_status !== "active");
-    $("retry-operation").disabled = !(lastOperationKind === "observe" ? canObserve() : canStart());
-    $("observation-panel").hidden = !enabled;
+    $("start-authenticate").hidden = Boolean(enrollmentTarget) && (!console || enrollmentIntent);
+    $("start-authenticate").disabled = identifying ? !canIdentify() : !canStart("authenticate") || (console && enrollmentTarget?.face_status !== "active");
+    $("stop-identification").hidden = true;
+    $("retry-operation").disabled = !(lastOperationKind === "observe" ? canObserve() : canStart(lastOperationKind));
+    observationAvailable = observationAvailable || enabled;
+    $("observation-panel").hidden = !observationAvailable;
     for (const control of $("observation-form").elements) control.disabled = !enabled || busy;
     const attack = $("observation-kind").value !== "live";
     $("observation-instrument").disabled = !enabled || busy || !attack;
     $("observation-instrument").required = attack;
-    $("start-observation").disabled = !canObserve();
+    renderObservationPrerequisites(busy);
     const observationMode = $("observation-mode").value;
     $("observation-mode-description").textContent = (observationModes[observationMode] || observationModes.diagnostic).description;
+    $("observation-capture-summary").textContent = `이번 수집 · ${["observation-kind", "observation-mode", "observation-split"]
+      .map(id => $(id).selectedOptions[0]?.textContent || "").join(" · ")}`;
+    const diagnosticTest = observationMode === "diagnostic" && $("observation-split").value === "test";
+    $("observation-test-warning").hidden = !diagnosticTest;
+    $("start-observation").setAttribute("aria-describedby", ["observation-capture-summary",
+      diagnosticTest ? "observation-test-warning" : null, "observation-blocker", "observation-feedback"].filter(Boolean).join(" "));
     $("observation-note").textContent = !auth.capture_ready ? "센서와 분석 서비스의 준비가 완료되면 표본을 수집할 수 있습니다."
-      : `${console ? "계정 선택" : "계정 로그인"}과 생체정보 처리 동의가 필요합니다. ${observationMode === "enroll" ? "카메라에서 50~80cm 거리를 유지하고 9방향 촬영 안내에 따라 천천히 움직여 주세요." : "정면을 바라보고 카메라에서 50~80cm 거리를 유지해 주세요."}`;
+      : `${observationMode === "enroll" ? "카메라에서 50~80cm 거리를 유지하고 9방향 촬영 안내에 따라 천천히 움직여 주세요." : "대상을 카메라에서 50~80cm 거리에 정면으로 보여 주세요."} ${auth.pad_candidate_available === true ? "PAD 수치 측정이 준비됐어요." : "현재 기존 판별 점수만 수집할 수 있어요."} ${auth.pad_enabled === false ? "인증의 위조 방지 검사는 꺼져 있어요." : "표본 수집은 인증 결과에 영향을 주지 않아요."}`;
     $("cancel-operation").disabled = authBusy || cancelRequested || currentOperation?.state === "processing";
     $("cancel-operation").textContent = cancelRequested ? "취소 확인 중…"
       : currentOperation?.state === "processing" ? "서버 처리 중" : "촬영 취소";
     $("action-note").textContent = !enabled ? "현재 화면은 센서 확인용이며 얼굴 등록·인증은 진행하지 않습니다."
       : operationUncertain ? "요청을 확인하고 있어요. 잠시만 기다려 주세요."
       : activeOperation() ? "카메라 안내를 따라 주세요. 결과가 나오면 알려드릴게요."
-      : !hasParticipant ? console ? "계정을 선택하거나 새 계정을 추가해 주세요." : "내 계정으로 로그인하면 시작할 수 있어요."
-      : !auth.ready ? "위 준비 항목이 모두 해결되면 등록·인증을 사용할 수 있습니다."
+      : identificationArmed ? "10초 동안 등록된 얼굴을 기다려요. 언제든 대기를 중지할 수 있어요."
+      : identifying && !identificationGallery().length ? "계정 관리에서 얼굴을 등록하고 활성화해 주세요."
+      : !hasParticipant ? console ? "등록할 계정을 선택해 주세요." : "내 계정으로 로그인하면 시작할 수 있어요."
+      : !(identifying ? auth.ready : auth.enrollment_ready ?? auth.ready) ? "위 준비 항목이 해결되면 촬영을 시작할 수 있어요."
+      : identifying ? "인증을 시작하면 10초 동안 가장 크게 보이는 얼굴로 확인해요."
       : !$("biometric-consent").checked ? "안내를 읽고 동의하면 준비 끝이에요."
       : "등록은 혼자, 인증은 가장 크게 보이는 얼굴로 진행해요.";
     renderAccountManagement();
     renderEnrollment();
-    if (console && isAdmin() && !accountsLoading && Date.now() - accountsFetchedAt > 5000 && !busy) void loadAccounts();
+    renderIdentification();
+    if (console && isAdmin() && !accountsLoading && Date.now() - accountsFetchedAt > 5000
+      && !authBusy && !activeOperation() && !operationUncertain) void loadAccounts();
     if (sessionReady && auth.operation_id && auth.operation_id !== dismissedOperationId && !operationId && !pendingRequestId) {
       operationId = String(auth.operation_id);
       operationUncertain = true;
       renderAuth();
       void pollOperation();
     }
+    consumePendingPadLink();
   }
 
   function isAdmin() {
@@ -497,7 +868,7 @@
   }
 
   function canManage() {
-    return isAdmin() && !authBusy && !activeOperation() && !operationUncertain;
+    return isAdmin() && !identificationArmed && !authBusy && !activeOperation() && !operationUncertain;
   }
 
   function needsReEnrollment(account) {
@@ -509,9 +880,12 @@
   }
 
   function selectParticipant(account) {
+    operationGeneration += 1;
     enrollmentTarget = account ? { ...account } : null;
     $("biometric-consent").checked = false;
     $("photo-consent").checked = false;
+    $("observation-consent").checked = false;
+    $("observation-feedback").hidden = true;
     dismissedOperationId = operationId || dismissedOperationId;
     currentOperation = null;
     operationId = null;
@@ -522,7 +896,7 @@
 
   function renderConsolePicker(busy) {
     const enabled = consoleMode();
-    $("console-account-picker").hidden = !enabled;
+    $("console-account-picker").hidden = !enabled || !enrollmentIntent;
     if (!enabled) return;
     const choices = managedAccounts.filter((account) => account.enabled !== false);
     const key = JSON.stringify([choices.map((account) => [account.account_id, account.display_name, account.face_status]), enrollmentTarget?.account_id]);
@@ -543,9 +917,58 @@
     $("demo-account-note").textContent = !accountsLoaded ? "계정 목록을 불러오고 있어요."
       : !accountsReady ? "계정 서비스 연결을 확인하고 있어요."
       : !choices.length ? "사용할 계정을 추가하거나, 계정 관리에서 활성화해 주세요."
-      : !enrollmentTarget ? "등록하거나 인증할 사람을 선택해 주세요."
-      : enrollmentTarget.face_status === "active" ? "등록된 얼굴로 일치 여부를 확인할 수 있어요."
+      : !enrollmentTarget ? "얼굴을 등록할 사람을 선택해 주세요."
+      : enrollmentTarget.face_status === "active" ? "선택한 계정의 얼굴을 다시 등록할 수 있어요."
       : "얼굴을 먼저 등록하면 인증을 체험할 수 있어요.";
+  }
+
+  function renderObservationPrerequisites(busy) {
+    const auth = authState();
+    const console = consoleMode();
+    $("observation-account-picker").hidden = !console;
+    $("observation-account-status").hidden = console || auth.account?.authenticated !== true;
+    $("observation-account-status").textContent = auth.account?.authenticated === true
+      ? `선택한 계정: ${auth.account.display_name || auth.account.account_id}` : "";
+    $("observation-account-help").hidden = !auth.enabled || (console ? Boolean(managedAccounts.filter(a => a.enabled !== false).length)
+      : auth.account?.authenticated === true && !enrollmentTarget);
+    $("observation-account-help").textContent = console ? "계정 추가·관리로 이동" : "계정 선택·로그인으로 이동";
+    if (console) {
+      const choices = managedAccounts.filter(account => account.enabled !== false);
+      const key = JSON.stringify([choices.map(account => [account.account_id, account.display_name]), enrollmentTarget?.account_id]);
+      const select = $("observation-account");
+      if (key !== observationPickerKey) {
+        observationPickerKey = key;
+        select.replaceChildren(new Option("계정을 선택해 주세요", ""));
+        for (const account of choices) {
+          const name = account.display_name || account.account_id;
+          const duplicateName = choices.some(other => other.account_id !== account.account_id
+            && (other.display_name || other.account_id) === name);
+          select.append(new Option(`${name}${duplicateName ? ` · ${account.account_id}` : ""}`, account.account_id));
+        }
+        select.value = enrollmentTarget?.account_id || "";
+      }
+      select.disabled = !auth.enabled || busy || !accountsReady || !choices.length;
+      $("observation-account-note").textContent = !accountsReady ? "계정 목록을 불러오고 있어요."
+        : !choices.length ? "먼저 계정을 추가하거나 계정 관리에서 활성화해 주세요."
+        : "얼굴 등록 여부와 관계없이 활성 계정을 선택할 수 있어요. 대상 코드는 아래에 별도로 입력해 주세요.";
+    }
+    $("observation-consent-description").textContent = consentReady() ? auth.consent.text : "동의 안내를 불러오고 있어요.";
+    $("observation-consent-version").textContent = consentReady() ? `안내 버전 ${auth.consent.version}` : "";
+    $("observation-consent").disabled = !auth.enabled || busy || !participantReady() || !consentReady();
+    for (const [id, label, example] of [["observation-subject", "대상 코드", "subject-001"],
+      ["observation-instrument", "공격 매체 코드", "phone-001 또는 print-001"]]) {
+      const field = $(id);
+      const invalid = !field.disabled && field.value !== "" && !studyCodePattern.test(field.value);
+      field.setAttribute("aria-invalid", String(invalid));
+      $(id + "-note").dataset.invalid = String(invalid);
+      $(id + "-note").textContent = invalid ? `${label}에 공백을 사용할 수 없어요. 영문·숫자·점·밑줄·하이픈으로 입력해 주세요. 예: ${example}`
+        : id === "observation-subject" ? "이름 대신 subject-001처럼 익명 코드를 입력해 주세요. 공백은 사용할 수 없어요."
+        : "인쇄 사진은 print-001, 휴대폰은 phone-001처럼 구분해 주세요. 공백은 사용할 수 없어요.";
+    }
+    const blocker = observationBlocker();
+    $("start-observation").disabled = Boolean(blocker);
+    $("observation-blocker").textContent = blocker || "준비됐어요. 버튼을 누르면 수치 표본을 수집해요.";
+    $("observation-blocker").dataset.ready = String(!blocker);
   }
 
   function accountFeedback(message, tone = "warning", id = "accounts-feedback") {
@@ -555,7 +978,18 @@
   }
 
   function resetAccountManagement() {
-    mainView = "live";
+    operationGeneration += 1;
+    identificationArmed = false;
+    identificationRun += 1;
+    identificationOperationRun = null;
+    identificationResultUntil = 0;
+    clearTimeout(identificationDeadlineTimer);
+    identificationDeadlineTimer = null;
+    identificationCandidate = null;
+    enrollmentIntent = false;
+    $("observation-consent").checked = false;
+    observationPickerKey = null;
+    mainView = mainView === "pad" ? "pad" : "live";
     managedAccounts = [];
     accountsLoaded = false;
     accountsReady = false;
@@ -575,16 +1009,56 @@
     $("new-account-password").value = "";
   }
 
-  function setMainView(view) {
+  function setMainView(view, enrolling = false) {
+    if (identificationArmed) return;
     if (view === "accounts" && !canManage()) return;
-    mainView = view === "accounts" ? "accounts" : "live";
-    renderAccountManagement();
-    renderEnrollment();
+    mainView = ["accounts", "pad"].includes(view) ? view : "live";
+    enrollmentIntent = mainView === "live" && enrolling;
+    renderAuth();
     if (mainView === "accounts") {
       $("accounts-heading").focus({ preventScroll: true });
       void loadAccounts();
     }
     window.scrollTo({ top: 0, behavior: "instant" });
+  }
+
+  function updatePadNavigation() {
+    $("nav-pad").setAttribute("aria-expanded", String(mainView === "pad"));
+  }
+
+  function consumePendingPadLink() {
+    if (!padLinkPending || authState().enabled !== true) return;
+    // A restored server operation may already be complete. Resolve it before
+    // consuming navigation; genuinely active captures still reject the preset.
+    if (operationUncertain && operationId && !currentOperation && !pendingRequestId && !authBusy) return;
+    const preset = padLinkPresets[padLinkPending];
+    padLinkPending = null;
+    openPadCollection(preset);
+  }
+
+  function applyObservationPreset(preset) {
+    if (authState().enabled !== true || authBusy || activeOperation() || operationUncertain) return;
+    if (!["auth", "enroll", "calibration-auth", "calibration-enroll"].includes(preset)
+      && !Object.hasOwn(explicitTestKinds, preset)) return;
+    const calibration = preset.startsWith("calibration-");
+    const mode = preset.endsWith("enroll") ? "enroll" : "auth";
+    $("observation-mode").value = mode;
+    $("observation-split").value = calibration ? "calibration" : "test";
+    if (Object.hasOwn(explicitTestKinds, preset)) $("observation-kind").value = explicitTestKinds[preset];
+    else if (calibration || mode === "enroll") $("observation-kind").value = "live";
+    $("observation-feedback").hidden = true;
+    renderAuth();
+  }
+
+  function openPadCollection(preset = null) {
+    if (authState().enabled !== true || authBusy || activeOperation() || operationUncertain) return;
+    if (preset) applyObservationPreset(preset);
+    setMainView("pad");
+    $("observation-panel").open = true;
+    updatePadNavigation();
+    requestAnimationFrame(() => {
+      $("pad-page-heading").focus({ preventScroll: true });
+    });
   }
 
   function dateLabel(value) {
@@ -689,15 +1163,27 @@
     const admin = isAdmin();
     const busy = !canManage();
     $("main-navigation").hidden = !admin;
-    if (!admin || activeOperation() || operationUncertain) mainView = "live";
+    if (!admin && mainView === "accounts") mainView = "live";
+    if (activeOperation() || operationUncertain) mainView = (currentOperation?.kind || lastOperationKind) === "observe" ? "pad" : "live";
     const managing = admin && mainView === "accounts";
-    document.body.dataset.mainView = managing ? "accounts" : "live";
+    const studying = mainView === "pad";
+    document.body.dataset.mainView = mainView;
     $("accounts-page").hidden = !managing;
-    $("live-intro").hidden = managing;
-    $("live-workspace").hidden = managing;
-    $("live-advanced").hidden = managing;
+    $("live-intro").hidden = managing || studying;
+    $("live-workspace").hidden = managing || studying;
+    $("live-advanced").hidden = managing || studying;
+    $("pad-page").hidden = !studying;
+    const preview = $("camera-preview-card");
+    if (studying && preview.parentElement !== $("pad-preview-slot")) $("pad-preview-slot").append(preview);
+    else if (!studying && $("preview-home").nextElementSibling !== preview) $("preview-home").after(preview);
+    if (currentOperation?.kind === "observe" && !activeOperation()) {
+      $("operation-panel").hidden = !studying || currentOperation.id === dismissedOperationId;
+    }
     $("nav-accounts").disabled = busy;
-    for (const [id, active] of [["nav-live", !managing], ["nav-accounts", managing]]) {
+    $("nav-pad").disabled = authState().enabled !== true || identificationArmed || authBusy || Boolean(activeOperation()) || operationUncertain;
+    $("nav-live").disabled = identificationArmed || authBusy || Boolean(activeOperation()) || operationUncertain;
+    updatePadNavigation();
+    for (const [id, active] of [["nav-live", !managing && !studying], ["nav-accounts", managing], ["nav-pad", studying]]) {
       if (active) $(id).setAttribute("aria-current", "page");
       else $(id).removeAttribute("aria-current");
     }
@@ -784,7 +1270,10 @@
       if (enrollmentTarget) {
         const updated = managedAccounts.find((account) => account.account_id === enrollmentTarget.account_id);
         if (updated && updated.enabled !== false) enrollmentTarget = updated;
-        else if (consoleMode()) selectParticipant(null);
+        else if (consoleMode()) {
+          if (identificationView()) enrollmentTarget = null;
+          else selectParticipant(null);
+        }
       }
     } catch (error) {
       if (accountsOwner !== owner) return;
@@ -855,7 +1344,7 @@
     const account = managedAccount();
     if (!account || !canManage() || !accountsReady || account.enabled === false || account.face_status === "unknown") return;
     selectParticipant(account);
-    setMainView("live");
+    setMainView("live", true);
     renderAuth();
     $("auth-heading").focus({ preventScroll: true });
     $("enrollment-target").scrollIntoView({ block: "nearest", behavior: "instant" });
@@ -912,15 +1401,25 @@
     for (const [sector, direction] of enrollmentDirections.entries()) {
       for (let index = 0; index < 9; index += 1) {
         const angle = (-90 + sector * 45 + (index - 4) * 5) * Math.PI / 180;
-        const tick = document.createElementNS(SVG_NS, "line");
+        const tick = document.createElementNS(SVG_NS, "g");
         tick.classList.add("enrollment-tick");
         tick.dataset.direction = direction;
         tick.dataset.index = String(index);
         tick.dataset.state = "waiting";
-        for (const [attribute, value] of Object.entries({
-          x1: 220 + 195 * Math.cos(angle), y1: 220 + 195 * Math.sin(angle),
-          x2: 220 + 210 * Math.cos(angle), y2: 220 + 210 * Math.sin(angle),
-        })) tick.setAttribute(attribute, value.toFixed(3));
+        // Every mark has the same two slots: the inner slot is the first
+        // accepted sample; the outer slot is the second. Partial capture
+        // never looks like a completed section of the circle.
+        for (const [step, [inner, outer]] of [[188, 197], [205, 216]].entries()) {
+          const segment = document.createElementNS(SVG_NS, "line");
+          segment.classList.add("enrollment-tick-step");
+          segment.dataset.step = String(step + 1);
+          segment.dataset.state = "waiting";
+          for (const [attribute, value] of Object.entries({
+            x1: 220 + inner * Math.cos(angle), y1: 220 + inner * Math.sin(angle),
+            x2: 220 + outer * Math.cos(angle), y2: 220 + outer * Math.sin(angle),
+          })) segment.setAttribute(attribute, value.toFixed(3));
+          tick.append(segment);
+        }
         ticks.append(tick);
       }
     }
@@ -937,7 +1436,9 @@
     if (age >= MAX_GUIDE_AGE_MS) return { state: "stale", label: "얼굴 방향을 다시 확인하고 있어요", prompt: "움직임을 잠시 멈춰 주세요. 얼굴 방향을 다시 확인하고 있어요." };
     if (guide.quality_ok !== true) {
       const labels = { no_face: "얼굴을 찾고 있어요", multi_face: "한 분씩 촬영해 주세요", small_face: "조금 가까이 와 주세요", blur: "움직임을 잠시 멈춰 주세요", exposure: "얼굴 밝기를 확인해 주세요", depth_invalid: "얼굴 거리를 확인하고 있어요", ir_invalid: "얼굴 영상을 확인하고 있어요" };
-      return { state: "blocked", label: labels[guide.reason_code] || "촬영 상태를 확인하고 있어요", prompt: guide.prompt || "정면을 바라보고 잠시 기다려 주세요." };
+      const depthHints = { pad_depth_check: "얼굴 깊이를 다시 확인해 주세요", pad_depth_unmeasurable: "얼굴 깊이를 확인하고 있어요", pad_validation_required: "깊이 검사 준비를 기다리고 있어요" };
+      const depthHint = depthHints[guide.reason_code];
+      return { state: "blocked", label: depthHint ? guide.prompt || depthHint : labels[guide.reason_code] || "촬영 상태를 확인하고 있어요", prompt: guide.prompt || depthHint || "정면을 바라보고 잠시 기다려 주세요." };
     }
     if (guide.motion?.valid !== true || ![guide.motion?.yaw, guide.motion?.pitch, guide.motion?.azimuth, guide.motion?.radius].every(finite)) {
       return { state: "pose", label: "얼굴 방향을 다시 맞춰 주세요", prompt: guide.prompt || "정면에서 고개를 조금씩 움직여 주세요." };
@@ -945,10 +1446,51 @@
     return { state: "tracking", label: "고개 움직임을 따라가고 있어요", prompt: guide.prompt };
   }
 
+  function enrollmentResultCopy(operation) {
+    if (operation?.kind !== "enroll" || activeStates.has(operation.state)) return null;
+    const result = operation.result || {};
+    if (operation.state === "succeeded" && result.status === "active") {
+      return { heading: "내 얼굴, 등록 완료!", detail: result.photo_saved === false
+        ? "얼굴은 등록했지만 사진을 갱신하지 못했어요. 계정 관리에서 사진을 확인해 주세요."
+        : "다음부터는 얼굴로 간편하게 확인해요.", label: "등록 완료", tone: "good", finish: "등록 완료", retry: false };
+    }
+    if (operation.state === "cancelled") {
+      return { heading: "촬영을 취소했어요", detail: "준비되면 다시 촬영할 수 있어요.", label: "촬영 취소", tone: "waiting", finish: "촬영 취소", retry: true };
+    }
+    if (result.status === "pending_review") {
+      return { heading: "등록 확인이 필요해요", detail: "등록 정보를 운영자가 확인해야 해요. 같은 얼굴을 반복해서 등록하지 않아도 돼요.", label: "확인 대기", tone: "warning", finish: "확인 대기", retry: false };
+    }
+    // The public "denied" reason also covers integrity and assertion failures.
+    // Only an explicit server diagnosis can identify a failed depth check.
+    if (operation.state === "rejected" && result.status === "rejected"
+      && result.reason === "denied" && result.enrollment_feedback === "depth_check") {
+      return { heading: "깊이 검사를 통과하지 못했어요", detail: "카메라에서 50~80cm 떨어져 얼굴 전체가 보이게 한 뒤, 고개를 천천히 돌려 다시 등록해 주세요.", label: "깊이 검사 확인 필요", tone: "warning", finish: "깊이 검사 확인", retry: true };
+    }
+    const reasons = {
+      capture_incomplete: ["촬영 시간이 초과됐어요", [operation.message,
+        operation.guide?.done !== true ? operation.guide?.prompt : ""].filter(part => typeof part === "string" && part.trim()).join(" ")
+        || "얼굴 전체가 보이게 서서, 안내에 따라 고개를 천천히 돌려 다시 촬영해 주세요."],
+      capture_session_expired: ["촬영 시간이 만료됐어요", "새로 시작한 뒤 안내에 따라 얼굴을 다시 촬영해 주세요."],
+      session: ["촬영 세션을 다시 시작해 주세요", "이번 촬영 세션을 확인하지 못했어요. 새로 시작해 주세요."],
+      camera_unavailable: ["카메라 연결을 확인해 주세요", "카메라 연결이 끊겼어요. 영상이 다시 보이면 등록을 시작해 주세요."],
+      calib_changed: ["카메라 설정이 변경됐어요", "촬영 중 센서 설정이 바뀌었어요. 준비 상태를 확인하고 다시 시작해 주세요."],
+      readiness_changed: ["서비스 준비 상태를 확인해 주세요", "촬영 중 카메라 또는 서버 상태가 바뀌었어요. 준비되면 다시 시작해 주세요."],
+      already_enrolled: ["이미 얼굴이 등록된 계정이에요", "계정 관리에서 등록 상태를 확인하고, 필요한 경우 다시 등록해 주세요."],
+      coverage: ["얼굴 방향을 더 촬영해야 해요", "화면의 안내에 따라 정면과 여러 방향을 천천히 촬영해 주세요."],
+      retry: ["촬영 상태를 다시 확인해 주세요", "한 분만 얼굴 전체가 보이게 서서, 안내에 따라 천천히 다시 촬영해 주세요."],
+      consent: ["등록 동의를 확인해 주세요", "등록 안내와 동의 정보를 확인한 뒤 다시 시작해 주세요."],
+      approval_scope_mismatch: ["등록 결과를 확인하지 못했어요", "이번 촬영의 승인 결과를 확인할 수 없어요. 서비스 상태를 확인해 주세요."],
+      service_error: ["서버 처리 결과를 확인하지 못했어요", "서비스 연결과 준비 상태를 확인한 뒤 다시 시도해 주세요."],
+    };
+    const [heading, detail] = reasons[result.reason] || ["얼굴 등록을 완료하지 못했어요", "등록 요청이 승인되지 않았어요. 이 결과만으로는 구체적인 원인을 확인할 수 없어요."];
+    return { heading, detail, label: "등록되지 않음", tone: operation.state === "error" ? "error" : "warning", finish: "등록되지 않음", retry: result.reason !== "already_enrolled" };
+  }
+
   function renderEnrollment() {
     const operation = currentOperation;
     const panel = $("operation-panel");
-    const enabled = mainView === "live" && operation?.kind === "enroll" && !panel.hidden;
+    const enabled = mainView === "live" && (!consoleMode() || enrollmentIntent)
+      && operation?.kind === "enroll" && !panel.hidden;
     document.body.dataset.enrollmentMode = String(Boolean(enabled));
     if (enabled !== enrollmentMode) {
       enrollmentMode = enabled;
@@ -964,7 +1506,14 @@
         schedulePreview();
       }
     }
-    for (const id of ["enrollment-header", "enrollment-camera-disc", "enrollment-ring", "enrollment-operation-slot", "enrollment-mode-note"]) {
+    if (!enabled) {
+      if (mainView === "pad" && operation?.kind === "observe") {
+        if (panel.parentElement !== $("pad-operation-slot")) $("pad-operation-slot").append(panel);
+      } else if ($("operation-home").nextElementSibling !== panel) {
+        $("operation-home").after(panel);
+      }
+    }
+    for (const id of ["enrollment-header", "enrollment-camera-disc", "enrollment-ring", "enrollment-ring-legend", "enrollment-operation-slot", "enrollment-mode-note"]) {
       // Use the attribute for both HTML and SVG; SVG .hidden is not reflected.
       $(id).toggleAttribute("hidden", !enabled);
     }
@@ -986,6 +1535,7 @@
     const tracking = operation.state === "capturing" && feedback.state === "tracking";
     const finished = !activeStates.has(operation.state);
     const success = operation.state === "succeeded" && operation.result?.status === "active";
+    const resultCopy = enrollmentResultCopy(operation);
     document.body.dataset.enrollmentTracking = String(tracking);
     document.body.dataset.enrollmentPhase = operation.state;
     document.body.dataset.enrollmentFeedback = feedback.state;
@@ -993,7 +1543,7 @@
     $("enrollment-guidance").hidden = !activeStates.has(operation.state);
     $("enrollment-finish").hidden = !finished;
     $("enrollment-finish").dataset.success = String(success);
-    $("enrollment-finish-label").textContent = success ? "등록 완료" : operation.state === "cancelled" ? "촬영 취소" : "다시 확인해 주세요";
+    $("enrollment-finish-label").textContent = resultCopy?.finish || "등록 결과 확인";
     $("enrollment-pose-marker").toggleAttribute("hidden", !tracking);
     const poseSequence = `${operation.id}:${guide.sample_seq}`;
     if (tracking && poseSequence !== enrollmentPoseSequence) {
@@ -1014,12 +1564,16 @@
     const values = {};
     let capturedFraction = 0;
     let completeDirections = 0;
+    let capturedFrames = 0;
+    let requiredFrames = 0;
     for (const key of ["C", ...enrollmentDirections]) {
       const pair = coverage[key];
       const need = Array.isArray(pair) && finite(pair[1]) && pair[1] > 0 ? pair[1] : 0;
       const have = need && finite(pair[0]) ? Math.max(0, Math.min(pair[0], need)) : 0;
       values[key] = { have, need, fraction: need ? have / need : 0, done: need > 0 && have >= need };
       capturedFraction += values[key].fraction;
+      capturedFrames += have;
+      requiredFrames += need || 2;
       if (values[key].done) completeDirections += 1;
     }
     // Only accepted coverage fills ticks. A target or ring_frac never counts as captured data.
@@ -1028,13 +1582,19 @@
       enrollmentRingKey = ringKey;
       for (const tick of $("enrollment-ticks").children) {
         const value = values[tick.dataset.direction];
-        tick.dataset.state = Number(tick.dataset.index) < Math.floor(value.fraction * 9) ? "done"
-          : tracking && tick.dataset.direction === direction ? "current" : "waiting";
+        const current = tracking && tick.dataset.direction === direction;
+        tick.dataset.state = value.done ? "done" : value.have > 0 ? "partial" : current ? "current" : "waiting";
+        for (const segment of tick.children) {
+          // The two slots also remain honest if a different sample count is
+          // supplied: only reaching each half can fill its corresponding slot.
+          segment.dataset.state = value.fraction >= Number(segment.dataset.step) / 2 ? "done"
+            : current ? "current" : "waiting";
+        }
       }
       const center = $("enrollment-center-status");
-      center.dataset.state = values.C.done ? "done" : tracking && direction === "C" ? "current" : "waiting";
+      center.dataset.state = values.C.done ? "done" : values.C.have > 0 ? "partial" : tracking && direction === "C" ? "current" : "waiting";
       center.querySelector(".center-status-icon").textContent = values.C.done ? "✓" : "◎";
-      $("enrollment-center-label").textContent = values.C.done ? "정면 완료" : "정면";
+      $("enrollment-center-label").textContent = values.C.done ? "정면 완료" : `정면 ${values.C.need ? `${values.C.have}/${values.C.need}` : "대기"}`;
       const marker = $("enrollment-target-marker");
       const hideTarget = !direction || direction === "C" || !tracking || values[direction].done;
       marker.hidden = hideTarget;
@@ -1045,21 +1605,27 @@
     // Missing direction data remains incomplete, even if every reported bin is full.
     const percentage = Math.floor(capturedFraction * 100 / 9);
     $("enrollment-ring").setAttribute("aria-valuenow", String(percentage));
-    $("enrollment-ring").setAttribute("aria-valuetext", `${completeDirections} / 9개 방향 완료, 촬영 ${percentage}%`);
-    $("enrollment-coverage-count").textContent = `${completeDirections} / 9개 방향 완료 · ${percentage}%`;
+    $("enrollment-ring").setAttribute("aria-valuetext", `${completeDirections} / 9개 방향 완료, ${capturedFrames} / ${requiredFrames || 18}장 촬영, 안쪽 한 칸은 1회, 두 칸은 완료`);
+    $("enrollment-coverage-count").textContent = `${completeDirections} / 9개 방향 완료 · ${capturedFrames}/${requiredFrames || 18}장`;
+    const directionProgress = $("enrollment-direction-progress");
+    directionProgress.hidden = !direction || !activeStates.has(operation.state) || operation.state === "processing";
+    if (direction) {
+      const value = values[direction];
+      directionProgress.dataset.state = value.done ? "done" : value.have > 0 ? "partial" : "waiting";
+      const countText = `${enrollmentDirectionNames[direction]} ${value.have}/${value.need || 2}${value.done ? " · 완료" : value.have > 0 ? " · 한 번 더" : " · 촬영 대기"}`;
+      if ($("enrollment-direction-count").textContent !== countText) $("enrollment-direction-count").textContent = countText;
+    }
     $("enrollment-next-direction").textContent = operation.state === "processing" ? "촬영한 얼굴을 확인하고 있어요"
       : !tracking ? feedback.label
       : !direction ? "파란 점을 보며 천천히 움직여 주세요"
       : direction === "C" ? "먼저 정면을 바라봐 주세요" : `다음 촬영 방향 · ${enrollmentDirectionNames[direction]}`;
     $("enrollment-heading").textContent = operation.state === "processing" ? "내 얼굴을 확인하고 있어요"
-      : operation.state === "succeeded" && operation.result?.status === "active" ? "내 얼굴, 등록 완료!"
-      : operation.state === "cancelled" ? "촬영을 취소했어요"
-      : !activeStates.has(operation.state) ? "얼굴 등록을 다시 확인해 주세요"
+      : resultCopy ? resultCopy.heading
       : operation.state === "capturing" && !tracking ? feedback.label
       : values.C.done ? "고개를 천천히 움직여 주세요" : "얼굴을 원 안에 맞춰 주세요";
     $("enrollment-subheading").textContent = activeStates.has(operation.state)
-      ? operation.state === "processing" ? "촬영은 끝났어요. 결과를 잠시 기다려 주세요." : tracking ? "파란 점은 지금 내 고개 방향이에요." : "확인된 촬영 진행은 그대로 유지돼요."
-      : operation.state === "succeeded" && operation.result?.status === "active" ? "다음부터는 얼굴로 간편하게 확인해요." : "아래 안내와 결과를 확인해 주세요.";
+      ? operation.state === "processing" ? "촬영은 끝났어요. 결과를 잠시 기다려 주세요." : tracking ? "한 방향마다 두 칸이 채워지면 완료예요." : "확인된 촬영 진행은 그대로 유지돼요."
+      : resultCopy?.detail || "등록 결과를 확인해 주세요.";
     const connectionMessage = operation.state === "capturing" && ["connection", "camera", "stale"].includes(feedback.state) ? feedback.prompt : "";
     if ($("enrollment-connection-message").textContent !== connectionMessage) $("enrollment-connection-message").textContent = connectionMessage;
     $("enrollment-connection-message").hidden = !connectionMessage;
@@ -1067,17 +1633,46 @@
       if ($("operation-prompt").textContent !== feedback.prompt) $("operation-prompt").textContent = feedback.prompt;
       $("operation-description").textContent = guide.done === true ? "결과가 나오면 알려드릴게요." : "확인되면 촬영을 자동으로 이어가요.";
     }
-    $("enrollment-mode-note").textContent = `${(operation.pad_enabled ?? authState().pad_enabled) === false ? "위조 방지 검사 꺼짐 · " : ""}등록 사진은 동의한 경우에만 저장해요.\n불편하면 언제든 촬영을 취소할 수 있어요.`;
+    const enrollmentPadMode = operation.pad_mode ?? authState().pad_mode;
+    const enrollmentPadDisabled = (operation.enrollment_pad_enabled ?? authState().enrollment_pad_enabled) === false;
+    $("enrollment-mode-note").textContent = `${enrollmentPadDisabled ? "등록 시 PAD 검사 안 함 · " : (operation.pad_enabled ?? authState().pad_enabled) === false ? "위조 방지 검사 꺼짐 · " : enrollmentPadMode === "femto_geometry_experimental" ? "실험용 PAD 켜짐 · 실측 미검증 · " : enrollmentPadMode === "femto_geometry_pilot" ? "깊이 PAD 시험 적용 · 3D 가면 미검증 · " : ""}등록 사진은 동의한 경우에만 저장해요.\n불편하면 언제든 촬영을 취소할 수 있어요.`;
+  }
+
+  function observationDescription(result) {
+    const summary = result.candidate_summary;
+    const parts = [];
+    const features = summary?.features || {};
+    if (finite(features.depth_median_mm)) parts.push(`측정 거리 ${(features.depth_median_mm / 10).toFixed(1)}cm`);
+    if (finite(features.plane_residual_mm)) parts.push(`표면 굴곡 ${features.plane_residual_mm.toFixed(1)}mm`);
+    if (finite(features.nose_protrusion_mm)) parts.push(`코 부위 깊이 차 ${features.nose_protrusion_mm.toFixed(1)}mm`);
+    const reasons = Object.keys(summary?.reasons || {});
+    if (["capture_incomplete", "capture_session_expired"].includes(result.reason)) parts.push("촬영을 끝내지 못한 시도도 시험 횟수에 포함돼요");
+    else if (reasons.includes("no_face")) parts.push("얼굴이 보이지 않은 프레임이 있어요");
+    else if (reasons.includes("multi_face")) parts.push("한 번에 한 대상만 보여 주세요");
+    else if (summary && summary.valid_frames < summary.frames) parts.push("일부 프레임의 깊이·얼굴 위치를 측정하기 어려웠어요");
+    if (!summary) parts.push("기존 판별 점수만 기록했어요");
+    parts.push("측정이 안 된 경우도 1회로 기록돼요. 시험 중에는 임의로 다시 수집하지 말고 이 결과를 알려 주세요.");
+    parts.push("실제 사람 판정이나 인증 통과 결과가 아니에요. 원본 영상은 저장하지 않았어요.");
+    return parts.join(" · ");
   }
 
   function resultLabel(operation) {
     const result = operation.result || {};
+    const enrollmentCopy = enrollmentResultCopy(operation);
+    if (enrollmentCopy) return [enrollmentCopy.label, enrollmentCopy.heading, enrollmentCopy.tone];
     if (operation.state === "cancelled") return ["촬영 취소", "촬영이 취소되었습니다.", "waiting"];
-    if (operation.kind === "observe" && result.recorded === true && operation.state === "succeeded") {
-      return ["표본 기록 완료", "검증용 표본을 기록했습니다.", "good"];
+    if (operation.kind === "observe" && result.recorded === true && ["succeeded", "error"].includes(operation.state)) {
+      if (operation.state === "error") return ["시도 기록 완료", "촬영을 마치지 못한 결과도 1회로 기록했어요.", "good"];
+      const summary = result.candidate_summary;
+      if (summary && Number.isInteger(summary.frames) && Number.isInteger(summary.valid_frames)) {
+        return ["수치 기록 완료",
+          `이번 시도를 1회로 기록했어요. 측정 프레임 ${summary.valid_frames}/${summary.frames}개.`, "good"];
+      }
+      return ["표본 기록 완료", "이번 시도를 1회로 기록했어요.", "good"];
     }
-    if (operation.kind === "enroll" && result.status === "active" && operation.state === "succeeded") {
-      return ["등록 완료", "얼굴 등록이 완료되었습니다.", "good"];
+    if (operation.kind === "identify" && result.decision === "approved" && operation.state === "succeeded"
+      && result.matched_account_id && result.matched_display_name) {
+      return ["승인", "등록된 얼굴로 확인됐어요.", "good"];
     }
     if (result.status === "pending_review" || result.decision === "step_up") {
       return ["추가 확인 필요", result.status === "pending_review" ? "등록 정보를 운영자가 확인해야 합니다." : "추가 인증이 필요합니다.", "warning"];
@@ -1087,6 +1682,12 @@
       if (resultPadEnabled === false) {
         return ["얼굴 일치", "얼굴이 일치합니다. 위조 방지 검사는 꺼져 있습니다.", "good"];
       }
+      if ((result.pad_mode ?? operation.pad_mode ?? authState().pad_mode) === "femto_geometry_experimental") {
+        return ["얼굴 일치 · 실험용 검사 통과", "실험용 깊이 검사를 통과했어요. 수정된 PAD의 실측 성능은 아직 검증 전이에요.", "good"];
+      }
+      if ((result.pad_mode ?? operation.pad_mode ?? authState().pad_mode) === "femto_geometry_pilot") {
+        return ["얼굴 일치 · 깊이 검사 통과", "얼굴 일치와 시험용 깊이 검사를 통과했어요. 3D 가면은 검증하지 않았어요.", "good"];
+      }
       return ["인증 성공", "얼굴 인증이 완료되었습니다.", "good"];
     }
     if (operation.state === "rejected") return ["인증되지 않음", "요청이 승인되지 않았습니다.", "warning"];
@@ -1095,6 +1696,9 @@
 
   function renderOperation(operation, requestElapsed = 0) {
     if (!operation || typeof operation.id !== "string") return;
+    if (operationId && operation.id !== operationId) return;
+    // A delayed start/poll/cancel response cannot replace a settled result.
+    if (currentOperation?.id === operation.id && !activeStates.has(currentOperation.state)) return;
     if (pendingRequestId && operation.client_request_id !== pendingRequestId) {
       operationUncertain = true;
       feedback("새 요청의 상태를 확인하고 있습니다. 이전 작업 결과는 새 결과로 표시하지 않습니다.");
@@ -1111,7 +1715,30 @@
     operationUncertain = false;
     pendingRequestId = null;
     const active = activeStates.has(operation.state);
-    if ((operation.kind === "enroll" || consoleMode()) && operation.target_account_id && !enrollmentTarget
+    if (operation.kind === "enroll" && active) enrollmentIntent = true;
+    if (operation.kind === "identify") enrollmentIntent = false;
+    if (operation.kind === "identify") {
+      expireIdentification();
+      if (!active && identificationSettledId !== operation.id) {
+        identificationSettledId = operation.id;
+        identificationCandidate = null;
+        const result = operation.result || {};
+        const approved = identificationArmed && identificationOperationRun === identificationRun
+          && identificationRemainingMs() > 0 && operation.state === "succeeded" && result.decision === "approved"
+          && typeof result.matched_account_id === "string" && result.matched_account_id
+          && typeof result.matched_display_name === "string" && result.matched_display_name;
+        identificationResultUntil = approved ? performance.now() + IDENTIFICATION_SUCCESS_MS : 0;
+        if (approved) {
+          identificationArmed = false;
+          identificationStopped = false;
+          clearTimeout(identificationDeadlineTimer);
+          identificationDeadlineTimer = null;
+        } else if (identificationArmed) {
+          identificationNextAttemptAt = performance.now() + IDENTIFICATION_RETRY_MS;
+        }
+      }
+    }
+    if (operation.kind !== "identify" && (operation.kind === "enroll" || consoleMode()) && operation.target_account_id && !enrollmentTarget
       && operation.target_account_id !== authState().account?.account_id && isAdmin()) {
       enrollmentTarget = managedAccounts.find((account) => account.account_id === operation.target_account_id)
         || { account_id: operation.target_account_id, display_name: operation.target_display_name || operation.target_account_id, enabled: true };
@@ -1122,11 +1749,16 @@
     const observationLabel = observationModes[operation.observation_mode]?.label;
     const participantName = operation.target_display_name || enrollmentTarget?.display_name || "";
     $("operation-heading").textContent = operation.kind === "observe" ? `${observationLabel || "센서 검증"} · 표본 수집`
+      : operation.kind === "identify" ? "1:N 얼굴 확인"
       : `${participantName ? `${participantName}님 · ` : ""}${operation.kind === "enroll" ? "얼굴 등록" : "얼굴 인증"}`;
     const guide = operation.guide || {};
     const panel = $("operation-panel");
+    const observationRecorded = operation.kind === "observe" && operation.result?.recorded === true
+      && ["succeeded", "error"].includes(operation.state);
+    const enrollmentCopy = enrollmentResultCopy(operation);
     panel.dataset.state = active ? "busy" : operation.state === "cancelled" ? "cancelled"
-      : operation.state === "succeeded" && resultLabel(operation)[2] === "good" ? "success" : "error";
+      : operation.kind === "enroll" && operation.result?.status === "pending_review" ? "waiting"
+      : observationRecorded || (operation.state === "succeeded" && resultLabel(operation)[2] === "good") ? "success" : "error";
     panel.dataset.phase = operation.state;
     panel.dataset.kind = operation.kind;
     panel.dataset.direction = ["C", "U", "D", "L", "R", "UL", "UR", "DL", "DR"].includes(guide.current)
@@ -1150,8 +1782,8 @@
       badge("operation-state", label, tone);
       $("operation-prompt").textContent = prompt;
       $("operation-description").textContent = operation.kind === "observe" && operation.result?.recorded === true
-        ? "이 결과는 표본 수집 완료를 뜻합니다. 얼굴 인증이나 생체 판별의 검증 통과를 뜻하지 않습니다."
-        : operation.message || operation.result?.reason || "";
+        ? observationDescription(operation.result)
+        : enrollmentCopy ? enrollmentCopy.detail : operation.message || operation.result?.reason || "";
     }
     let collected = 0;
     let required = 0;
@@ -1180,7 +1812,7 @@
     }
     $("progress-caption").textContent = operation.state === "processing" ? "결과 확인 중" : "촬영 진행";
     $("cancel-operation").hidden = !active;
-    $("retry-operation").hidden = active || operation.state === "succeeded";
+    $("retry-operation").hidden = active || operation.state === "succeeded" || observationRecorded || enrollmentCopy?.retry === false;
     $("dismiss-operation").hidden = active;
     $("dismiss-operation").textContent = operation.kind === "enroll" && enrollmentTarget ? "계정 관리로" : "닫기";
     if (!active && operation.kind === "enroll" && isAdmin() && refreshedOperationId !== operation.id) {
@@ -1272,14 +1904,18 @@
   }
 
   async function startOperation(kind, extra = {}) {
-    if (!(kind === "observe" ? canObserve() : canStart()) || !["enroll", "authenticate", "observe"].includes(kind)) return;
+    if (kind === "identify") expireIdentification();
+    if (!["enroll", "authenticate", "observe", "identify"].includes(kind)
+      || !(kind === "identify" ? identificationArmed && canIdentify() : kind === "observe" ? canObserve() : canStart(kind))) return;
     if (!consoleMode() && enrollmentTarget && kind !== "enroll") return;
     if (consoleMode() && kind === "authenticate" && enrollmentTarget?.face_status !== "active") return;
-    const targetId = consoleMode() || kind === "enroll" ? enrollmentTarget?.account_id : null;
+    const targetId = kind !== "identify" && (consoleMode() || kind === "enroll") ? enrollmentTarget?.account_id : null;
     const enrollmentOptions = kind === "enroll" ? {
       photo_consent: $("photo-consent").checked,
       re_enroll: needsReEnrollment(enrollmentTarget),
     } : {};
+    const generation = ++operationGeneration;
+    if (kind === "identify") identificationOperationRun = identificationRun;
     authBusy = true;
     const random = crypto.getRandomValues(new Uint8Array(16));
     random[6] = (random[6] & 15) | 64;
@@ -1291,34 +1927,56 @@
     $("operation-panel").hidden = true;
     dismissedOperationId = null;
     lastOperationKind = kind;
-    feedback("촬영 시작을 요청하고 있습니다.", "waiting");
+    feedback(kind === "identify" ? "" : "촬영 시작을 요청하고 있습니다.", "waiting");
     renderAuth();
     try {
-      const operation = await authRequest(targetId && kind !== "observe" ? `/api/auth/accounts/${encodeURIComponent(targetId)}/${kind}` : `/api/auth/${kind}`, {
-        consent: { version: authState().consent.version, agreed: true }, guide_mode: kind === "enroll" ? "circle" : "steps",
-        client_request_id: pendingRequestId, ...(consoleMode() && kind === "observe" ? { target_account_id: targetId } : {}), ...enrollmentOptions, ...extra,
+      const remainingMs = kind === "identify" ? Math.floor(identificationRemainingMs()) : null;
+      if (kind === "identify" && remainingMs < 1) {
+        pendingRequestId = null;
+        stopIdentification();
+        return;
+      }
+      const body = kind === "identify" ? {
+        start: true, client_request_id: pendingRequestId,
+        timeout_ms: remainingMs,
+      }
+        : { consent: { version: authState().consent.version, agreed: true }, client_request_id: pendingRequestId };
+      if (kind !== "identify") Object.assign(body, {
+        guide_mode: kind === "enroll" ? "circle" : "steps",
+        ...(consoleMode() && kind === "observe" ? { target_account_id: targetId } : {}), ...enrollmentOptions, ...extra,
+        ...(kind === "observe" ? { photo_consent: false } : {}),
       });
+      const operation = await authRequest(targetId && kind !== "observe" ? `/api/auth/accounts/${encodeURIComponent(targetId)}/${kind}` : `/api/auth/${kind}`, body);
+      if (generation !== operationGeneration) return;
       if (!operation?.id) throw new Error("Operation identifier missing");
       feedback("");
       renderOperation(operation);
-      $("operation-panel").tabIndex = -1;
-      $("operation-panel").focus({ preventScroll: true });
-      (kind === "enroll" ? $("enrollment-header") : $("operation-panel")).scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
-        block: kind === "enroll" ? "start" : "nearest",
-      });
+      if (kind !== "identify") {
+        $("operation-panel").tabIndex = -1;
+        $("operation-panel").focus({ preventScroll: true });
+        (kind === "enroll" ? $("enrollment-header") : kind === "observe" ? $("pad-preview-slot") : $("operation-panel")).scrollIntoView({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+          block: kind === "enroll" ? "start" : "nearest",
+        });
+      }
     } catch (error) {
+      if (generation !== operationGeneration || (currentOperation && !activeOperation())) return;
       feedback(error.status ? error.message : "시작 요청의 결과를 확인하고 있습니다. 버튼을 다시 누르지 않아도 됩니다.");
       if (!error.status || error.status === 409 || error.status >= 500) {
         operationUncertain = true;
         void pollOperation(true);
       } else {
         pendingRequestId = null;
+        if (kind === "identify") {
+          identificationCandidate = null;
+          identificationNextAttemptAt = performance.now() + IDENTIFICATION_RETRY_MS;
+        }
       }
       await pollStatus();
     } finally {
       authBusy = false;
       renderAuth();
+      if (generation === operationGeneration && kind === "identify" && identificationStopped && activeOperation()) void cancelOperation();
     }
   }
 
@@ -1326,6 +1984,7 @@
     if (operationBusy || document.hidden || !(consoleMode() ? authState().console_ready === true : authState().account?.authenticated === true)
       || (!force && !operationId && !operationUncertain)) return;
     operationBusy = true;
+    const generation = operationGeneration;
     lastOperationPollAt = performance.now();
     const controller = new AbortController();
     operationController = controller;
@@ -1334,8 +1993,9 @@
         : pendingRequestId ? `?client_request_id=${encodeURIComponent(pendingRequestId)}` : "";
       const operation = await authRequest(`/api/auth/operation${query}`,
         undefined, { controller, timeoutMs: 3500 });
-      if (document.hidden) return;
+      if (document.hidden || generation !== operationGeneration) return;
       if (operation === null) {
+        if (currentOperation && !activeOperation()) return;
         dismissedOperationId = authState().operation_id || dismissedOperationId;
         currentOperation = null;
         operationId = null;
@@ -1347,9 +2007,10 @@
         renderAuth();
       } else {
         renderOperation(operation, performance.now() - lastOperationPollAt);
+        if (operation.kind === "identify" && identificationStopped && activeOperation()) void cancelOperation();
       }
     } catch (error) {
-      if (!document.hidden) {
+      if (!document.hidden && generation === operationGeneration && !(currentOperation && !activeOperation())) {
         operationUncertain = true;
         feedback(error.status === 401 ? consoleMode() ? "페이지 연결을 갱신하고 있어요. 잠시만 기다려 주세요." : "계정 세션이 만료되었습니다. 다시 로그인해 주세요."
           : "작업 상태를 확인할 수 없습니다. 연결이 복구되면 결과를 다시 확인합니다.");
@@ -1363,15 +2024,19 @@
   }
 
   async function cancelOperation() {
-    if (!operationId || !activeOperation() || authBusy || cancelRequested || currentOperation.state === "processing") return;
+    if (!operationId || !activeOperation() || authBusy || cancelRequested
+      || (currentOperation.state === "processing" && currentOperation.kind !== "identify")) return;
     authBusy = true;
+    const generation = operationGeneration;
     cancelRequested = true;
     renderAuth();
     try {
       const operation = await authRequest("/api/auth/cancel", { id: operationId });
+      if (generation !== operationGeneration) return;
       if (operation?.id) renderOperation(operation);
       else await pollOperation(true);
     } catch (error) {
+      if (generation !== operationGeneration || (currentOperation && !activeOperation())) return;
       cancelRequested = false;
       feedback(error.status === 409 ? "이미 서버에 제출된 요청입니다. 최종 결과를 기다려 주세요."
         : "취소 여부를 확인하고 있습니다. 서버 결과가 확인될 때까지 기다려 주세요.");
@@ -1572,6 +2237,8 @@
   });
 
   document.addEventListener("visibilitychange", () => {
+    expireIdentification();
+    identificationCandidate = null;
     if (document.hidden) {
       statusController?.abort();
       operationController?.abort();
@@ -1605,8 +2272,40 @@
   });
   $("biometric-consent").addEventListener("change", renderAuth);
   $("photo-consent").addEventListener("change", renderAuth);
+  $("observation-consent").addEventListener("change", renderAuth);
+  $("observation-account").addEventListener("change", () => {
+    if (!consoleMode() || !canManage()) return;
+    const account = managedAccounts.find(item => item.account_id === $("observation-account").value && item.enabled !== false);
+    selectParticipant(account || null);
+    renderAuth();
+  });
+  $("observation-account-help").addEventListener("click", () => {
+    if (authBusy || activeOperation() || operationUncertain) return;
+    if (consoleMode()) setMainView("accounts");
+    else {
+      if (enrollmentTarget) selectParticipant(null);
+      setMainView("live");
+      renderAuth();
+      $("auth-heading").focus();
+    }
+  });
+  for (const id of ["observation-subject", "observation-instrument"]) {
+    $(id).addEventListener("input", () => {
+      $("observation-feedback").hidden = true;
+      renderAuth();
+    });
+  }
   $("nav-live").addEventListener("click", () => setMainView("live"));
   $("nav-accounts").addEventListener("click", () => setMainView("accounts"));
+  $("nav-pad").addEventListener("click", () => openPadCollection());
+  $("observation-preset-auth").addEventListener("click", () => applyObservationPreset("auth"));
+  $("observation-preset-enroll").addEventListener("click", () => applyObservationPreset("enroll"));
+  $("live-advanced").addEventListener("toggle", updatePadNavigation);
+  $("observation-panel").addEventListener("toggle", updatePadNavigation);
+  window.addEventListener("hashchange", () => {
+    padLinkPending = Object.hasOwn(padLinkPresets, window.location.hash) ? window.location.hash : null;
+    consumePendingPadLink();
+  });
   $("demo-account").addEventListener("change", () => {
     if (!consoleMode() || !canManage()) return;
     const account = managedAccounts.find((item) => item.account_id === $("demo-account").value && item.enabled !== false);
@@ -1679,8 +2378,15 @@
   });
   $("confirm-delete-account").addEventListener("click", () => void deleteManagedAccount());
   $("start-enroll").addEventListener("click", () => void startOperation("enroll"));
-  $("start-authenticate").addEventListener("click", () => void startOperation("authenticate"));
-  $("cancel-operation").addEventListener("click", () => void cancelOperation());
+  $("start-authenticate").addEventListener("click", () => {
+    if (identificationView()) startIdentification();
+    else void startOperation("authenticate");
+  });
+  $("stop-identification").addEventListener("click", stopIdentification);
+  $("cancel-operation").addEventListener("click", () => {
+    if (currentOperation?.kind === "identify") stopIdentification();
+    else void cancelOperation();
+  });
   $("retry-operation").addEventListener("click", () => {
     if (lastOperationKind === "observe") $("observation-form").requestSubmit();
     else void startOperation(lastOperationKind);
@@ -1704,6 +2410,7 @@
   });
   $("observation-kind").addEventListener("change", renderAuth);
   $("observation-mode").addEventListener("change", renderAuth);
+  $("observation-split").addEventListener("change", renderAuth);
   $("observation-form").addEventListener("submit", (event) => {
     event.preventDefault();
     if (!canObserve() || !$("observation-form").reportValidity()) return;
@@ -1724,6 +2431,7 @@
 
   // One preview request at a time waits for a new sequence; capture rate sets the pace.
   setInterval(pollStatus, 1000);
+  setInterval(tickIdentification, 100);
   // At most one recognition request is in flight. Slow inference never queues requests or delays preview.
   setInterval(() => {
     renderFaces();

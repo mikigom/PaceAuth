@@ -1,0 +1,986 @@
+{
+  "tested_at": "2026-10-16T01:22:21.457881+00:00",
+  "source_sha256": {
+    "live.html": "987ad66c9bb16e68c3dfefbcd87b6b0eefb4e6761fcbbe4f915c3bdf7cc7d6df",
+    "live.css": "2492702a818a6c9146c9c1248bd95537620c38d37e98f14d1646d5582461365f",
+    "live.js": "bb9ae9d75fcdcf03e6986fff54a761406c2da327b84575f263c03c4c9858391e"
+  },
+  "passed": true,
+  "checks": {
+    "fresh_live_no_capture_or_implicit_consent": true,
+    "fresh_start_available_without_consent": true,
+    "active_enrolled_count_preserved": true,
+    "idle_1440x900_no_page_overflow": true,
+    "idle_1440x900_camera_fills_viewport": true,
+    "idle_1440x900_camera_mirrored_cover": true,
+    "idle_1440x900_boxes_cover_projection": true,
+    "idle_1440x900_svg_matches_cover_crop": true,
+    "idle_1440x900_face_boxes_mirrored_exactly_once": true,
+    "idle_1440x900_face_caption_screen_size": true,
+    "idle_1440x900_face_captions_inside_visible_crop": true,
+    "idle_1440x900_result_is_on_camera": true,
+    "idle_1440x900_experimental_badge_visible": true,
+    "idle_1440x900_start_compact_and_clickable": true,
+    "idle_1440x900_nav-live_clickable": true,
+    "idle_1440x900_nav-accounts_clickable": true,
+    "idle_1440x900_nav-pad_clickable": true,
+    "idle_1440x900_no_live_consent": true,
+    "idle_1920x1080_no_page_overflow": true,
+    "idle_1920x1080_camera_fills_viewport": true,
+    "idle_1920x1080_camera_mirrored_cover": true,
+    "idle_1920x1080_boxes_cover_projection": true,
+    "idle_1920x1080_svg_matches_cover_crop": true,
+    "idle_1920x1080_face_boxes_mirrored_exactly_once": true,
+    "idle_1920x1080_face_caption_screen_size": true,
+    "idle_1920x1080_face_captions_inside_visible_crop": true,
+    "idle_1920x1080_result_is_on_camera": true,
+    "idle_1920x1080_experimental_badge_visible": true,
+    "idle_1920x1080_start_compact_and_clickable": true,
+    "idle_1920x1080_nav-live_clickable": true,
+    "idle_1920x1080_nav-accounts_clickable": true,
+    "idle_1920x1080_nav-pad_clickable": true,
+    "idle_1920x1080_no_live_consent": true,
+    "idle_390x844_no_page_overflow": true,
+    "idle_390x844_camera_fills_viewport": true,
+    "idle_390x844_camera_mirrored_cover": true,
+    "idle_390x844_boxes_cover_projection": true,
+    "idle_390x844_svg_matches_cover_crop": true,
+    "idle_390x844_face_boxes_mirrored_exactly_once": true,
+    "idle_390x844_face_caption_screen_size": true,
+    "idle_390x844_face_captions_inside_visible_crop": true,
+    "idle_390x844_result_is_on_camera": true,
+    "idle_390x844_experimental_badge_visible": true,
+    "idle_390x844_start_compact_and_clickable": true,
+    "idle_390x844_nav-live_clickable": true,
+    "idle_390x844_nav-accounts_clickable": true,
+    "idle_390x844_nav-pad_clickable": true,
+    "idle_390x844_no_live_consent": true,
+    "idle_320x568_no_page_overflow": true,
+    "idle_320x568_camera_fills_viewport": true,
+    "idle_320x568_camera_mirrored_cover": true,
+    "idle_320x568_boxes_cover_projection": true,
+    "idle_320x568_svg_matches_cover_crop": true,
+    "idle_320x568_face_boxes_mirrored_exactly_once": true,
+    "idle_320x568_face_caption_screen_size": true,
+    "idle_320x568_face_captions_inside_visible_crop": true,
+    "idle_320x568_result_is_on_camera": true,
+    "idle_320x568_experimental_badge_visible": true,
+    "idle_320x568_start_compact_and_clickable": true,
+    "idle_320x568_nav-live_clickable": true,
+    "idle_320x568_nav-accounts_clickable": true,
+    "idle_320x568_nav-pad_clickable": true,
+    "idle_320x568_no_live_consent": true,
+    "idle_844x390_no_page_overflow": true,
+    "idle_844x390_camera_fills_viewport": true,
+    "idle_844x390_camera_mirrored_cover": true,
+    "idle_844x390_boxes_cover_projection": true,
+    "idle_844x390_svg_matches_cover_crop": true,
+    "idle_844x390_face_boxes_mirrored_exactly_once": true,
+    "idle_844x390_face_caption_screen_size": true,
+    "idle_844x390_face_captions_inside_visible_crop": true,
+    "idle_844x390_result_is_on_camera": true,
+    "idle_844x390_experimental_badge_visible": true,
+    "idle_844x390_start_compact_and_clickable": true,
+    "idle_844x390_nav-live_clickable": true,
+    "idle_844x390_nav-accounts_clickable": true,
+    "idle_844x390_nav-pad_clickable": true,
+    "idle_844x390_no_live_consent": true,
+    "idle_568x320_no_page_overflow": true,
+    "idle_568x320_camera_fills_viewport": true,
+    "idle_568x320_camera_mirrored_cover": true,
+    "idle_568x320_boxes_cover_projection": true,
+    "idle_568x320_svg_matches_cover_crop": true,
+    "idle_568x320_face_boxes_mirrored_exactly_once": true,
+    "idle_568x320_face_caption_screen_size": true,
+    "idle_568x320_face_captions_inside_visible_crop": true,
+    "idle_568x320_result_is_on_camera": true,
+    "idle_568x320_experimental_badge_visible": true,
+    "idle_568x320_start_compact_and_clickable": true,
+    "idle_568x320_nav-live_clickable": true,
+    "idle_568x320_nav-accounts_clickable": true,
+    "idle_568x320_nav-pad_clickable": true,
+    "idle_568x320_no_live_consent": true,
+    "account_management_restores_normal_layout": true,
+    "return_live_selects_color": true,
+    "no_face_waits_without_capture": true,
+    "waiting_stop_compact_and_clickable": true,
+    "unknown_nearest_ignores_known_far_face": true,
+    "stale_known_face_does_not_trigger": true,
+    "hidden_page_does_not_trigger": true,
+    "explicit_account_free_consent_free_request": true,
+    "live_label_never_final_identity": true,
+    "capturing_stop_remains_clickable": true,
+    "camera_continues_behind_motion": true,
+    "rejection_motion_continues_watch": true,
+    "verified_identity_stops_watch": true,
+    "check_and_ripple_motion": true,
+    "approval_experimental_disclosure": true,
+    "approval_does_not_replay_on_poll": true,
+    "approved_1440x900_no_page_overflow": true,
+    "approved_1440x900_camera_fills_viewport": true,
+    "approved_1440x900_camera_mirrored_cover": true,
+    "approved_1440x900_boxes_cover_projection": true,
+    "approved_1440x900_svg_matches_cover_crop": true,
+    "approved_1440x900_face_boxes_mirrored_exactly_once": true,
+    "approved_1440x900_face_caption_screen_size": true,
+    "approved_1440x900_face_captions_inside_visible_crop": true,
+    "approved_1440x900_result_is_on_camera": true,
+    "approved_1440x900_experimental_badge_visible": true,
+    "approved_1440x900_start_compact_and_clickable": true,
+    "approved_1440x900_nav-live_clickable": true,
+    "approved_1440x900_nav-accounts_clickable": true,
+    "approved_1440x900_nav-pad_clickable": true,
+    "approved_1440x900_no_live_consent": true,
+    "approved_390x844_no_page_overflow": true,
+    "approved_390x844_camera_fills_viewport": true,
+    "approved_390x844_camera_mirrored_cover": true,
+    "approved_390x844_boxes_cover_projection": true,
+    "approved_390x844_svg_matches_cover_crop": true,
+    "approved_390x844_face_boxes_mirrored_exactly_once": true,
+    "approved_390x844_face_caption_screen_size": true,
+    "approved_390x844_face_captions_inside_visible_crop": true,
+    "approved_390x844_result_is_on_camera": true,
+    "approved_390x844_experimental_badge_visible": true,
+    "approved_390x844_start_compact_and_clickable": true,
+    "approved_390x844_nav-live_clickable": true,
+    "approved_390x844_nav-accounts_clickable": true,
+    "approved_390x844_nav-pad_clickable": true,
+    "approved_390x844_no_live_consent": true,
+    "approved_320x568_no_page_overflow": true,
+    "approved_320x568_camera_fills_viewport": true,
+    "approved_320x568_camera_mirrored_cover": true,
+    "approved_320x568_boxes_cover_projection": true,
+    "approved_320x568_svg_matches_cover_crop": true,
+    "approved_320x568_face_boxes_mirrored_exactly_once": true,
+    "approved_320x568_face_caption_screen_size": true,
+    "approved_320x568_face_captions_inside_visible_crop": true,
+    "approved_320x568_result_is_on_camera": true,
+    "approved_320x568_experimental_badge_visible": true,
+    "approved_320x568_start_compact_and_clickable": true,
+    "approved_320x568_nav-live_clickable": true,
+    "approved_320x568_nav-accounts_clickable": true,
+    "approved_320x568_nav-pad_clickable": true,
+    "approved_320x568_no_live_consent": true,
+    "approved_844x390_no_page_overflow": true,
+    "approved_844x390_camera_fills_viewport": true,
+    "approved_844x390_camera_mirrored_cover": true,
+    "approved_844x390_boxes_cover_projection": true,
+    "approved_844x390_svg_matches_cover_crop": true,
+    "approved_844x390_face_boxes_mirrored_exactly_once": true,
+    "approved_844x390_face_caption_screen_size": true,
+    "approved_844x390_face_captions_inside_visible_crop": true,
+    "approved_844x390_result_is_on_camera": true,
+    "approved_844x390_experimental_badge_visible": true,
+    "approved_844x390_start_compact_and_clickable": true,
+    "approved_844x390_nav-live_clickable": true,
+    "approved_844x390_nav-accounts_clickable": true,
+    "approved_844x390_nav-pad_clickable": true,
+    "approved_844x390_no_live_consent": true,
+    "approved_568x320_no_page_overflow": true,
+    "approved_568x320_camera_fills_viewport": true,
+    "approved_568x320_camera_mirrored_cover": true,
+    "approved_568x320_boxes_cover_projection": true,
+    "approved_568x320_svg_matches_cover_crop": true,
+    "approved_568x320_face_boxes_mirrored_exactly_once": true,
+    "approved_568x320_face_caption_screen_size": true,
+    "approved_568x320_face_captions_inside_visible_crop": true,
+    "approved_568x320_result_is_on_camera": true,
+    "approved_568x320_experimental_badge_visible": true,
+    "approved_568x320_start_compact_and_clickable": true,
+    "approved_568x320_nav-live_clickable": true,
+    "approved_568x320_nav-accounts_clickable": true,
+    "approved_568x320_nav-pad_clickable": true,
+    "approved_568x320_no_live_consent": true,
+    "approval_stays_final_without_new_capture": true,
+    "step_up_not_unregistered_rejection": true,
+    "service_error_not_unregistered_rejection": true,
+    "stop_waiting_prevents_capture": true,
+    "stop_capture_cancels_without_retry": true,
+    "stop_processing_waits_for_existing_request": true,
+    "stop_processing_prevents_new_request": true,
+    "pending_start_is_cancelled_when_returned": true,
+    "late_snapshot_does_not_regress_cancelled": true,
+    "stale_participant_ignored": true,
+    "enrollment_target_and_consent_retained": true,
+    "enrollment_request_still_consented": true,
+    "enrollment_circle_preserved": true,
+    "pad_test_live_auth_restores_form_and_contain_preview": true,
+    "pad_test_live_auth_requires_separate_consent": true,
+    "pad_test_live_auth_correct_consented_observation": true,
+    "pad_test_live_enroll_restores_form_and_contain_preview": true,
+    "pad_test_live_enroll_requires_separate_consent": true,
+    "pad_test_live_enroll_correct_consented_observation": true,
+    "pad_test_print_auth_restores_form_and_contain_preview": true,
+    "pad_test_print_auth_requires_separate_consent": true,
+    "pad_test_print_auth_correct_consented_observation": true,
+    "pad_test_replay_auth_restores_form_and_contain_preview": true,
+    "pad_test_replay_auth_requires_separate_consent": true,
+    "pad_test_replay_auth_correct_consented_observation": true,
+    "reduced_motion_retains_identity": true,
+    "reduced_motion_suppresses_animations": true,
+    "reduced_motion_scroll_instant": true
+  },
+  "details": {
+    "idle_1440x900_layout": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "scroll": [
+        1440,
+        900
+      ],
+      "rects": {
+        "camera-preview-card": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "hidden": false,
+          "display": "block"
+        },
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 500,
+          "y": 707,
+          "width": 440,
+          "height": 93,
+          "hidden": false,
+          "display": "grid"
+        },
+        "start-authenticate": {
+          "x": 660,
+          "y": 828.75,
+          "width": 120,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "pad-disabled-notice": {
+          "x": 24,
+          "y": 848,
+          "width": 106.921875,
+          "height": 25,
+          "hidden": false,
+          "display": "grid"
+        }
+      }
+    },
+    "idle_1920x1080_layout": {
+      "viewport": [
+        1920,
+        1080
+      ],
+      "scroll": [
+        1920,
+        1080
+      ],
+      "rects": {
+        "camera-preview-card": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "hidden": false,
+          "display": "block"
+        },
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 740,
+          "y": 887,
+          "width": 440,
+          "height": 93,
+          "hidden": false,
+          "display": "grid"
+        },
+        "start-authenticate": {
+          "x": 900,
+          "y": 1008.75,
+          "width": 120,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "pad-disabled-notice": {
+          "x": 24,
+          "y": 1028,
+          "width": 106.921875,
+          "height": 25,
+          "hidden": false,
+          "display": "grid"
+        }
+      }
+    },
+    "idle_390x844_layout": {
+      "viewport": [
+        390,
+        844
+      ],
+      "scroll": [
+        390,
+        844
+      ],
+      "rects": {
+        "camera-preview-card": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "hidden": false,
+          "display": "block"
+        },
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 14,
+          "y": 655,
+          "width": 362,
+          "height": 82,
+          "hidden": false,
+          "display": "grid"
+        },
+        "start-authenticate": {
+          "x": 135,
+          "y": 757.75,
+          "width": 120,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "pad-disabled-notice": {
+          "x": 14,
+          "y": 811.5,
+          "width": 96.234375,
+          "height": 23.5,
+          "hidden": false,
+          "display": "grid"
+        }
+      }
+    },
+    "idle_320x568_layout": {
+      "viewport": [
+        320,
+        568
+      ],
+      "scroll": [
+        320,
+        568
+      ],
+      "rects": {
+        "camera-preview-card": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568,
+          "hidden": false,
+          "display": "block"
+        },
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 14,
+          "y": 379,
+          "width": 292,
+          "height": 82,
+          "hidden": false,
+          "display": "grid"
+        },
+        "start-authenticate": {
+          "x": 100,
+          "y": 481.75,
+          "width": 120,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "pad-disabled-notice": {
+          "x": 14,
+          "y": 535.5,
+          "width": 96.234375,
+          "height": 23.5,
+          "hidden": false,
+          "display": "grid"
+        }
+      }
+    },
+    "idle_844x390_layout": {
+      "viewport": [
+        844,
+        390
+      ],
+      "scroll": [
+        844,
+        390
+      ],
+      "rects": {
+        "camera-preview-card": {
+          "x": 0,
+          "y": 0,
+          "width": 844,
+          "height": 390,
+          "hidden": false,
+          "display": "block"
+        },
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 844,
+          "height": 390,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 844,
+          "height": 390,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 217,
+          "y": 223,
+          "width": 410,
+          "height": 93,
+          "hidden": false,
+          "display": "grid"
+        },
+        "start-authenticate": {
+          "x": 362,
+          "y": 328.75,
+          "width": 120,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "pad-disabled-notice": {
+          "x": 24,
+          "y": 338,
+          "width": 106.921875,
+          "height": 25,
+          "hidden": false,
+          "display": "grid"
+        }
+      }
+    },
+    "idle_568x320_layout": {
+      "viewport": [
+        568,
+        320
+      ],
+      "scroll": [
+        568,
+        320
+      ],
+      "rects": {
+        "camera-preview-card": {
+          "x": 0,
+          "y": 0,
+          "width": 568,
+          "height": 320,
+          "hidden": false,
+          "display": "block"
+        },
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 568,
+          "height": 320,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 568,
+          "height": 320,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 79,
+          "y": 164,
+          "width": 410,
+          "height": 82,
+          "hidden": false,
+          "display": "grid"
+        },
+        "start-authenticate": {
+          "x": 224,
+          "y": 258.75,
+          "width": 120,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "pad-disabled-notice": {
+          "x": 14,
+          "y": 287.5,
+          "width": 96.234375,
+          "height": 23.5,
+          "hidden": false,
+          "display": "grid"
+        }
+      }
+    },
+    "approved_1440x900_layout": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "scroll": [
+        1440,
+        900
+      ],
+      "rects": {
+        "camera-preview-card": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "hidden": false,
+          "display": "block"
+        },
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 560,
+          "y": 540.40625,
+          "width": 320,
+          "height": 259.59375,
+          "hidden": false,
+          "display": "flex"
+        },
+        "start-authenticate": {
+          "x": 653.3984375,
+          "y": 828.75,
+          "width": 133.203125,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "pad-disabled-notice": {
+          "x": 24,
+          "y": 848,
+          "width": 106.921875,
+          "height": 25,
+          "hidden": false,
+          "display": "grid"
+        }
+      }
+    },
+    "approved_390x844_layout": {
+      "viewport": [
+        390,
+        844
+      ],
+      "scroll": [
+        390,
+        844
+      ],
+      "rects": {
+        "camera-preview-card": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "hidden": false,
+          "display": "block"
+        },
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 50,
+          "y": 496.40625,
+          "width": 290,
+          "height": 240.59375,
+          "hidden": false,
+          "display": "flex"
+        },
+        "start-authenticate": {
+          "x": 128.3984375,
+          "y": 757.75,
+          "width": 133.203125,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "pad-disabled-notice": {
+          "x": 14,
+          "y": 811.5,
+          "width": 96.234375,
+          "height": 23.5,
+          "hidden": false,
+          "display": "grid"
+        }
+      }
+    },
+    "approved_320x568_layout": {
+      "viewport": [
+        320,
+        568
+      ],
+      "scroll": [
+        320,
+        568
+      ],
+      "rects": {
+        "camera-preview-card": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568,
+          "hidden": false,
+          "display": "block"
+        },
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 15,
+          "y": 220.40625,
+          "width": 290,
+          "height": 240.59375,
+          "hidden": false,
+          "display": "flex"
+        },
+        "start-authenticate": {
+          "x": 93.3984375,
+          "y": 481.75,
+          "width": 133.203125,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "pad-disabled-notice": {
+          "x": 14,
+          "y": 535.5,
+          "width": 96.234375,
+          "height": 23.5,
+          "hidden": false,
+          "display": "grid"
+        }
+      }
+    },
+    "approved_844x390_layout": {
+      "viewport": [
+        844,
+        390
+      ],
+      "scroll": [
+        844,
+        390
+      ],
+      "rects": {
+        "camera-preview-card": {
+          "x": 0,
+          "y": 0,
+          "width": 844,
+          "height": 390,
+          "hidden": false,
+          "display": "block"
+        },
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 844,
+          "height": 390,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 844,
+          "height": 390,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 217,
+          "y": 215,
+          "width": 410,
+          "height": 101,
+          "hidden": false,
+          "display": "grid"
+        },
+        "start-authenticate": {
+          "x": 355.3984375,
+          "y": 328.75,
+          "width": 133.203125,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "pad-disabled-notice": {
+          "x": 24,
+          "y": 338,
+          "width": 106.921875,
+          "height": 25,
+          "hidden": false,
+          "display": "grid"
+        }
+      }
+    },
+    "approved_568x320_layout": {
+      "viewport": [
+        568,
+        320
+      ],
+      "scroll": [
+        568,
+        320
+      ],
+      "rects": {
+        "camera-preview-card": {
+          "x": 0,
+          "y": 0,
+          "width": 568,
+          "height": 320,
+          "hidden": false,
+          "display": "block"
+        },
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 568,
+          "height": 320,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 568,
+          "height": 320,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 79,
+          "y": 145,
+          "width": 410,
+          "height": 101,
+          "hidden": false,
+          "display": "grid"
+        },
+        "start-authenticate": {
+          "x": 217.3984375,
+          "y": 258.75,
+          "width": 133.203125,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "pad-disabled-notice": {
+          "x": 14,
+          "y": 287.5,
+          "width": 96.234375,
+          "height": 23.5,
+          "hidden": false,
+          "display": "grid"
+        }
+      }
+    }
+  },
+  "screenshots": [
+    "/tmp/paceauth-immersive-ui/idle_1440x900-synthetic.png",
+    "/tmp/paceauth-immersive-ui/idle_1920x1080-synthetic.png",
+    "/tmp/paceauth-immersive-ui/idle_390x844-synthetic.png",
+    "/tmp/paceauth-immersive-ui/idle_320x568-synthetic.png",
+    "/tmp/paceauth-immersive-ui/idle_844x390-synthetic.png",
+    "/tmp/paceauth-immersive-ui/idle_568x320-synthetic.png",
+    "/tmp/paceauth-immersive-ui/desktop-scanning-synthetic.png",
+    "/tmp/paceauth-immersive-ui/desktop-rejected-synthetic.png",
+    "/tmp/paceauth-immersive-ui/approved_1440x900-synthetic.png",
+    "/tmp/paceauth-immersive-ui/approved_390x844-synthetic.png",
+    "/tmp/paceauth-immersive-ui/approved_320x568-synthetic.png",
+    "/tmp/paceauth-immersive-ui/approved_844x390-synthetic.png",
+    "/tmp/paceauth-immersive-ui/approved_568x320-synthetic.png",
+    "/tmp/paceauth-immersive-ui/desktop-enrollment-synthetic.png",
+    "/tmp/paceauth-immersive-ui/desktop-reduced-motion-synthetic.png"
+  ],
+  "js_errors": [],
+  "backend": "isolated mocked API; synthetic accounts and capture operation responses only",
+  "mode": "femto_geometry_experimental",
+  "test_scope": "Immersive Live layout, explicit start controls, 1:N watch lifecycle, mirror/cover projection, and preserved enrollment/PAD UI only",
+  "empirical_pad_validation": "not_evaluated",
+  "human_media_persisted": false,
+  "synthetic_media_persisted": true
+}

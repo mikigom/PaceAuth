@@ -1,0 +1,34 @@
+{
+  "checked_at": "2026-10-15T10:59:57.230035+00:00",
+  "assets": {
+    "live.html": {
+      "sha256": "34a2fdd81fedeb887f317a66cfc93ad4b3df44f0e169e3b2c3bba464b751858d",
+      "matches_source": true,
+      "cache_control": "no-store, max-age=0"
+    },
+    "live.css": {
+      "sha256": "79462dbc6e5e671a97616fca5d53f635a68385e525cad2d95a5e5958570cea75",
+      "matches_source": true,
+      "cache_control": "no-store, max-age=0"
+    },
+    "live.js": {
+      "sha256": "11290dcaa041ac8129b3359bfff9660d1335a14a4ca6e27e4731ba2d1b0f8242",
+      "matches_source": true,
+      "cache_control": "no-store, max-age=0"
+    }
+  },
+  "healthz": 200,
+  "camera_state": "streaming",
+  "capture_ready": true,
+  "pad_mode": "disabled_pilot",
+  "private_state_hashes": {
+    "observations": "4ab99a8296084df15304a5119430515d3f9a45485dbf4e3e7cacd911415a0056",
+    "frozen_profile": "907454b8797ec94c9688b6252f271d851ef4e336ef7a4c6f83b9154a858f770d",
+    "protocol": "ee95d5516aa7d08c29327169e7ad7c6b9837ba3c3aeaf4941499c08cc48c7417",
+    "corrections": "ae8dd32b025b06485e47ff9c56caab339175d215e1be3345d913ee72de4dd4a0",
+    "eligible_profile_exists": false
+  },
+  "mock_browser_checks_passed": 36,
+  "raw_capture_saved": false,
+  "pad_activated": false
+}

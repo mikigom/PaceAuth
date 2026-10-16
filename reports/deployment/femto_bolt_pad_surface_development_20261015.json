@@ -1,0 +1,184 @@
+{
+  "reviewed_at": "2026-10-15T10:58:03.161078+00:00",
+  "purpose": "offline development comparison only; no deployable profile or activation",
+  "source_sha256": "4ab99a8296084df15304a5119430515d3f9a45485dbf4e3e7cacd911415a0056",
+  "correction_sha256": "ae8dd32b025b06485e47ff9c56caab339175d215e1be3345d913ee72de4dd4a0",
+  "candidate_rows": 71,
+  "calibration_rows_used_for_descriptive_midpoints": 42,
+  "features": [
+    "plane_residual_mm",
+    "quadratic_residual_mm"
+  ],
+  "calibration_bounds": {
+    "plane_residual_mm": {
+      "live_frame_min": 9.089824363628203,
+      "attack_frame_max": 2.4597921622646424
+    },
+    "quadratic_residual_mm": {
+      "live_frame_min": 4.180331217660068,
+      "attack_frame_max": 1.9446213511695727
+    }
+  },
+  "descriptive_midpoints": {
+    "plane_residual_mm": 5.774808262946423,
+    "quadratic_residual_mm": 3.062476284414821
+  },
+  "historical_diagnostics": [
+    {
+      "original_split": "calibration",
+      "kind": "live",
+      "mode": "diagnostic",
+      "presentations": 4,
+      "accepted": 4,
+      "nonresponses": 0,
+      "responding": 4,
+      "valid_frames": 20,
+      "frames_meeting_pair": 20
+    },
+    {
+      "original_split": "calibration",
+      "kind": "print",
+      "mode": "diagnostic",
+      "presentations": 20,
+      "accepted": 0,
+      "nonresponses": 11,
+      "responding": 9,
+      "valid_frames": 46,
+      "frames_meeting_pair": 0
+    },
+    {
+      "original_split": "calibration",
+      "kind": "replay",
+      "mode": "diagnostic",
+      "presentations": 13,
+      "accepted": 0,
+      "nonresponses": 6,
+      "responding": 7,
+      "valid_frames": 35,
+      "frames_meeting_pair": 0
+    },
+    {
+      "original_split": "test",
+      "kind": "live",
+      "mode": "diagnostic",
+      "presentations": 6,
+      "accepted": 6,
+      "nonresponses": 0,
+      "responding": 6,
+      "valid_frames": 30,
+      "frames_meeting_pair": 30
+    },
+    {
+      "original_split": "test",
+      "kind": "print",
+      "mode": "diagnostic",
+      "presentations": 8,
+      "accepted": 0,
+      "nonresponses": 1,
+      "responding": 7,
+      "valid_frames": 37,
+      "frames_meeting_pair": 0
+    },
+    {
+      "original_split": "test",
+      "kind": "replay",
+      "mode": "diagnostic",
+      "presentations": 3,
+      "accepted": 0,
+      "nonresponses": 0,
+      "responding": 3,
+      "valid_frames": 15,
+      "frames_meeting_pair": 0
+    },
+    {
+      "original_split": "calibration",
+      "kind": "live",
+      "mode": "auth",
+      "presentations": 4,
+      "accepted": 4,
+      "nonresponses": 0,
+      "responding": 4,
+      "valid_frames": 12,
+      "frames_meeting_pair": 12
+    },
+    {
+      "original_split": "calibration",
+      "kind": "live",
+      "mode": "enroll",
+      "presentations": 1,
+      "accepted": 1,
+      "nonresponses": 0,
+      "responding": 1,
+      "valid_frames": 18,
+      "frames_meeting_pair": 18
+    },
+    {
+      "original_split": "test",
+      "kind": "live",
+      "mode": "auth",
+      "presentations": 1,
+      "accepted": 1,
+      "nonresponses": 0,
+      "responding": 1,
+      "valid_frames": 3,
+      "frames_meeting_pair": 3
+    },
+    {
+      "original_split": "test",
+      "kind": "live",
+      "mode": "enroll",
+      "presentations": 2,
+      "accepted": 2,
+      "nonresponses": 0,
+      "responding": 2,
+      "valid_frames": 36,
+      "frames_meeting_pair": 36
+    },
+    {
+      "original_split": "test",
+      "kind": "print",
+      "mode": "auth",
+      "presentations": 5,
+      "accepted": 0,
+      "nonresponses": 2,
+      "responding": 3,
+      "valid_frames": 10,
+      "frames_meeting_pair": 1
+    },
+    {
+      "original_split": "test",
+      "kind": "replay",
+      "mode": "auth",
+      "presentations": 4,
+      "accepted": 0,
+      "nonresponses": 1,
+      "responding": 3,
+      "valid_frames": 9,
+      "frames_meeting_pair": 0
+    }
+  ],
+  "attack_frames_meeting_alternative": [
+    {
+      "split": "test",
+      "kind": "print",
+      "mode": "auth",
+      "count": 1
+    }
+  ],
+  "historical_test_used_for_design": true,
+  "independent_evaluation": false,
+  "deployable": false,
+  "known_limitations": [
+    "Already-inspected test outcomes are development evidence for any redesigned classifier, not fresh validation.",
+    "All historical responding attacks fail at presentation level, but an individual print frame has large plane and quadratic residuals and meets this alternative. Persistent geometry artifacts could therefore defeat this simple substitution.",
+    "No raw images are stored, so the cause of the anomalous print or negative live nose cannot be reconstructed.",
+    "No feature extraction, thresholds in the frozen profile, observations, or runtime behavior were changed."
+  ],
+  "public_export": {
+    "original_report_sha256": "3a42a97356b7b104c077f94f80cc96ecc44a0592af7e16f05acd5ccf503e558b",
+    "frame_measurements_removed": true,
+    "frame_and_attempt_indices_removed": true,
+    "original_preserved_locally": true,
+    "note": "Public aggregate copy; original observations and private report remain unchanged locally."
+  }
+}

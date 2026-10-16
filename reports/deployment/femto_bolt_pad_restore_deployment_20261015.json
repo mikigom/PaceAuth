@@ -1,0 +1,25 @@
+{
+  "verified_at": "2026-10-15T10:23:12.751143+00:00",
+  "checks": {
+    "live.html_matches_source": true,
+    "live.html_no_store": true,
+    "live.css_matches_source": true,
+    "live.css_no_store": true,
+    "live.js_matches_source": true,
+    "live.js_no_store": true,
+    "camera_streaming": true,
+    "capture_ready": true,
+    "pad_still_disabled": true,
+    "healthz_ok": true
+  },
+  "assets": {
+    "live.html": "34a2fdd81fedeb887f317a66cfc93ad4b3df44f0e169e3b2c3bba464b751858d",
+    "live.css": "79462dbc6e5e671a97616fca5d53f635a68385e525cad2d95a5e5958570cea75",
+    "live.js": "7f04de91cc14dd343f8166438f7fc47e074af223616d8630c82fac444e8aef99"
+  },
+  "passed": true,
+  "corrected_link": "http://192.168.2.218:8080/?ui=pad-restore-2#pad-calibration-enroll",
+  "browser_checks_passed": 129,
+  "capture_triggered": false,
+  "issue": "Completed operation restoration consumed pending PAD preset before its state was known."
+}

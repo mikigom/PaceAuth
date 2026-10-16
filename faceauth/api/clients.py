@@ -33,12 +33,17 @@ def _decode(r: httpx.Response):
 
 class Deps:
     def __init__(self, engine_urls: list, search_urls: list, kms_url: str, kms_token: str, admin_token: str,
-                 *, pad_enabled: bool = True):
+                 *, pad_enabled: bool = True, pad_mode: str | None = None,
+                 pad_profile_sha256: str = ""):
         self.engine_urls, self.search_urls, self.kms_url = engine_urls, search_urls, kms_url
         self.kms_auth = {"Authorization": f"Bearer {kms_token}"}
         self.admin_auth = {"Authorization": f"Bearer {admin_token}"}
         self.pad_enabled = pad_enabled
-        self.pad_mode = "enabled" if pad_enabled else "disabled_pilot"
+        self.pad_mode = pad_mode or ("enabled" if pad_enabled else "disabled_pilot")
+        if (self.pad_mode not in ("enabled", "disabled_pilot", "femto_geometry_pilot", "femto_geometry_experimental")
+                or pad_enabled is not (self.pad_mode != "disabled_pilot")):
+            raise ValueError("inconsistent PAD mode configuration")
+        self.pad_profile_sha256 = pad_profile_sha256
         # one pool for engine/search/KMS: the default 100 connections queued requests at ~50 sessions/s (E9)
         self.http = httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=2.0),
                                       limits=httpx.Limits(max_connections=1000, max_keepalive_connections=200))
@@ -62,7 +67,8 @@ class Deps:
 
         async def call(url):
             out = _decode(await self.http.post(f"{url}/v1/analyze", content=body, headers=MSGPACK, timeout=60.0))
-            self._check_pad_mode(out)
+            self._check_pad_mode(out, require_profile=not (mode == "enroll" or
+                                  (mode == "guide" and capture_purpose == "enroll")))
             if not (isinstance(out["versions"]["recog"], str) and int(out["dim"]) > 0
                     and len(out["frames"]) == len(frames) and all(isinstance(f, dict) for f in out["frames"])
                     and out.get("calib_version") == calib_version
@@ -86,14 +92,20 @@ class Deps:
             return out
         return await self._any("engine", self.engine_urls, call)
 
-    def _check_pad_mode(self, out):
+    def _check_pad_mode(self, out, *, require_profile=True):
         if out.get("pad_enabled") is not self.pad_enabled or out.get("pad_mode") != self.pad_mode:
             raise PADModeMismatch("pad_mode_mismatch")
+        profile_key = "pad_experiment" if self.pad_mode == "femto_geometry_experimental" else "pad_pilot_validation"
+        if require_profile and self.pad_mode in ("femto_geometry_pilot", "femto_geometry_experimental") and self.pad_profile_sha256 and (
+                (out.get(profile_key) or {}).get("profile_sha256") != self.pad_profile_sha256):
+            raise PADModeMismatch("pad_profile_mismatch")
 
     async def readiness(self, calib_version: str, active_recog: str | None) -> dict:
         async def engine(url):
             out = _decode(await self.http.get(f"{url}/v1/readiness", params={"calib_version": calib_version}, timeout=3))
-            self._check_pad_mode(out)
+            # An unavailable PAD profile blocks authentication below, but must
+            # not make a functioning recognition engine unavailable to enrollment.
+            self._check_pad_mode(out, require_profile=False)
             if (not active_recog or out.get("capture_ready") is not True
                     or out.get("versions", {}).get("recog") != active_recog
                     or out.get("calib_version") != calib_version):
@@ -104,16 +116,35 @@ class Deps:
             out = await self._any("engine", self.engine_urls, engine)
         except Unavailable as exc:
             mismatch = isinstance(exc.__cause__, PADModeMismatch)
-            return {"ready": False, "capture_ready": False, "pad_validation": None,
+            return {"ready": False, "enrollment_ready": False, "capture_ready": False, "pad_validation": None,
+                    "enrollment_pad_enabled": False,
                     "pad_enabled": self.pad_enabled, "pad_mode": self.pad_mode,
                     "blockers": [{"code": "pad_mode_mismatch" if mismatch else "engine_unavailable",
                                   "message": "API와 분석 엔진의 PAD 설정이 다릅니다." if mismatch
                                   else "GPU 분석 엔진이 준비되지 않았습니다."}]}
-        validation = out.get("pad_validation") or {}
-        blockers = [{"code": code, "message": "이 센서의 위조 방지 검증이 완료되지 않았습니다."}
+        status_key = ("pad_experiment" if self.pad_mode == "femto_geometry_experimental" else
+                      "pad_pilot_validation" if self.pad_mode == "femto_geometry_pilot" else "pad_validation")
+        validation = out.get(status_key) or {}
+        failure_message = ("실험용 깊이 PAD 설정을 확인할 수 없습니다." if self.pad_mode == "femto_geometry_experimental"
+                           else "이 센서의 위조 방지 검증이 완료되지 않았습니다.")
+        blockers = [{"code": code, "message": failure_message}
                     for code in validation.get("reasons", [])] if self.pad_enabled else []
         if self.pad_enabled and validation.get("ready") is not True and not blockers:
             blockers.append({"code": "pad_validation_required", "message": "위조 방지 검증 상태를 확인할 수 없습니다."})
+        if self.pad_mode == "femto_geometry_pilot" and (
+                len(self.pad_profile_sha256) != 64 or validation.get("experimental") is not True
+                or validation.get("scope") != ["print", "replay"]
+                or validation.get("calib_version") != calib_version
+                or validation.get("profile_sha256") != self.pad_profile_sha256):
+            blockers.append({"code": "pad_pilot_profile_invalid", "message": "깊이 PAD 시험 설정을 확인할 수 없습니다."})
+        if self.pad_mode == "femto_geometry_experimental" and (
+                len(self.pad_profile_sha256) != 64 or validation.get("experimental") is not True
+                or validation.get("production_validated") is not False
+                or validation.get("empirical_validation") != "not_evaluated"
+                or validation.get("scope") != ["print", "replay"]
+                or validation.get("calib_version") != calib_version
+                or validation.get("profile_sha256") != self.pad_profile_sha256):
+            blockers.append({"code": "pad_experiment_profile_invalid", "message": failure_message})
 
         async def search(url):
             state = _decode(await self.http.get(f"{url}/v1/status", timeout=3))
@@ -121,11 +152,18 @@ class Deps:
                 raise ValueError("search not ready or recognition model differs")
             return state
 
+        enrollment_blockers = []
         try:
             await self._any("search", self.search_urls, search)
         except Unavailable:
-            blockers.append({"code": "search_unavailable", "message": "얼굴 검색 서비스가 준비되지 않았습니다."})
-        return {**out, "ready": not blockers, "blockers": blockers}
+            enrollment_blockers.append({"code": "search_unavailable", "message": "얼굴 검색 서비스가 준비되지 않았습니다."})
+            blockers.extend(enrollment_blockers)
+        result = {**out, "ready": not blockers, "blockers": blockers,
+                  "enrollment_ready": not enrollment_blockers, "enrollment_blockers": enrollment_blockers,
+                  "enrollment_pad_enabled": False}
+        if self.pad_mode in ("femto_geometry_pilot", "femto_geometry_experimental"):
+            result["pad_profile_sha256"] = self.pad_profile_sha256
+        return result
 
     async def search(self, model_version: str, probes: np.ndarray, k: int = 5) -> list:
         body = msgpack.packb({"model_version": model_version, "probes": probes.astype("<f4").tobytes(),

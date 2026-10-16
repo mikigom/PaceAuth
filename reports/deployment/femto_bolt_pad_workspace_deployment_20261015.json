@@ -1,0 +1,35 @@
+{
+  "verified_at": "2026-10-15T09:43:26.395075+00:00",
+  "url": "http://192.168.2.218:8080/#pad",
+  "checks": {
+    "live.html_matches_source": true,
+    "live.html_no_store": true,
+    "live.css_matches_source": true,
+    "live.css_no_store": true,
+    "live.js_matches_source": true,
+    "live.js_no_store": true,
+    "camera_streaming": true,
+    "console_ready": true,
+    "capture_ready": true,
+    "pad_candidate_available": true,
+    "healthz_ok": true
+  },
+  "passed": true,
+  "assets": {
+    "live.html": {
+      "sha256": "ff01d01a8c11f3cbb4f94f5865d2adf3239c4e2ee0af90d176d991ad760a8aaa",
+      "cache_control": "no-store, max-age=0"
+    },
+    "live.css": {
+      "sha256": "f68048c0545d5717abb4671ddc0a2e534bfd42138e06a6b51e2e51b601554299",
+      "cache_control": "no-store, max-age=0"
+    },
+    "live.js": {
+      "sha256": "05751117205a3a1a7478542c84d38d529ade690810a0dca70ed8e48204151721",
+      "cache_control": "no-store, max-age=0"
+    }
+  },
+  "camera_state": "streaming",
+  "pad_mode": "disabled_pilot",
+  "capture_triggered": false
+}

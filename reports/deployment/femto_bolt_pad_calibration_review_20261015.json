@@ -1,0 +1,150 @@
+{
+  "total_presentations": 50,
+  "legacy_presentations_excluded": 32,
+  "candidate_presentations": 18,
+  "test_presentations": 0,
+  "calibration": {
+    "live": {
+      "presentations": 4,
+      "frames": 20,
+      "valid_frames": 20,
+      "fully_responding_presentations": 4,
+      "invalid_reasons": {},
+      "unique_subjects": 1,
+      "unique_instruments": 0,
+      "features_including_invalid_frames": {
+        "valid_ratio": {
+          "min": 0.9513590844062947,
+          "median": 0.9783023366714354,
+          "max": 0.9866475917978064
+        },
+        "depth_median_mm": {
+          "min": 351.0,
+          "median": 460.0,
+          "max": 544.0
+        },
+        "plane_residual_mm": {
+          "min": 9.089824363628203,
+          "median": 10.076502717658727,
+          "max": 10.307328340751106
+        },
+        "nose_protrusion_mm": {
+          "min": 8.567081189262012,
+          "median": 11.257843436293584,
+          "max": 14.621439656216864
+        },
+        "nose_valid_ratio": {
+          "min": 0.9519230769230769,
+          "median": 0.9902912621359223,
+          "max": 1.0
+        },
+        "surround_valid_ratio": {
+          "min": 0.9426681367144433,
+          "median": 0.9779492833517089,
+          "max": 0.9873208379272327
+        }
+      }
+    },
+    "print": {
+      "presentations": 8,
+      "frames": 40,
+      "valid_frames": 0,
+      "fully_responding_presentations": 0,
+      "invalid_reasons": {
+        "depth_coverage": 35,
+        "nose_coverage": 40,
+        "surround_coverage": 35,
+        "ir_missing": 35,
+        "depth_blocks": 37
+      },
+      "unique_subjects": 1,
+      "unique_instruments": 1,
+      "features_including_invalid_frames": {
+        "valid_ratio": {
+          "min": 0.09060562708631378,
+          "median": 0.2646638054363376,
+          "max": 0.6890796375774917
+        },
+        "depth_median_mm": {
+          "min": 220.0,
+          "median": 259.0,
+          "max": 346.0
+        },
+        "plane_residual_mm": null,
+        "nose_protrusion_mm": null,
+        "nose_valid_ratio": {
+          "min": 0.0,
+          "median": 0.10526556776556777,
+          "max": 0.4095238095238095
+        },
+        "surround_valid_ratio": {
+          "min": 0.10303030303030303,
+          "median": 0.2805293083182228,
+          "max": 0.7220693450742983
+        }
+      }
+    },
+    "replay": {
+      "presentations": 6,
+      "frames": 30,
+      "valid_frames": 0,
+      "fully_responding_presentations": 0,
+      "invalid_reasons": {
+        "depth_coverage": 30,
+        "nose_coverage": 30,
+        "surround_coverage": 30,
+        "ir_missing": 30,
+        "depth_blocks": 30
+      },
+      "unique_subjects": 1,
+      "unique_instruments": 1,
+      "features_including_invalid_frames": {
+        "valid_ratio": {
+          "min": 0.004768717215069146,
+          "median": 0.20910824988078208,
+          "max": 0.31998092513113974
+        },
+        "depth_median_mm": {
+          "min": 112.0,
+          "median": 128.5,
+          "max": 145.5
+        },
+        "plane_residual_mm": null,
+        "nose_protrusion_mm": null,
+        "nose_valid_ratio": {
+          "min": 0.0,
+          "median": 0.0,
+          "max": 0.4380952380952381
+        },
+        "surround_valid_ratio": {
+          "min": 0.005497526113249038,
+          "median": 0.22537171117992857,
+          "max": 0.34233737596471886
+        }
+      }
+    }
+  },
+  "fit": {
+    "success": false,
+    "reason": "each calibration attack type requires a responding physical presentation"
+  },
+  "candidate_binding": {
+    "schema": "faceauth.femto_pad.binding.v1",
+    "feature_schema": "faceauth.femto_pad.features.v1",
+    "feature_code_sha256": "d4b057446e45f0aec9531e8a2a83695f5cacc6f15e6db25c4f83adff1df8a210",
+    "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5",
+    "pipeline_sha256": "e848eadc9c9477939ed7f0a6cade4f1831a2aba7291ae72ff8b062db527c486d"
+  },
+  "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+  "reviewed_at": "2026-10-15T09:52:20.819897+00:00",
+  "profile_written": false,
+  "pad_activated": false,
+  "media_captured_or_exported": false,
+  "raw_observations_exported": false,
+  "notes": [
+    "Invalid measurement depth values are partial sensor values, not verified physical presentation distances.",
+    "Nonresponding attacks remain in the dataset and must not be reported as demonstrated spoof rejection.",
+    "Next step: one print and one replay diagnostic calibration presentation at a physically verified 60-70 cm; review measurement coverage before repeating batches.",
+    "A fitted frozen profile still requires new test presentations including actual auth and enrollment selection paths before pilot activation."
+  ]
+}

@@ -1,0 +1,178 @@
+{
+  "tested_at": "2026-10-15T10:29:52.667548+00:00",
+  "source_sha256": {
+    "live.html": "34a2fdd81fedeb887f317a66cfc93ad4b3df44f0e169e3b2c3bba464b751858d",
+    "live.css": "79462dbc6e5e671a97616fca5d53f635a68385e525cad2d95a5e5958570cea75",
+    "live.js": "cf8370ec9fdb790a9fd8fc4c4963cb2207bbbbd829f54a3533172dce39bdaf44"
+  },
+  "passed": true,
+  "checks": {
+    "camera_and_button_320": true,
+    "mirrored_overlay_matches_contained_camera_320": true,
+    "camera_and_button_390": true,
+    "mirrored_overlay_matches_contained_camera_390": true,
+    "camera_and_button_768": true,
+    "mirrored_overlay_matches_contained_camera_768": true,
+    "camera_and_button_1440": true,
+    "mirrored_overlay_matches_contained_camera_1440": true
+  },
+  "details": {
+    "320": {
+      "camera": {
+        "x": 12,
+        "y": 62,
+        "width": 296,
+        "height": 160,
+        "top": 62,
+        "right": 308,
+        "bottom": 222,
+        "left": 12
+      },
+      "button": {
+        "x": 28,
+        "y": 691.609375,
+        "width": 264,
+        "height": 48,
+        "top": 691.609375,
+        "right": 292,
+        "bottom": 739.609375,
+        "left": 28
+      },
+      "window": {
+        "width": 320,
+        "height": 740
+      },
+      "hit": "start-observation",
+      "scrollY": 1293,
+      "sticky": {
+        "x": 12,
+        "y": 8,
+        "width": 296,
+        "height": 214,
+        "top": 8,
+        "right": 308,
+        "bottom": 222,
+        "left": 12
+      }
+    },
+    "390": {
+      "camera": {
+        "x": 16,
+        "y": 62,
+        "width": 358,
+        "height": 160,
+        "top": 62,
+        "right": 374,
+        "bottom": 222,
+        "left": 16
+      },
+      "button": {
+        "x": 32,
+        "y": 795.828125,
+        "width": 326,
+        "height": 48,
+        "top": 795.828125,
+        "right": 358,
+        "bottom": 843.828125,
+        "left": 32
+      },
+      "window": {
+        "width": 390,
+        "height": 844
+      },
+      "hit": "start-observation",
+      "scrollY": 1096,
+      "sticky": {
+        "x": 16,
+        "y": 8,
+        "width": 358,
+        "height": 214,
+        "top": 8,
+        "right": 374,
+        "bottom": 222,
+        "left": 16
+      }
+    },
+    "768": {
+      "camera": {
+        "x": 80.5,
+        "y": 82,
+        "width": 592,
+        "height": 240,
+        "top": 82,
+        "right": 672.5,
+        "bottom": 322,
+        "left": 80.5
+      },
+      "button": {
+        "x": 103.5,
+        "y": 975.9375,
+        "width": 546,
+        "height": 48,
+        "top": 975.9375,
+        "right": 649.5,
+        "bottom": 1023.9375,
+        "left": 103.5
+      },
+      "window": {
+        "width": 768,
+        "height": 1024
+      },
+      "hit": "start-observation",
+      "scrollY": 898,
+      "sticky": {
+        "x": 80.5,
+        "y": 8,
+        "width": 592,
+        "height": 314,
+        "top": 8,
+        "right": 672.5,
+        "bottom": 322,
+        "left": 80.5
+      }
+    },
+    "1440": {
+      "camera": {
+        "x": 120.5,
+        "y": 98,
+        "width": 618.3125,
+        "height": 463.734375,
+        "top": 98,
+        "right": 738.8125,
+        "bottom": 561.734375,
+        "left": 120.5
+      },
+      "button": {
+        "x": 792.8125,
+        "y": 1031.9375,
+        "width": 485.671875,
+        "height": 48,
+        "top": 1031.9375,
+        "right": 1278.484375,
+        "bottom": 1079.9375,
+        "left": 792.8125
+      },
+      "window": {
+        "width": 1440,
+        "height": 1080
+      },
+      "hit": "start-observation",
+      "scrollY": 561,
+      "sticky": {
+        "x": 120.5,
+        "y": 24,
+        "width": 618.3125,
+        "height": 694.859375,
+        "top": 24,
+        "right": 738.8125,
+        "bottom": 718.859375,
+        "left": 120.5
+      }
+    }
+  },
+  "screenshots": [],
+  "js_errors": [],
+  "backend": "isolated mocked API; no real accounts, consent or capture",
+  "human_media_persisted": false,
+  "synthetic_media_persisted": false
+}

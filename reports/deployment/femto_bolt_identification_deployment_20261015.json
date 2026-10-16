@@ -1,0 +1,62 @@
+{
+  "deployed_at": "2026-10-15T11:23:04.574070+00:00",
+  "url": "http://192.168.2.218:8080",
+  "passed": true,
+  "behavior": "Explicit consent and start once; keep waiting for a fresh stable known primary face, request signed global 1:N identification, retry rejected attempts, stop on verified approval or explicit stop.",
+  "assets_sha256": {
+    "live.html": "71c78ede8731c15bfc318d229e8ce45ecf9f2d5999a916ae97e15254d6c2d17c",
+    "live.css": "abe9afa8e54c3e9269274745159a4ed703aaae3efb8585aee92d7fde33c9ee45",
+    "live.js": "560ccc8ccbb6c68add5a2132f7e81e1ca8bee538207fbdfdf7a190be853a0429"
+  },
+  "assets_cache_control_no_store": true,
+  "validation": {
+    "backend_tests_passed": 109,
+    "browser_checks_passed": 64,
+    "browser_js_errors": [],
+    "real_face_approval_performed_this_deployment": false
+  },
+  "camera": {
+    "state": "streaming",
+    "fps": 30.2
+  },
+  "auth": {
+    "ready": true,
+    "capture_ready": true,
+    "console_mode": true,
+    "pad_enabled": false,
+    "pad_mode": "disabled_pilot"
+  },
+  "engines": {
+    "engine-1": {
+      "gpu_ready": true,
+      "pad_enabled": false,
+      "candidate_binding": {
+        "schema": "faceauth.femto_pad.binding.v1",
+        "feature_schema": "faceauth.femto_pad.features.v1",
+        "feature_code_sha256": "d4b057446e45f0aec9531e8a2a83695f5cacc6f15e6db25c4f83adff1df8a210",
+        "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5",
+        "pipeline_sha256": "33fd1a9b0781efe12d7bfed0fc0febc4c6f01236997c6586ad873c1d806b88e1"
+      }
+    },
+    "engine-2": {
+      "gpu_ready": true,
+      "pad_enabled": false,
+      "candidate_binding": {
+        "schema": "faceauth.femto_pad.binding.v1",
+        "feature_schema": "faceauth.femto_pad.features.v1",
+        "feature_code_sha256": "d4b057446e45f0aec9531e8a2a83695f5cacc6f15e6db25c4f83adff1df8a210",
+        "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5",
+        "pipeline_sha256": "33fd1a9b0781efe12d7bfed0fc0febc4c6f01236997c6586ad873c1d806b88e1"
+      }
+    }
+  },
+  "api_health": true,
+  "identify_endpoint_deployed": true,
+  "preserved_pad_evidence": {
+    "observation_rows": 103,
+    "observation_sha256": "4ab99a8296084df15304a5119430515d3f9a45485dbf4e3e7cacd911415a0056",
+    "frozen_profile_sha256": "907454b8797ec94c9688b6252f271d851ef4e336ef7a4c6f83b9154a858f770d",
+    "terminal_source_sha256": "c74666b64a8fe41ef8463437cd0c0ed198780db95fdd068217eb9292957b5307"
+  },
+  "pad_note": "PAD remains disabled; prior frozen evaluation binds earlier web_auth.py code and does not qualify this new pipeline."
+}

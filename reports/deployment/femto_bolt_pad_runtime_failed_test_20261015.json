@@ -1,0 +1,282 @@
+{
+  "reviewed_at": "2026-10-15T10:56:04.259109+00:00",
+  "source_rows": 103,
+  "source_sha256": "4ab99a8296084df15304a5119430515d3f9a45485dbf4e3e7cacd911415a0056",
+  "protocol_sha256": "ee95d5516aa7d08c29327169e7ad7c6b9837ba3c3aeaf4941499c08cc48c7417",
+  "assessment_path": "/var/lib/paceauth/pad-evaluations/runtime-final-assessment-20261015.json",
+  "assessment_sha256": "4b32cc7c906fd2fcdf6f0677a2f8bf70c529780cb860e6018adea12d805fbd28",
+  "operator_reconciliation_path": "/var/lib/paceauth/pad-evaluations/runtime-attempt-reconciliation-20261015.json",
+  "operator_reconciliation_sha256": "a12e21511e134c2d547c2eb0effcfb7d7df72fb278d325975397a98d8b5d997e",
+  "operator_reconciliation": {
+    "cancelled_attempts": 0,
+    "confirmed_at": "2026-10-15T10:54:13.041976+00:00",
+    "operator_confirmed": true,
+    "protocol_sha256": "ee95d5516aa7d08c29327169e7ad7c6b9837ba3c3aeaf4941499c08cc48c7417",
+    "recorded_presentations": 12,
+    "schema": "faceauth.femto_pad.runtime_attempt_reconciliation.v1",
+    "started_attempts": 12,
+    "unrecorded_attempts": 0
+  },
+  "operator_clarification": "Three additional starts were retries after numerical measurement nonresponses; no cancellations or unrecorded interruptions reported.",
+  "frozen_profile_sha256": "907454b8797ec94c9688b6252f271d851ef4e336ef7a4c6f83b9154a858f770d",
+  "frozen_profile_unchanged": true,
+  "counts": {
+    "live": {
+      "auth": 1,
+      "enroll": 2
+    },
+    "print": {
+      "auth": 5,
+      "enroll": 0
+    },
+    "replay": {
+      "auth": 4,
+      "enroll": 0
+    }
+  },
+  "summary": {
+    "live": {
+      "accepted": 2,
+      "error_metric": "bpcer",
+      "error_rate": 0.3333333333333333,
+      "error_upper95": 0.8646496378284163,
+      "errors": 1,
+      "nonresponse_upper95": 0.6315968501359613,
+      "nonresponses": 0,
+      "presentations": 3,
+      "responding": 3
+    },
+    "print": {
+      "accepted": 0,
+      "error_metric": "apcer",
+      "error_rate": 0.0,
+      "error_upper95": 0.6315968501359613,
+      "errors": 0,
+      "nonresponse_upper95": 0.8107446225622292,
+      "nonresponses": 2,
+      "presentations": 5,
+      "responding": 3
+    },
+    "replay": {
+      "accepted": 0,
+      "error_metric": "apcer",
+      "error_rate": 0.0,
+      "error_upper95": 0.6315968501359613,
+      "errors": 0,
+      "nonresponse_upper95": 0.7513953742698183,
+      "nonresponses": 1,
+      "presentations": 4,
+      "responding": 3
+    }
+  },
+  "by_mode": {
+    "auth": {
+      "live": {
+        "accepted": 1,
+        "error_metric": "bpcer",
+        "error_rate": 0.0,
+        "error_upper95": 0.95,
+        "errors": 0,
+        "nonresponse_upper95": 0.95,
+        "nonresponses": 0,
+        "presentations": 1,
+        "responding": 1
+      },
+      "print": {
+        "accepted": 0,
+        "error_metric": "apcer",
+        "error_rate": 0.0,
+        "error_upper95": 0.6315968501359613,
+        "errors": 0,
+        "nonresponse_upper95": 0.8107446225622292,
+        "nonresponses": 2,
+        "presentations": 5,
+        "responding": 3
+      },
+      "replay": {
+        "accepted": 0,
+        "error_metric": "apcer",
+        "error_rate": 0.0,
+        "error_upper95": 0.6315968501359613,
+        "errors": 0,
+        "nonresponse_upper95": 0.7513953742698183,
+        "nonresponses": 1,
+        "presentations": 4,
+        "responding": 3
+      }
+    },
+    "diagnostic": {
+      "live": {
+        "accepted": 0,
+        "error_metric": "bpcer",
+        "error_rate": null,
+        "error_upper95": null,
+        "errors": 0,
+        "nonresponse_upper95": null,
+        "nonresponses": 0,
+        "presentations": 0,
+        "responding": 0
+      },
+      "print": {
+        "accepted": 0,
+        "error_metric": "apcer",
+        "error_rate": null,
+        "error_upper95": null,
+        "errors": 0,
+        "nonresponse_upper95": null,
+        "nonresponses": 0,
+        "presentations": 0,
+        "responding": 0
+      },
+      "replay": {
+        "accepted": 0,
+        "error_metric": "apcer",
+        "error_rate": null,
+        "error_upper95": null,
+        "errors": 0,
+        "nonresponse_upper95": null,
+        "nonresponses": 0,
+        "presentations": 0,
+        "responding": 0
+      }
+    },
+    "enroll": {
+      "live": {
+        "accepted": 1,
+        "error_metric": "bpcer",
+        "error_rate": 0.5,
+        "error_upper95": 0.9746794344808964,
+        "errors": 1,
+        "nonresponse_upper95": 0.7763932022500211,
+        "nonresponses": 0,
+        "presentations": 2,
+        "responding": 2
+      },
+      "print": {
+        "accepted": 0,
+        "error_metric": "apcer",
+        "error_rate": null,
+        "error_upper95": null,
+        "errors": 0,
+        "nonresponse_upper95": null,
+        "nonresponses": 0,
+        "presentations": 0,
+        "responding": 0
+      },
+      "replay": {
+        "accepted": 0,
+        "error_metric": "apcer",
+        "error_rate": null,
+        "error_upper95": null,
+        "errors": 0,
+        "nonresponse_upper95": null,
+        "nonresponses": 0,
+        "presentations": 0,
+        "responding": 0
+      }
+    },
+    "unspecified": {
+      "live": {
+        "accepted": 0,
+        "error_metric": "bpcer",
+        "error_rate": null,
+        "error_upper95": null,
+        "errors": 0,
+        "nonresponse_upper95": null,
+        "nonresponses": 0,
+        "presentations": 0,
+        "responding": 0
+      },
+      "print": {
+        "accepted": 0,
+        "error_metric": "apcer",
+        "error_rate": null,
+        "error_upper95": null,
+        "errors": 0,
+        "nonresponse_upper95": null,
+        "nonresponses": 0,
+        "presentations": 0,
+        "responding": 0
+      },
+      "replay": {
+        "accepted": 0,
+        "error_metric": "apcer",
+        "error_rate": null,
+        "error_upper95": null,
+        "errors": 0,
+        "nonresponse_upper95": null,
+        "nonresponses": 0,
+        "presentations": 0,
+        "responding": 0
+      }
+    }
+  },
+  "quality_passing_responding_auth_rejections": {
+    "print": 3,
+    "replay": 3
+  },
+  "live_incomplete_or_quality_failed": {
+    "auth": 0,
+    "enroll": 0
+  },
+  "eligible_for_local_pilot": false,
+  "reasons": [
+    "pilot_live_not_all_accepted",
+    "runtime_attempt_reconciliation_invalid",
+    "runtime_excess_print_auth",
+    "runtime_excess_replay_auth"
+  ],
+  "prior_diagnostic": {
+    "eligible_for_local_pilot": false,
+    "failure_resolved": false,
+    "known_limitation": "prior_diagnostic_live_rejection_remains_unfixed",
+    "report_sha256": "4f34a319b5a7f475063af92a99ea9eb378ea2073d8bcb1565f35a09e88a2c573",
+    "summary": {
+      "live": {
+        "accepted": 5,
+        "errors": 1,
+        "nonresponses": 0,
+        "presentations": 6,
+        "responding": 6
+      },
+      "print": {
+        "accepted": 0,
+        "errors": 0,
+        "nonresponses": 1,
+        "presentations": 8,
+        "responding": 7
+      },
+      "replay": {
+        "accepted": 0,
+        "errors": 0,
+        "nonresponses": 0,
+        "presentations": 3,
+        "responding": 3
+      }
+    }
+  },
+  "failure_analysis": [
+    {
+      "mode": "enroll",
+      "attempt_count": 1,
+      "frame_count": 18,
+      "failed_frame_count": 2,
+      "failed_feature_counts": {
+        "nose_protrusion_mm": 2
+      },
+      "quality_reason_counts": {},
+      "all_failed_frames_quality_ok": true,
+      "all_failed_frames_measurement_valid": true
+    }
+  ],
+  "interpretation": "A live enrollment failed the signed nose feature despite all final capture quality checks passing. This blocks activation independently of the12-vs9 trial-count deviation. The original thresholds, observations and failed trials remain unchanged. Scalar measurements cannot determine whether pose, RGB/depth registration, landmark position or surface reference caused the failure.",
+  "eligible_profile_exists": false,
+  "pad_activated": false,
+  "public_export": {
+    "original_report_sha256": "b3339b0bb64a17302611fb4d733f2f29683c74d6d7749dfe86f32396cd9d6765",
+    "frame_measurements_removed": true,
+    "frame_and_attempt_indices_removed": true,
+    "original_preserved_locally": true,
+    "note": "Public aggregate copy; original observations and private report remain unchanged locally."
+  }
+}

@@ -7,7 +7,8 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from faceauth.common.pad_validation import (PADValidationGate, SPECIES, binomial_upper95, canonical_json,
-                                           evaluate_observations, make_observation, model_binding)
+    evaluate_observations, make_observation, model_binding, CANDIDATE_SCHEMA, CANDIDATE_FEATURES,
+    candidate_binding, clean_candidate_binding, clean_candidate_measurement)
 
 
 CALIB = "femto-bolt-test-calibration"
@@ -27,14 +28,25 @@ def model(tmp_path):
 
 
 def observation(binding, attempt="one", kind="live", *, split="test", person=None, instrument=None,
-                frames=None, consent=True):
+                frames=None, consent=True, candidate=None):
     return make_observation(presentation_id=attempt, subject_id=person or "person-" + attempt,
                             consent_id="study-consent-" + attempt, consent=consent, kind=kind, split=split,
                             instrument_id=instrument or ("instrument-" + attempt if kind != "live" else None),
                             calib_version=CALIB, binding=binding,
                             frames=frames or [{"pad": {"live": kind == "live", "nonresponse": False,
                                                      "score": 1.0 if kind == "live" else 0.0}, "ok": True}],
-                            conditions={"mode": "auth", "distance_mm": 650})
+                            conditions={"mode": "auth", "distance_mm": 650}, candidate_binding=candidate)
+
+
+def candidate_fixture():
+    return {"schema": "faceauth.femto_pad.binding.v1", "feature_schema": CANDIDATE_SCHEMA,
+            "feature_code_sha256": "a" * 64, "detector_model_json_sha256": "b" * 64,
+            "pipeline_sha256": "c" * 64}
+
+
+def candidate_measurement():
+    return {"schema": CANDIDATE_SCHEMA, "valid": True, "reasons": [],
+            "features": dict.fromkeys(CANDIDATE_FEATURES, 1.0)}
 
 
 def approved_report(binding):
@@ -239,3 +251,90 @@ def test_exact_upper_bound_known_values():
     assert binomial_upper95(10, 10) == 1
     with pytest.raises(ValueError):
         binomial_upper95(True, 10)
+
+
+def test_candidate_schema_matches_measurement_implementation():
+    from faceauth.models.femto_pad import FEATURE_NAMES, FEATURE_SCHEMA
+    assert CANDIDATE_SCHEMA == FEATURE_SCHEMA
+    assert CANDIDATE_FEATURES == FEATURE_NAMES
+
+
+def test_candidate_binding_tracks_actual_geometry_and_detector_sources(tmp_path, monkeypatch):
+    from faceauth.common import pad_validation as module
+    detector = tmp_path / "detector"
+    detector.mkdir()
+    (detector / "MODEL.json").write_text('{"fixture":"detector"}')
+    first = candidate_binding(detector_dir=detector)
+    assert clean_candidate_binding(first) == first
+    assert first["feature_code_sha256"] == module._hash(
+        module.Path(module.__file__).resolve().parents[1] / "models/femto_pad.py")
+    actual_hash = module._hash
+    monkeypatch.setattr(module, "_hash", lambda path: "d" * 64 if str(path).endswith("models/femto_pad.py") else actual_hash(path))
+    second = candidate_binding(detector_dir=detector)
+    assert second["feature_code_sha256"] != first["feature_code_sha256"]
+    assert second["pipeline_sha256"] != first["pipeline_sha256"]
+    (detector / "MODEL.json").write_text('{"fixture":"different detector"}')
+    assert candidate_binding(detector_dir=detector)["detector_model_json_sha256"] != second["detector_model_json_sha256"]
+
+
+def test_candidate_collection_whitelists_only_finite_features_and_does_not_relabel_old_pad(model):
+    measurement = {**candidate_measurement(), "emb": b"private", "score": 1, "live": True}
+    measurement["features"]["raw_depth"] = ["private"]
+    candidate = {**candidate_fixture(), "name": "private"}
+    frame = {"pad": {"live": False, "nonresponse": False, "score": 0}, "pad_candidate": measurement}
+    row = observation(model_binding(model), frames=[frame], candidate=candidate)
+    assert "private" not in json.dumps(row)
+    assert row["candidate_binding"] == candidate_fixture()
+    assert row["frames"][0]["pad_candidate"] == candidate_measurement()
+    assert row["frames"][0]["pad"]["live"] is False
+    report = evaluate_observations([row], binding=model_binding(model), calib_version=CALIB)
+    assert report["summary"]["live"]["bpcer"]["errors"] == 1
+    assert not report["eligible_for_review"]
+
+
+def test_candidate_collection_requires_binding_and_keeps_missing_attempts(model):
+    with pytest.raises(ValueError, match="requires its binding"):
+        observation(model_binding(model), frames=[{"pad_candidate": candidate_measurement()}])
+    row = observation(model_binding(model), frames=[{"pad": None}], candidate=candidate_fixture())
+    candidate = row["frames"][0]["pad_candidate"]
+    assert candidate["valid"] is False and candidate["reasons"] == ["not_measured"]
+    assert all(value is None for value in candidate["features"].values())
+
+
+@pytest.mark.parametrize("bad", [True, "1.2", [1.2], {"nested": 1.2}, float("nan"), float("inf"), None])
+def test_candidate_valid_measurement_cannot_contain_nonnumeric_or_missing_features(bad):
+    measurement = candidate_measurement()
+    measurement["features"]["plane_residual_mm"] = bad
+    with pytest.raises(ValueError):
+        clean_candidate_measurement(measurement)
+
+
+@pytest.mark.parametrize("field,value", [("schema", "other"), ("feature_schema", "other"),
+    ("pipeline_sha256", "not-a-hash"), ("feature_code_sha256", ["a" * 64])])
+def test_candidate_binding_rejects_malformed_provenance(field, value):
+    with pytest.raises(ValueError):
+        clean_candidate_binding({**candidate_fixture(), field: value})
+
+
+def test_candidate_failure_reasons_are_codes_not_freeform_metadata():
+    for reasons in (["private account name"], [[1, 2]], ["depth_missing"]):
+        measurement = candidate_measurement()
+        measurement["reasons"] = reasons
+        with pytest.raises(ValueError):
+            clean_candidate_measurement(measurement)
+    invalid = {"schema": CANDIDATE_SCHEMA, "valid": False, "reasons": ["depth_missing"],
+               "features": {"valid_ratio": 0.0, "plane_residual_mm": float("nan")}}
+    assert clean_candidate_measurement(invalid)["features"]["plane_residual_mm"] is None
+
+
+def test_historical_candidate_version_is_preserved_and_cannot_be_relabelled(model):
+    from faceauth.common.pad_validation import LEGACY_CANDIDATE_SCHEMA
+    old_binding = {**candidate_fixture(), "feature_schema": LEGACY_CANDIDATE_SCHEMA}
+    old_measurement = {**candidate_measurement(), "schema": LEGACY_CANDIDATE_SCHEMA}
+    assert clean_candidate_binding(old_binding)["feature_schema"] == LEGACY_CANDIDATE_SCHEMA
+    assert clean_candidate_measurement(old_measurement)["schema"] == LEGACY_CANDIDATE_SCHEMA
+    with pytest.raises(ValueError, match="schema does not match"):
+        observation(model_binding(model), frames=[{"pad_candidate": old_measurement}], candidate=candidate_fixture())
+    row = observation(model_binding(model), frames=[{"pad": None}], candidate=old_binding)
+    assert row["frames"][0]["pad_candidate"]["schema"] == LEGACY_CANDIDATE_SCHEMA
+    assert not row["frames"][0]["pad_candidate"]["valid"]

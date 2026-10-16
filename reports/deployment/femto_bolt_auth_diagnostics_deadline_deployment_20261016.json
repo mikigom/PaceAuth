@@ -1,0 +1,203 @@
+{
+  "deployed_at": "2026-10-16T02:34:53.198732+00:00",
+  "passed": true,
+  "url": "http://192.168.2.218:8080",
+  "mode": "femto_geometry_experimental",
+  "pad_enforcement_enabled": true,
+  "empirical_validation": "not_evaluated",
+  "production_validated": false,
+  "configuration_path": "deploy/pad/femto-geometry-experiment-auth-diagnostics-deadline-20261016.json",
+  "configuration_sha256": "35b052633b263a823662aae8de663d21c2ae7f03b188e7e6b4d4634bda7265a7",
+  "source_hashes": {
+    "models/pad.py": "f2d990a9e6d5303bb04b507b05993c6336529c589a7c2548c24b1e806a778c33",
+    "models/scrfd.py": "b7385053327e49f141235344841e95a5c4652523291a664c7bacf87c096d941b",
+    "common/align.py": "a0112cda33add8da7d521a40a1c61055a3e5f49c754fe4811aaac68041063a67",
+    "common/packet.py": "e784908efa80c522f57753459b01ba88c3311dcdbf35ab6cfa56bb983b8db85e",
+    "terminal/orbbec.py": "61eff28802ff92bb1674b72061b30be0c09188a50358ed54682a0a28d09800b0",
+    "engine/main.py": "851a4c9d0ed44831834ea528d7fea01afe4998f1893fe58b7a43e5d792ac3f03",
+    "api/policy.py": "ffa3c79218981ebb904f20109f10844bb5b23d935384c19cb7c37195674e4209",
+    "terminal/live.py": "a3399cb74e5af44d10af04300cd1273de43c071b6721a81651ead821db9a0d49",
+    "terminal/web_auth.py": "cb30f413cb9e06550500d0d6f1a05555f0235184cd95c00efe1acde7e5982d1f",
+    "terminal/pipeline.py": "8ae072ef2b04ffccd6076264e4f73fe316358bc3b46a9efeb75db50122f10615",
+    "terminal/guide.py": "40ae452fe74cf1dd7c8f31c1fbdb08714a07dcdd0004acd60e2b1f60a475264c",
+    "models/femto_pad.py": "20fe96861cd4a5755a8c8d076f9931c2864342f352406f0b8a586b2f2d74433f",
+    "common/pad_validation.py": "fa1b771fbffae4b74e8ae11d88df2b80334a346d03898133efc098c9e5741406",
+    "common/femto_pad_profile.py": "a013d0cb663ce6d500221726069d850c29f52776e4419ad5ceeae3b0d24ae738",
+    "common/femto_pad_experiment.py": "f277a57efcb34c51f84b3535f4e5650250db8ed8de68e5192cc6582c7c69f053",
+    "api/app.py": "3b9199230b5aa6d26b106a04d1012b5640494cce9592092b244fcc9e93e816c1",
+    "api/clients.py": "c96ed6174744e837dd5589416c6d7c7e9032f691674acd75b008d5bdd6e90b4e",
+    "terminal/client.py": "276249bad719b3916aca6e81eb7659f1e657b08983c865eec3a243ebdee0aeee"
+  },
+  "engines": {
+    "engine-1": {
+      "gpu_ready": true,
+      "mode": "femto_geometry_experimental",
+      "experiment": {
+        "ready": true,
+        "reasons": [],
+        "profile_sha256": "35b052633b263a823662aae8de663d21c2ae7f03b188e7e6b4d4634bda7265a7",
+        "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+        "scope": [
+          "print",
+          "replay"
+        ],
+        "experimental": true,
+        "production_validated": false,
+        "empirical_validation": "not_evaluated"
+      },
+      "production_pad_ready": false,
+      "candidate_binding": {
+        "schema": "faceauth.femto_pad.binding.v1",
+        "feature_schema": "faceauth.femto_pad.features.v2",
+        "feature_code_sha256": "20fe96861cd4a5755a8c8d076f9931c2864342f352406f0b8a586b2f2d74433f",
+        "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5",
+        "pipeline_sha256": "0095bfe961114a42de3e778c623b900382bb0d11cac9240464597048f6c953e0"
+      }
+    },
+    "engine-2": {
+      "gpu_ready": true,
+      "mode": "femto_geometry_experimental",
+      "experiment": {
+        "ready": true,
+        "reasons": [],
+        "profile_sha256": "35b052633b263a823662aae8de663d21c2ae7f03b188e7e6b4d4634bda7265a7",
+        "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+        "scope": [
+          "print",
+          "replay"
+        ],
+        "experimental": true,
+        "production_validated": false,
+        "empirical_validation": "not_evaluated"
+      },
+      "production_pad_ready": false,
+      "candidate_binding": {
+        "schema": "faceauth.femto_pad.binding.v1",
+        "feature_schema": "faceauth.femto_pad.features.v2",
+        "feature_code_sha256": "20fe96861cd4a5755a8c8d076f9931c2864342f352406f0b8a586b2f2d74433f",
+        "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5",
+        "pipeline_sha256": "0095bfe961114a42de3e778c623b900382bb0d11cac9240464597048f6c953e0"
+      }
+    }
+  },
+  "apis_config_and_health_verified": true,
+  "camera": {
+    "state": "streaming",
+    "fps": 30.1
+  },
+  "auth": {
+    "ready": true,
+    "capture_ready": true,
+    "console_mode": true,
+    "pad_enabled": true,
+    "pad_mode": "femto_geometry_experimental",
+    "pad_profile_sha256": "35b052633b263a823662aae8de663d21c2ae7f03b188e7e6b4d4634bda7265a7",
+    "enrollment_ready": true,
+    "enrollment_pad_enabled": false
+  },
+  "assets_sha256": {
+    "live.html": "77cfcbe3218fece6901c47427797815dea6abded71388682bc5ad8e66485ec0d",
+    "live.css": "a1a8fae7c9ac49c9fb9cbad960089ed4baad558370165624c229952c8e9f690c",
+    "live.js": "dd9626be2d35aa441fc7e9877c7a96b310ca2ba4bd94cb9cd5474e8503af5cc9"
+  },
+  "assets_cache_control_no_store": true,
+  "live_ui": {
+    "full_viewport_camera": true,
+    "default_view": "rgb",
+    "results_on_stream": true,
+    "compact_start_stop": true,
+    "identification_start_contract": {
+      "start": true,
+      "timeout_ms": "1..10000 ms remaining original window"
+    },
+    "identification_window_ms": 10000,
+    "silent_failure_retries": true,
+    "expiry_returns_idle": true,
+    "approval_only_result": true,
+    "late_result_suppressed": true,
+    "live_consent_form": false,
+    "enrollment_and_observation_consent_preserved": true
+  },
+  "enrollment_policy": {
+    "pad_enabled": false,
+    "guide_and_final_skip_pad": true,
+    "basic_quality_consent_integrity_same_person_retained": true,
+    "auth_pad_remains_enabled": true,
+    "affected_account_registration_confirmed_after_fix": false
+  },
+  "thresholds": {
+    "nose_protrusion_mm": 3.0,
+    "plane_residual_mm": 0.3
+  },
+  "threshold_provenance": {
+    "kind": "operator_requested_engineering_relaxation",
+    "previous_thresholds": {
+      "nose_protrusion_mm": 4.563589938099597,
+      "plane_residual_mm": 0.3536019972420733
+    },
+    "recalibrated": false,
+    "revision": "auth-relaxed-20261016",
+    "source_feature_schema": "faceauth.femto_pad.features.v1",
+    "source_profile_sha256": "907454b8797ec94c9688b6252f271d851ef4e336ef7a4c6f83b9154a858f770d",
+    "transferred_without_recalibration": false
+  },
+  "diagnostics": {
+    "storage": "internal auth_decision audit only",
+    "counts": [
+      "total_frames",
+      "passed_frames",
+      "failed_frames",
+      "nonresponse_frames",
+      "unmeasured_frames"
+    ],
+    "failed_conditions": "allowlisted per-frame reason counts",
+    "raw_media_or_features_or_scores_added": false,
+    "physical_failure_reproduction_performed": false
+  },
+  "ring": {
+    "two_slots_per_mark": true,
+    "inner_slot_first_capture": true,
+    "both_slots_two_captures": true,
+    "coverage_only_progress": true,
+    "direction_count_and_legend": true
+  },
+  "tests": {
+    "backend_passed": 393,
+    "browser_checks_passed": 61,
+    "js_errors": [],
+    "new_physical_pad_presentations": 0,
+    "new_real_face_approvals_tested": 0,
+    "backend_unique_tests": true,
+    "isolated_synthetic_fixtures": true,
+    "integration_stack_executed": false,
+    "backend_groups": [
+      {
+        "count": 145,
+        "scope": "internal audit diagnostics, API deadline, experimental runtime, engine and enrollment feedback"
+      },
+      {
+        "count": 113,
+        "scope": "console identification, terminal deadlines, capture and signed session client"
+      },
+      {
+        "count": 135,
+        "scope": "PAD candidate binding, enrollment guide, open console, observations and experimental profile"
+      }
+    ]
+  },
+  "preserved_original_evidence": {
+    "observations": "4ab99a8296084df15304a5119430515d3f9a45485dbf4e3e7cacd911415a0056",
+    "frozen_profile": "907454b8797ec94c9688b6252f271d851ef4e336ef7a4c6f83b9154a858f770d",
+    "runtime_protocol": "ee95d5516aa7d08c29327169e7ad7c6b9837ba3c3aeaf4941499c08cc48c7417",
+    "rows": 103,
+    "terminal_source": "cb30f413cb9e06550500d0d6f1a05555f0235184cd95c00efe1acde7e5982d1f"
+  },
+  "geometry_report": "reports/deployment/femto_bolt_pad_nose_robust_synthetic_20261015.json",
+  "browser_report": "reports/deployment/femto_bolt_live_deadline_ui_20261016.json",
+  "limitations": [
+    "Synthetic computation tests do not establish physical live acceptance or attack rejection rates.",
+    "Prior numeric observations cannot be recalculated using v2 because raw depth and landmarks were not stored.",
+    "Enrollment excludes PAD but retains basic quality; 3D masks and real bent prints are not validated for authentication.",
+    "Relaxed authentication minima are operator-requested engineering settings, not v2 calibration; historical failures remain failures."
+  ]
+}

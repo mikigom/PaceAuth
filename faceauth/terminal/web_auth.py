@@ -13,6 +13,7 @@ import json
 import logging
 import os
 import secrets
+import statistics
 import threading
 import time
 import unicodedata
@@ -50,7 +51,7 @@ CONSENT_TEXT = (
     "검증 기록으로 저장합니다. 안내 시간 안에 촬영을 마치지 못한 경우도 비응답으로 기록하며, "
     "직접 취소한 촬영은 검증 기록에 저장하지 않습니다. 이 서비스의 별도 테스트 계정만 사용합니다."
 )
-FINAL_STATES = {"succeeded", "rejected", "error", "cancelled"}
+FINAL_STATES = {"succeeded", "rejected", "error", "cancelled", "expired"}
 
 
 class Credentials(BaseModel):
@@ -104,11 +105,30 @@ class CaptureRequest(BaseModel):
                                          pattern=r"^[a-zA-Z0-9_-]+$")
 
 
+class IdentificationRequest(BaseModel):
+    # The LAN operator starts a transient 1:N check. This does not assert a
+    # participant's consent or carry an enrollment target into identification.
+    model_config = {"extra": "forbid"}
+    start: bool = Field(strict=True)
+    # Each retry receives only the browser run's remaining budget. The server
+    # enforces its own monotonic deadline even if the browser stops polling.
+    timeout_ms: int = Field(default=10000, strict=True, ge=1, le=10000)
+    client_request_id: str | None = Field(default=None, min_length=8, max_length=64,
+                                         pattern=r"^[a-zA-Z0-9_-]+$")
+
+    @field_validator("start")
+    @classmethod
+    def explicit_start(cls, value):
+        if value is not True:
+            raise ValueError("인증 시작 요청이 필요합니다.")
+        return value
+
+
 class ObservationRequest(CaptureRequest):
     target_account_id: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9_.-]{2,63}$")
     observation_mode: str = Field(default="diagnostic", pattern=r"^(diagnostic|auth|enroll)$")
     kind: str = Field(pattern=r"^(live|print|replay|mask_rigid|mask_silicone)$")
-    split: str = Field(pattern=r"^(calibration|test)$")
+    split: str = Field(pattern=r"^(train|calibration|test)$")
     subject_id: str = Field(pattern=r"^[a-zA-Z0-9_.-]{1,64}$")
     instrument_id: str = Field(default="", pattern=r"^[a-zA-Z0-9_.-]{0,64}$")
     conditions: str = Field(default="", max_length=300)
@@ -127,6 +147,10 @@ class AccountDeletion(BaseModel):
 
 
 class CaptureCancelled(Exception):
+    pass
+
+
+class IdentificationExpired(Exception):
     pass
 
 
@@ -234,6 +258,7 @@ class LiveAuth:
         same_calib = bool(calib and calib == backend.get("calib_version"))
         blockers = list(backend.get("blockers", [])) if self.enabled else [
             {"code": "auth_disabled", "message": "웹 등록·인증 기능이 설정되지 않았습니다."}]
+        backend_blocker_count = len(blockers)
         if self.enabled and not recent:
             blockers.append({"code": "readiness_stale", "message": "인증 서버의 최신 상태를 기다리고 있습니다."})
         if not camera_ready:
@@ -241,15 +266,26 @@ class LiveAuth:
         elif self.enabled and recent and not same_calib:
             blockers.append({"code": "calib_mismatch", "message": "센서 설정과 서버에 등록된 보정 정보가 다릅니다."})
         common = self.enabled and recent and camera_ready and same_calib
+        enrollment_blockers = (list(backend.get("enrollment_blockers", backend.get("blockers", [])))
+                               + blockers[backend_blocker_count:]) if self.enabled else list(blockers)
         return {"enabled": self.enabled, "pilot": True,
                 "console_mode": self.open_console, "console_ready": console_ready,
                 "console_session_id": Accounts.digest(secret)[:16] if console_ready else None,
                 "management_allowed": console_ready if self.open_console else bool(
                     self.accounts and self.accounts.profile(account).get("is_admin")),
                 "ready": bool(common and backend.get("ready") is True and not blockers),
+                "enrollment_ready": bool(common and backend.get("enrollment_ready", backend.get("ready")) is True
+                                         and not enrollment_blockers),
+                "enrollment_pad_enabled": False,
+                "enrollment_blockers": enrollment_blockers,
                 "capture_ready": bool(common and backend.get("capture_ready") is True),
                 "pad_enabled": backend.get("pad_enabled", True),
                 "pad_mode": backend.get("pad_mode", "enabled"),
+                "pad_profile_sha256": backend.get("pad_profile_sha256"),
+                "pad_pilot_validation": backend.get("pad_pilot_validation"),
+                "pad_experiment": backend.get("pad_experiment"),
+                "pad_candidate_available": isinstance(backend.get("candidate_binding"), dict)
+                    and bool(backend["candidate_binding"]),
                 "blockers": blockers, "pad_validation": backend.get("pad_validation"),
                 "account": self.accounts.profile(account) if self.accounts else {
                     "authenticated": False, "account_id": None, "display_name": None},
@@ -262,7 +298,8 @@ class LiveAuth:
     def public(operation):
         result = {k: operation[k] for k in ("id", "kind", "state", "message", "guide", "result", "client_request_id",
                                           "observation_mode", "pad_enabled", "pad_mode", "target_account_id",
-                                          "target_display_name", "guide_latency_ms", "guide_diagnostics") if k in operation}
+                                          "target_display_name", "guide_latency_ms", "guide_diagnostics",
+                                          "pad_profile_sha256", "enrollment_pad_enabled") if k in operation}
         sample_at = operation.get("_guide_sample_at")
         # Sample start, rather than response completion: a slow inference must not look like a fresh pose.
         result["guide_age_ms"] = round(max(0.0, time.monotonic() - sample_at) * 1000, 1) if sample_at is not None else None
@@ -380,19 +417,29 @@ class LiveAuth:
             return {"deleted": True, "account_id": account_id}
 
     def begin(self, kind, body, secret, account):
-        if body.consent.agreed is not True or body.consent.version != CONSENT_VERSION:
+        started_at = time.monotonic()
+        identifying = kind == "identify"
+        if identifying:
+            if not isinstance(body, IdentificationRequest) or body.start is not True:
+                raise HTTPException(400, "인증 시작 요청이 필요합니다.")
+        elif body.consent.agreed is not True or body.consent.version != CONSENT_VERSION:
             raise HTTPException(400, "현재 동의문을 확인하고 동의해 주세요.")
         if kind == "observe" and body.kind != "live" and not body.instrument_id:
             raise HTTPException(400, "사진·화면·가면을 구분하는 공격 매체 코드를 입력해 주세요.")
         readiness = self.status(secret)
-        required = "capture_ready" if kind == "observe" else "ready"
+        required = "capture_ready" if kind == "observe" else "enrollment_ready" if kind == "enroll" else "ready"
         if not readiness[required]:
             raise HTTPException(503, "촬영·인증 준비 항목이 완료되지 않았습니다.")
         with self.management_lock, self.lock:
             console = self.console_session(secret)
             actor = None if self.open_console else self.accounts.account(secret)
-            target = self.accounts.get(account)
-            if (not console and not actor) or not target or not target["enabled"]:
+            target = self.accounts.get(account) if account is not None else None
+            # Account-free identification is an explicit LAN-console operation.
+            # The identity comes only from a verified final approval, never a
+            # selected account or the read-only live recognition overlays.
+            if identifying and (not console or account is not None):
+                raise HTTPException(403, "전체 등록자 확인은 데모 관리 화면에서 사용할 수 있습니다.")
+            if not identifying and ((not console and not actor) or not target or not target["enabled"]):
                 raise HTTPException(403, "활성 계정만 얼굴을 등록하거나 인증할 수 있습니다.")
             if not console and actor != account and (kind != "enroll" or not self.accounts.profile(actor)["is_admin"]):
                 raise HTTPException(403, "다른 계정의 얼굴 등록은 관리자만 할 수 있습니다.")
@@ -411,11 +458,19 @@ class LiveAuth:
             op = {"id": secrets.token_urlsafe(18), "kind": kind, "state": "capturing",
                   "observation_mode": body.observation_mode if kind == "observe" else None,
                   "pad_enabled": readiness["pad_enabled"], "pad_mode": readiness["pad_mode"],
+                  "pad_profile_sha256": readiness.get("pad_profile_sha256"),
                   "message": "카메라에서 50~80cm 떨어져 정면을 바라봐 주세요.",
                   "guide": None, "result": None, "owner": Accounts.digest(secret), "account": account,
-                  "actor": actor, "console": console, "target_account_id": account, "target_display_name": target["display_name"],
+                  "actor": actor, "console": console, "target_account_id": account,
+                  "target_display_name": target["display_name"] if target else None,
                   "client_request_id": body.client_request_id, "request_hash": fingerprint,
-                  "cancel": threading.Event(), "consent_at": datetime.datetime.now(datetime.timezone.utc).isoformat()}
+                  "cancel": threading.Event()}
+            if kind == "enroll":
+                op["enrollment_pad_enabled"] = False
+            if identifying:
+                op["_deadline"] = started_at + body.timeout_ms / 1000
+            if not identifying:
+                op["consent_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
             self.operations[op["id"]] = op
             while len(self.operations) > 32:
                 self.operations.popitem(last=False)
@@ -429,7 +484,7 @@ class LiveAuth:
         with self.lock:
             self.operation(secret, operation_id)  # owner check
             op = self.operations[operation_id]
-            if op["state"] == "processing":
+            if op["state"] == "processing" and op["kind"] != "identify":
                 raise HTTPException(409, "이미 서버에 제출한 요청의 결과를 기다리고 있습니다.")
             if op["state"] not in FINAL_STATES:
                 op["cancel"].set()
@@ -439,23 +494,53 @@ class LiveAuth:
         with self.lock:
             op.update(fields)
 
+    @staticmethod
+    def _verify_pad_scope(op, *responses):
+        """Bind experimental results to the exact profile captured by this operation.
+
+        Legacy responses may omit mode claims, but an experimental approval must
+        explicitly bind all three fields in both its response and signed token.
+        """
+        expected = {"pad_enabled": op.get("pad_enabled", True), "pad_mode": op.get("pad_mode", "enabled"),
+                    "pad_profile_sha256": op.get("pad_profile_sha256")}
+        geometry_modes = ("femto_geometry_pilot", "femto_geometry_experimental")
+        pilot = any(value.get("pad_mode") in geometry_modes or value.get("pad_profile_sha256") is not None
+                    for value in (op, *responses))
+        if pilot:
+            digest = expected["pad_profile_sha256"]
+            if (expected["pad_enabled"] is not True or expected["pad_mode"] not in geometry_modes
+                    or not isinstance(digest, str) or len(digest) != 64
+                    or any(char not in "0123456789abcdef" for char in digest)):
+                raise RuntimeError("approval_scope_mismatch")
+        for response in responses:
+            for name, value in expected.items():
+                if pilot or name in response:
+                    if response.get(name) != value or (name == "pad_enabled" and response.get(name) is not value):
+                        raise RuntimeError("approval_scope_mismatch")
+
     def _check(self, op, secret):
         actor = self.accounts.account(secret) if not op.get("console") else None
-        target = self.accounts.get(op["account"])
+        identifying = op.get("kind") == "identify" and op.get("console") and op["account"] is None
+        target = self.accounts.get(op["account"]) if op["account"] is not None else None
         if (op["cancel"].is_set() or self.stop_event.is_set() or actor != op.get("actor", op["account"])
-                or not target or not target["enabled"]
+                or (not identifying and (not target or not target["enabled"]))
                 or (op.get("console") and not self.console_session(secret))
                 or (not op.get("console") and actor != op["account"] and not self.accounts.profile(actor).get("is_admin"))):
             raise CaptureCancelled
+        if op.get("_deadline") is not None and time.monotonic() >= op["_deadline"]:
+            raise IdentificationExpired
 
     def _frames(self, op, secret, session, timeout):
         # Establish the barrier AFTER receiving the unpredictable API challenge.
         after = self.camera.capture_sequence()
         not_before = time.monotonic() + 0.2
         deadline = time.monotonic() + timeout
+        if op.get("_deadline") is not None:
+            deadline = min(deadline, op["_deadline"])
         while time.monotonic() < deadline:
             self._check(op, secret)
-            capture = self.camera.capture_after(after, timeout=1)
+            capture = self.camera.capture_after(after, timeout=min(1, max(0, deadline - time.monotonic())))
+            self._check(op, secret)
             if capture is None:
                 if self.camera.status()["camera"]["state"] != "streaming":
                     raise RuntimeError("camera_unavailable")
@@ -468,14 +553,18 @@ class LiveAuth:
     def _run(self, op, body, secret):
         client = None
         observation_context = None
+        matched_account_id = None
         guide_attempts = 0
         guide_diagnostics = {"samples": 0, "quality_rejected": 0, "pose_unmatched": 0, "reasons": {},
                              "collected_frames": 0, "completed_directions": 0,
                              "latency_mean_ms": 0.0, "latency_max_ms": 0.0}
         latency_total_ms = 0.0
         try:
+            self._check(op, secret)
             calib = self.camera.status()["camera"]["info"]["calib_version"]
             client = self.client_factory(calib)
+            if op.get("_deadline") is not None:
+                client.deadline_monotonic = op["_deadline"]
             observing = op["kind"] == "observe"
             if observing:
                 initial = client.readiness()
@@ -485,11 +574,17 @@ class LiveAuth:
                     raise RuntimeError("readiness_changed")
                 # Snapshot the engine actually available before capture. A model
                 # reload must not relabel an earlier failed attempt as new data.
-                observation_context = {"calib_version": calib, "model_binding": json.loads(json.dumps(binding))}
+                observation_context = {"calib_version": calib, "model_binding": json.loads(json.dumps(binding)),
+                                       "candidate_binding": json.loads(json.dumps(initial.get("candidate_binding")))}
             capture_mode = body.observation_mode if observing else ("enroll" if op["kind"] == "enroll" else "auth")
             purpose = "enroll" if capture_mode == "enroll" else "auth"
             action = "enroll" if purpose == "enroll" else "pilot-check"
-            session = client.create_session(purpose, action)
+            if op.get("_deadline") is not None:
+                self._check(op, secret)
+                remaining_ms = max(1, int((op["_deadline"] - time.monotonic()) * 1000))
+                session = client.create_session(purpose, action, timeout_ms=remaining_ms)
+            else:
+                session = client.create_session(purpose, action)
             if purpose == "enroll":
                 guide = Guide(timeout_s=90, mode=body.guide_mode)
                 refs = []
@@ -516,6 +611,7 @@ class LiveAuth:
                         break
                     continue
                 analysis = client.capture_guide(session, encoded, ref["ts"], purpose=purpose)["frame"]
+                self._check(op, secret)
                 guide_attempts += 1
                 analyzed_at = time.monotonic()
                 latency_ms = max(0.0, analyzed_at - now) * 1000
@@ -564,8 +660,12 @@ class LiveAuth:
                 raise RuntimeError("capture_incomplete")
             # Recheck readiness and serialize cancellation with final submission.
             current = self.status(secret)
-            if not current["capture_ready" if op["kind"] == "observe" else "ready"]:
+            required = ("capture_ready" if observing else
+                        "enrollment_ready" if op["kind"] == "enroll" else "ready")
+            if not current[required]:
                 raise RuntimeError("readiness_changed")
+            if not observing and op["kind"] != "enroll":
+                self._verify_pad_scope(op, current)
             with self.lock:
                 self._check(op, secret)
                 op.update(state="processing", message="서버에서 촬영 결과를 확인하고 있습니다.")
@@ -575,7 +675,8 @@ class LiveAuth:
                 out = client.observe(session, images, timestamps, captured_at_ms=captured_at, purpose=purpose)
                 if (out.get("diagnostic") is not True or out.get("capture_purpose") != purpose
                         or out.get("calib_version") != calib or len(out.get("frames", [])) != len(refs)
-                        or out.get("model_binding") != observation_context["model_binding"]):
+                        or out.get("model_binding") != observation_context["model_binding"]
+                        or out.get("candidate_binding") != observation_context["candidate_binding"]):
                     raise RuntimeError("observation_mismatch")
                 result = self._record_observation(op, body, out)
                 ok, message = True, "검증 표본을 기록했습니다. 이 결과는 인증 승인이 아닙니다."
@@ -589,7 +690,9 @@ class LiveAuth:
                 ok = out.get("status") == "active"
                 message = "얼굴 등록이 완료되었습니다." if ok else (
                     "중복 등록 여부를 운영자가 확인해야 합니다." if out.get("status") == "pending_review" else "얼굴 등록이 거절되었습니다.")
-                result = {k: out[k] for k in ("status", "reason", "coverage", "pad_enabled", "pad_mode") if k in out}
+                result = {k: out[k] for k in ("status", "reason", "coverage", "pad_enabled", "pad_mode",
+                                             "pad_profile_sha256") if k in out}
+                result["enrollment_pad_enabled"] = False
                 if ok:
                     self._check(op, secret)
                     try:
@@ -612,20 +715,53 @@ class LiveAuth:
                         message = "얼굴은 등록했지만 사진을 갱신하지 못했습니다. 계정 관리에서 사진을 확인해 주세요."
             else:
                 out = client.authenticate(session, images, timestamps, captured_at_ms=captured_at)
+                # A central decision already committed is not revoked here.
+                # A stopped/expired Live run must never publish that late result.
+                self._check(op, secret)
+                self._verify_pad_scope(op, out)
                 ok = out.get("decision") == "approved"
                 if ok:
                     pub = serialization.load_pem_public_key((self.secrets_dir / "approval.pub").read_bytes())
                     claims = token.verify(pub, out.get("approval_token", ""))
-                    if ((claims.get("dev"), claims.get("act"), claims.get("sid"), claims.get("acct")) !=
-                            (self.device_id, action, session["session_id"], op["account"])):
+                    if ((claims.get("dev"), claims.get("act"), claims.get("sid")) !=
+                            (self.device_id, action, session["session_id"])):
+                        raise RuntimeError("approval_scope_mismatch")
+                    self._verify_pad_scope(op, claims)
+                    if op["kind"] == "identify":
+                        account_id = claims.get("acct")
+                        if (not isinstance(account_id, str) or not account_id or not isinstance(claims.get("amr"), list)
+                                or "face" not in claims["amr"]):
+                            raise RuntimeError("approval_scope_mismatch")
+                        matched_account_id = account_id
+                    elif claims.get("acct") != op["account"]:
                         raise RuntimeError("approval_scope_mismatch")
                 message = "얼굴 인증에 성공했습니다." if ok else (
                     "추가 인증이 필요합니다." if out.get("decision") == "step_up" else "얼굴 인증이 거절되었습니다. 다시 시도해 주세요.")
-                result = {k: out[k] for k in ("decision", "reason", "pad_enabled", "pad_mode") if k in out}
-            self._update(op, state="succeeded" if ok else "rejected", message=message, result=result)
+                result = {k: out[k] for k in ("decision", "reason", "pad_enabled", "pad_mode",
+                                             "pad_profile_sha256") if k in out}
+            # Serialize final identity eligibility and publication with local
+            # account disable/delete, after the API's own atomic ledger check.
+            with self.management_lock:
+                if matched_account_id is not None:
+                    self._check(op, secret)
+                    matched = self.accounts.get(matched_account_id)
+                    if not matched or not matched["enabled"]:
+                        raise RuntimeError("approval_scope_mismatch")
+                    result.update(matched_account_id=matched["account_id"], matched_display_name=matched["display_name"])
+                self._update(op, state="succeeded" if ok else "rejected", message=message, result=result)
         except CaptureCancelled:
             self._update(op, state="cancelled", message="촬영을 취소했습니다.")
+        except IdentificationExpired:
+            self._update(op, state="expired", message="인증 대기를 마쳤습니다.",
+                         result={"reason": "identification_expired"})
         except Exception as exc:
+            if op.get("_deadline") is not None and time.monotonic() >= op["_deadline"]:
+                self._update(op, state="expired", message="인증 대기를 마쳤습니다.",
+                             result={"reason": "identification_expired"})
+                return
+            if op["kind"] == "identify" and op["cancel"].is_set():
+                self._update(op, state="cancelled", message="촬영을 취소했습니다.")
+                return
             known = {"capture_incomplete", "camera_unavailable", "calib_changed", "already_enrolled",
                      "approval_scope_mismatch", "readiness_changed"}
             reason = str(exc) if isinstance(exc, RuntimeError) and str(exc) in known else "service_error"
@@ -645,7 +781,7 @@ class LiveAuth:
                         "calib_changed": "촬영 중 센서 설정이 변경되었습니다. 다시 시작해 주세요.",
                         "already_enrolled": "이 테스트 계정에는 이미 얼굴이 등록되어 있습니다.",
                         "capture_session_expired": "촬영 세션이 만료되었습니다. 다시 시작해 주세요.",
-                        "approval_scope_mismatch": "현재 테스트 계정에 대한 승인 결과를 확인할 수 없습니다.",
+                        "approval_scope_mismatch": "이 촬영에 대한 승인 결과를 확인할 수 없습니다.",
                         "readiness_changed": "서버 또는 센서 상태가 변경되었습니다. 준비 상태를 확인해 주세요."}
             LOG.warning("Face operation failed: %s", type(exc).__name__)
             result = {"reason": reason}
@@ -675,7 +811,8 @@ class LiveAuth:
             if (current.get("capture_ready") is not True or camera["state"] != "streaming"
                     or camera["info"].get("calib_version") != initial["calib_version"]
                     or current.get("calib_version") != initial["calib_version"]
-                    or (current.get("pad_validation") or {}).get("binding") != initial["model_binding"]):
+                    or (current.get("pad_validation") or {}).get("binding") != initial["model_binding"]
+                    or current.get("candidate_binding") != initial.get("candidate_binding")):
                 return None
             with self.lock:
                 self._check(op, secret)
@@ -699,14 +836,34 @@ class LiveAuth:
             consent=True,
             kind=body.kind, split=body.split, instrument_id=body.instrument_id,
             calib_version=out["calib_version"], binding=out["model_binding"], frames=out["frames"],
-            conditions=conditions)
+            conditions=conditions, candidate_binding=out.get("candidate_binding"))
         path = self.state_dir / "pad-observations.jsonl"
         fd = os.open(path, os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o600)
         with os.fdopen(fd, "a") as stream:
             stream.write(json.dumps(observation, ensure_ascii=False, allow_nan=False) + "\n")
             stream.flush()
             os.fsync(stream.fileno())
-        return {"recorded": True, "presentation_id": op["id"], "authentication_approved": False}
+        result = {"recorded": True, "presentation_id": op["id"], "authentication_approved": False}
+        if observation.get("candidate_binding"):
+            # Only the sanitized numeric observation is summarized. `valid`
+            # means measurable geometry, never a live/spoof classification.
+            candidates = [f["pad_candidate"] for f in observation["frames"] if "pad_candidate" in f]
+            valid = [c for c in candidates if c["valid"]]
+            names = ("depth_median_mm", "plane_residual_mm", "nose_protrusion_mm", "valid_ratio", "ir_median")
+            features = {}
+            for name in names:
+                values = [c["features"][name] for c in valid if c["features"].get(name) is not None]
+                if values:
+                    features[name] = round(statistics.median(values), 3)
+            reasons = {}
+            for candidate in candidates:
+                for reason in set(candidate["reasons"]):
+                    reasons[reason] = reasons.get(reason, 0) + 1
+            result["candidate_summary"] = {"frames": 0 if capture_outcome else len(observation["frames"]),
+                                           "measured_frames": sum("not_measured" not in c["reasons"] for c in candidates),
+                                           "valid_frames": len(valid),
+                                           "features": features, "reasons": reasons}
+        return result
 
 
 def auth_router(service):
@@ -893,6 +1050,14 @@ def auth_router(service):
         mutation(request)
         secret, account = identity(request)
         return service.begin("authenticate", body, secret, own_target(account))
+
+    @router.post("/identify", status_code=202)
+    def identify(body: IdentificationRequest, request: Request):
+        mutation(request)
+        secret, _ = identity(request)
+        if not service.open_console:
+            raise HTTPException(403, "전체 등록자 확인은 데모 관리 화면에서 사용할 수 있습니다.")
+        return service.begin("identify", body, secret, None)
 
     @router.post("/observe", status_code=202)
     def observe(body: ObservationRequest, request: Request):

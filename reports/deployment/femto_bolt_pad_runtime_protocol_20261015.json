@@ -1,0 +1,133 @@
+{
+  "reviewed_at": "2026-10-15T10:41:00.626596+00:00",
+  "protocol_path": "/var/lib/paceauth/pad-evaluations/runtime-protocol-20261015.json",
+  "protocol_sha256": "ee95d5516aa7d08c29327169e7ad7c6b9837ba3c3aeaf4941499c08cc48c7417",
+  "protocol_mode": "0o600",
+  "protocol": {
+    "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+    "candidate_binding": {
+      "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5",
+      "feature_code_sha256": "d4b057446e45f0aec9531e8a2a83695f5cacc6f15e6db25c4f83adff1df8a210",
+      "feature_schema": "faceauth.femto_pad.features.v1",
+      "pipeline_sha256": "e848eadc9c9477939ed7f0a6cade4f1831a2aba7291ae72ff8b062db527c486d",
+      "schema": "faceauth.femto_pad.binding.v1"
+    },
+    "correction_count": 6,
+    "corrections_sha256": "ae8dd32b025b06485e47ff9c56caab339175d215e1be3345d913ee72de4dd4a0",
+    "created_at": "2026-10-15T10:40:25.819599+00:00",
+    "evaluator_sources_sha256": {
+      "label_corrections": "da8996ec2105b944e7a81ddd4df1f67cc1a37798a378d06263acd8c6f92bfb40",
+      "observation_validation": "27ef123937a6cfbd8432fba1da0c08c041d98a7cadd4dd354845493243815a56",
+      "profile_evaluator": "f3858c9bc86a03d94f5a804db492a71cd76a82c82c9684947342d66f066750f7",
+      "runtime_evaluator": "33e3d685dedc6a670186bee773c33b7a16a75357eada0ba725f4646794e31b89"
+    },
+    "experimental": true,
+    "frozen_profile_sha256": "907454b8797ec94c9688b6252f271d851ef4e336ef7a4c6f83b9154a858f770d",
+    "prior_diagnostic": {
+      "eligible_for_local_pilot": false,
+      "failure_resolved": false,
+      "known_limitation": "prior_diagnostic_live_rejection_remains_unfixed",
+      "report_sha256": "4f34a319b5a7f475063af92a99ea9eb378ea2073d8bcb1565f35a09e88a2c573",
+      "summary": {
+        "live": {
+          "accepted": 5,
+          "errors": 1,
+          "nonresponses": 0,
+          "presentations": 6,
+          "responding": 6
+        },
+        "print": {
+          "accepted": 0,
+          "errors": 0,
+          "nonresponses": 1,
+          "presentations": 8,
+          "responding": 7
+        },
+        "replay": {
+          "accepted": 0,
+          "errors": 0,
+          "nonresponses": 0,
+          "presentations": 3,
+          "responding": 3
+        }
+      }
+    },
+    "production_validated": false,
+    "rules": {
+      "all_live_require_good_final_quality": true,
+      "all_matching_appended_attempts": true,
+      "attack_scope": [
+        "auth"
+      ],
+      "cancelled_attempts": 0,
+      "complete_frame_counts": {
+        "auth": 3,
+        "enroll": 18
+      },
+      "exact_presentations": {
+        "live": {
+          "auth": 1,
+          "enroll": 2
+        },
+        "print": {
+          "auth": 3,
+          "enroll": 0
+        },
+        "replay": {
+          "auth": 3,
+          "enroll": 0
+        }
+      },
+      "kinds": [
+        "live",
+        "print",
+        "replay"
+      ],
+      "live_scope": [
+        "auth",
+        "enroll"
+      ],
+      "modes": [
+        "auth",
+        "enroll"
+      ],
+      "operator_attempt_reconciliation_required": true,
+      "quality_passing_responding_auth_rejections_per_attack_kind": 1,
+      "recorded_presentations": 9,
+      "replace_failures": false,
+      "split": "test",
+      "started_attempts": 9,
+      "unrecorded_attempts": 0
+    },
+    "schema": "faceauth.femto_pad.runtime_protocol.v1",
+    "source_prefix": {
+      "bytes": 476500,
+      "rows": 91,
+      "sha256": "8c0adbe7f39fe3095769425a995893e64d470fbfac2bd16c2530d1b9ce738028"
+    }
+  },
+  "archived_evaluator_path": "/var/lib/paceauth/pad-evaluations/runtime-tools-20261015/scripts/evaluate_femto_runtime.py",
+  "prior_report_path": "/var/lib/paceauth/pad-evaluations/diagnostic-4f34a319b5a7f475.json",
+  "precollection_report_path": "/var/lib/paceauth/pad-evaluations/runtime-precollection-20261015.json",
+  "precollection_check": {
+    "report_sha256": "5274e670557324575e362715b56809da74f0e6f7effc32bda332ecec35b79e3f",
+    "profile_sha256": null,
+    "eligible_for_local_pilot": false,
+    "included_rows": 0,
+    "reasons": [
+      "runtime_attempt_reconciliation_missing",
+      "runtime_insufficient_live_auth",
+      "runtime_insufficient_live_enroll",
+      "runtime_insufficient_print_auth",
+      "runtime_insufficient_replay_auth",
+      "runtime_print_quality_passing_auth_rejection_missing",
+      "runtime_replay_quality_passing_auth_rejection_missing"
+    ]
+  },
+  "eligible_profile_created": false,
+  "operator_reconciliation_received": false,
+  "unit_tests_passed": 100,
+  "pad_activated": false,
+  "thresholds_changed": false,
+  "qualification_scope": "prospective authentication attack trials and live enrollment workflow; limited local pilot; prior diagnostic failure remains"
+}

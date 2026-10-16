@@ -1,0 +1,48 @@
+{
+  "tested_at": "2026-10-15T11:30:50.335830+00:00",
+  "source_sha256": {
+    "live.html": "71c78ede8731c15bfc318d229e8ce45ecf9f2d5999a916ae97e15254d6c2d17c",
+    "live.css": "abe9afa8e54c3e9269274745159a4ed703aaae3efb8585aee92d7fde33c9ee45",
+    "live.js": "44207d942a1f31fc7270f30071c81d47cfb649de7efeb350cf840abd83efbcf3"
+  },
+  "passed": true,
+  "checks": {
+    "experimental_disclosure_visible": true,
+    "no_disabled_pad_claim_when_enabled": true,
+    "experimental_status_badge": true,
+    "fresh_no_implicit_capture": true,
+    "no_identity_preselection_required": true,
+    "unready_experiment_blocks_authentication": true,
+    "experimental_watch_waits_without_face": true,
+    "unknown_keeps_waiting_without_approval": true,
+    "experimental_identification_has_no_account_target": true,
+    "live_overlay_does_not_grant_approval": true,
+    "rejection_motion_keeps_watch_armed": true,
+    "rejection_does_not_identify_live_label": true,
+    "rejection_automatically_returns_to_authentication": true,
+    "verified_approval_shows_only_result_identity": true,
+    "approval_preserves_unvalidated_experiment_disclosure": true,
+    "approval_check_and_ripple_motion_present": true,
+    "experimental_mobile_390_no_overflow": true,
+    "experimental_mobile_320_no_overflow": true,
+    "enrollment_experimental_disclosure_visible": true,
+    "reduced_motion_keeps_correct_experimental_result": true,
+    "reduced_motion_suppresses_decorative_animation": true
+  },
+  "failure_details": {},
+  "screenshots": [
+    "/tmp/paceauth-pad-experimental-ui/experimental-desktop-idle-synthetic.png",
+    "/tmp/paceauth-pad-experimental-ui/experimental-desktop-approved-synthetic.png",
+    "/tmp/paceauth-pad-experimental-ui/experimental-mobile-390-approved-synthetic.png",
+    "/tmp/paceauth-pad-experimental-ui/experimental-mobile-320-approved-synthetic.png",
+    "/tmp/paceauth-pad-experimental-ui/experimental-enrollment-capturing-synthetic.png",
+    "/tmp/paceauth-pad-experimental-ui/experimental-reduced-motion-approved-synthetic.png"
+  ],
+  "js_errors": [],
+  "backend": "isolated mocked API; synthetic accounts, consent and captures only",
+  "mode": "femto_geometry_experimental",
+  "test_scope": "UI mechanics only; no physical PAD validation",
+  "empirical_pad_validation": "not_evaluated",
+  "human_media_persisted": false,
+  "synthetic_media_persisted": true
+}

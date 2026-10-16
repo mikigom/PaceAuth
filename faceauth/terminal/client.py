@@ -79,6 +79,7 @@ class DeviceClient:
         # Wait beyond the gateway's 90 s response deadline for a final decision. Keep connection/pool waits
         # short and allow an enrollment packet's upload to finish within the gateway's 30 s body deadline.
         self.final_timeout = httpx.Timeout(final_timeout, connect=min(timeout, 2.0), write=30.0, pool=timeout)
+        self.deadline_monotonic = None
         self.key = serialization.load_pem_private_key(_device_file(secrets_dir, device_id, ".ed25519").read_bytes(), None)
         self.http = httpx.Client(base_url=base_url, verify=mtls_context(device_id, secrets_dir), timeout=timeout,
                                  transport=transport)  # transport: tests only
@@ -88,8 +89,18 @@ class DeviceClient:
 
     def _post(self, path: str, *, json=None, content: bytes | None = None, final=False):
         headers = {"Content-Type": "application/msgpack"} if content is not None else None
+        timeout = self.final_timeout if final else self.http.timeout
+        if self.deadline_monotonic is not None:
+            remaining = self.deadline_monotonic - time.monotonic()
+            if remaining <= 0:
+                raise httpx.TimeoutException("identification deadline expired")
+            # httpx limits each transport phase, not total wall-clock time.
+            # The terminal checks the absolute deadline again on response, and
+            # the central session expiry also prevents a late approval commit.
+            timeout = httpx.Timeout(**{name: min(value, remaining) if value is not None else remaining
+                                       for name, value in timeout.as_dict().items()})
         r = self.http.post(path, json=json, content=content, headers=headers,
-                           **({"timeout": self.final_timeout} if final else {}),
+                           timeout=timeout,
                            extensions={"sni_hostname": self.server_name})  # SNI + certificate name check
         r.raise_for_status()
         if "msgpack" in r.headers.get("content-type", ""):
@@ -103,8 +114,13 @@ class DeviceClient:
                             captured_at_ms=min(ts[0].values()) if captured_at_ms is None else captured_at_ms,
                             labels=labels, extra=extra)
 
-    def create_session(self, purpose: str, action_id: str) -> dict:
-        return self._post("/v1/sessions", json={"purpose": purpose, "device_id": self.device_id, "action_id": action_id})
+    def create_session(self, purpose: str, action_id: str, *, timeout_ms: int | None = None) -> dict:
+        body = {"purpose": purpose, "device_id": self.device_id, "action_id": action_id}
+        if timeout_ms is not None:
+            if purpose != "auth" or type(timeout_ms) is not int or not 1 <= timeout_ms <= 10000:
+                raise ValueError("identification timeout must be an auth budget of 1 to 10000 ms")
+            body["timeout_ms"] = timeout_ms
+        return self._post("/v1/sessions", json=body)
 
     def readiness(self) -> dict:
         response = self.http.get("/v1/terminal/readiness", params={"device_id": self.device_id},

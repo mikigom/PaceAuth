@@ -1,0 +1,62 @@
+{
+  "source_rows": 91,
+  "source_sha256": "8c0adbe7f39fe3095769425a995893e64d470fbfac2bd16c2530d1b9ce738028",
+  "frozen_profile_sha256": "907454b8797ec94c9688b6252f271d851ef4e336ef7a4c6f83b9154a858f770d",
+  "capture_paths": {
+    "auth": {
+      "presentations": 4,
+      "frames": 12,
+      "valid_frames": 12,
+      "accepted_by_frozen_profile": 4,
+      "failed_quality_frames": 0,
+      "ranges": {
+        "depth_median_mm": {
+          "min": 414.0,
+          "max": 432.0
+        },
+        "plane_residual_mm": {
+          "min": 9.657317743198451,
+          "max": 10.564512978649079
+        },
+        "quadratic_residual_mm": {
+          "min": 4.8270695976663385,
+          "max": 5.822735473849256
+        },
+        "nose_protrusion_mm": {
+          "min": 10.02864942032977,
+          "max": 17.973487264845545
+        }
+      }
+    },
+    "enroll": {
+      "presentations": 1,
+      "frames": 18,
+      "valid_frames": 18,
+      "accepted_by_frozen_profile": 1,
+      "failed_quality_frames": 0,
+      "ranges": {
+        "depth_median_mm": {
+          "min": 419.0,
+          "max": 452.0
+        },
+        "plane_residual_mm": {
+          "min": 9.142788715937881,
+          "max": 21.688233812044764
+        },
+        "quadratic_residual_mm": {
+          "min": 4.776052888758789,
+          "max": 13.89403077042611
+        },
+        "nose_protrusion_mm": {
+          "min": 8.196783427823902,
+          "max": 25.55443626156125
+        }
+      }
+    }
+  },
+  "pad_activated": false,
+  "thresholds_changed": false,
+  "diagnostic_test_failure_retained": true,
+  "scope": "calibration observations through actual capture selectors; not held-out qualification",
+  "reviewed_at": "2026-10-15T10:26:38.102342+00:00"
+}

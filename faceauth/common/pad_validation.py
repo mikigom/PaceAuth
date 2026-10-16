@@ -18,6 +18,23 @@ SPLITS = ("train", "calibration", "test")
 SOURCE_FILES = ("models/pad.py", "models/scrfd.py", "common/align.py",
                 "common/packet.py", "terminal/orbbec.py", "engine/main.py", "api/policy.py",
                 "terminal/live.py", "terminal/web_auth.py", "terminal/pipeline.py", "terminal/guide.py")
+LEGACY_CANDIDATE_SCHEMA = "faceauth.femto_pad.features.v1"
+CANDIDATE_SCHEMA = "faceauth.femto_pad.features.v2"
+CANDIDATE_SCHEMAS = (LEGACY_CANDIDATE_SCHEMA, CANDIDATE_SCHEMA)
+CANDIDATE_BINDING_SCHEMA = "faceauth.femto_pad.binding.v1"
+CANDIDATE_FEATURES = (
+    "valid_ratio", "surface_ratio", "valid_blocks_ratio", "depth_median_mm", "depth_iqr_mm",
+    "plane_residual_mm", "quadratic_residual_mm", "nose_plane_protrusion_mm", "nose_protrusion_mm",
+    "nose_valid_ratio", "surround_valid_ratio", "ir_median", "ir_iqr",
+)
+CANDIDATE_REASONS = frozenset(("invalid_input", "invalid_landmarks", "landmarks_too_small", "depth_missing",
+    "depth_coverage", "nose_coverage", "surround_coverage", "ir_missing", "depth_blocks",
+    "geometry_degenerate", "nose_depth_discontinuity", "not_measured", "measurement_error"))
+# These descriptors use PAD's alignment helpers, but never its CNN or weights.
+# Capture/selection/storage changes invalidate collection provenance as well.
+CANDIDATE_SOURCE_FILES = (*SOURCE_FILES, "models/femto_pad.py", "common/pad_validation.py",
+                          "common/femto_pad_profile.py", "common/femto_pad_experiment.py", "api/app.py", "api/clients.py",
+                          "terminal/client.py")
 
 
 def _hash(path):
@@ -30,6 +47,58 @@ def _hash(path):
 
 def canonical_json(value):
     return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+
+
+def candidate_binding(*, detector_dir):
+    """Fingerprint the feature-only candidate independently of the old PAD CNN.
+
+    The engine supplies the detector from its verified signed registry. This is
+    collection provenance, not a release signature or permission to authenticate.
+    Calibration remains a separate required observation field.
+    """
+    root = Path(__file__).resolve().parents[1]
+    sources = {name: _hash(root / name) for name in CANDIDATE_SOURCE_FILES}
+    return {"schema": CANDIDATE_BINDING_SCHEMA, "feature_schema": CANDIDATE_SCHEMA,
+            "feature_code_sha256": sources["models/femto_pad.py"],
+            "detector_model_json_sha256": _hash(Path(detector_dir) / "MODEL.json"),
+            "pipeline_sha256": hashlib.sha256(canonical_json(sources)).hexdigest()}
+
+
+def clean_candidate_binding(value):
+    """Keep only versioned provenance and SHA-256 digests, never freeform data."""
+    if (not isinstance(value, dict) or value.get("schema") != CANDIDATE_BINDING_SCHEMA
+            or value.get("feature_schema") not in CANDIDATE_SCHEMAS):
+        raise ValueError("invalid PAD candidate binding")
+    clean = {"schema": CANDIDATE_BINDING_SCHEMA, "feature_schema": value["feature_schema"]}
+    for key in ("feature_code_sha256", "detector_model_json_sha256", "pipeline_sha256"):
+        digest = value.get(key)
+        if not isinstance(digest, str) or len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
+            raise ValueError("invalid PAD candidate digest")
+        clean[key] = digest
+    return clean
+
+
+def clean_candidate_measurement(value):
+    """Whitelist feature scalars; valid describes measurement, never liveness."""
+    if value is None:
+        value = {"schema": CANDIDATE_SCHEMA, "valid": False, "reasons": ["not_measured"], "features": {}}
+    if (not isinstance(value, dict) or value.get("schema") not in CANDIDATE_SCHEMAS
+            or type(value.get("valid")) is not bool or not isinstance(value.get("features"), dict)):
+        raise ValueError("invalid PAD candidate measurement")
+    reasons = value.get("reasons")
+    if (not isinstance(reasons, list) or any(not isinstance(r, str) or r not in CANDIDATE_REASONS for r in reasons)
+            or bool(reasons) == value["valid"]):
+        raise ValueError("invalid PAD candidate reasons")
+    features = {}
+    for name in CANDIDATE_FEATURES:
+        item = value["features"].get(name)
+        if item is not None and type(item) not in (int, float):
+            raise ValueError("PAD candidate features must be numeric scalars")
+        features[name] = float(item) if item is not None and math.isfinite(item) else None
+    if value["valid"] and any(item is None for item in features.values()):
+        raise ValueError("valid PAD candidate measurement requires every finite feature")
+    return {"schema": value["schema"], "valid": value["valid"],
+            "reasons": list(dict.fromkeys(reasons)), "features": features}
 
 
 def model_binding(model_dir, *, detector_dir=None):
@@ -70,7 +139,7 @@ def model_binding(model_dir, *, detector_dir=None):
 
 
 def make_observation(*, presentation_id, subject_id, consent_id, consent, kind, split,
-                     instrument_id, calib_version, binding, frames, conditions):
+                     instrument_id, calib_version, binding, frames, conditions, candidate_binding=None):
     """Whitelist a consented attempt into a score-only record suitable for JSONL.
 
     IDs must be opaque study pseudonyms, not account names. The caller obtains
@@ -90,8 +159,11 @@ def make_observation(*, presentation_id, subject_id, consent_id, consent, kind, 
         raise ValueError("a presentation requires measured frames")
     if not isinstance(conditions, dict):
         raise ValueError("conditions must be a mapping")
+    candidate = clean_candidate_binding(candidate_binding) if candidate_binding is not None else None
     cleaned = []
     for frame in frames:
+        if "pad_candidate" in frame and candidate is None:
+            raise ValueError("PAD candidate measurement requires its binding")
         pad = frame.get("pad")
         if pad is None:
             decision = {"live": False, "nonresponse": True, "score": None}
@@ -111,9 +183,18 @@ def make_observation(*, presentation_id, subject_id, consent_id, consent, kind, 
             for key in ("cnn", "checks", "failed"):
                 if key in pad:
                     decision[key] = _finite_measurements(pad[key])
-        cleaned.append({"pad": decision, "ok": frame.get("ok") is True,
-                        "reasons": [str(r) for r in frame.get("reasons", [])],
-                        "quality": _finite_measurements(frame.get("quality", {}))})
+        item = {"pad": decision, "ok": frame.get("ok") is True,
+                "reasons": [str(r) for r in frame.get("reasons", [])],
+                "quality": _finite_measurements(frame.get("quality", {}))}
+        if candidate is not None:
+            measurement = frame.get("pad_candidate")
+            if measurement is None:
+                measurement = {"schema": candidate["feature_schema"], "valid": False,
+                               "reasons": ["not_measured"], "features": {}}
+            item["pad_candidate"] = clean_candidate_measurement(measurement)
+            if item["pad_candidate"]["schema"] != candidate["feature_schema"]:
+                raise ValueError("PAD candidate feature schema does not match its binding")
+        cleaned.append(item)
     # Deliberately whitelist conditions so a complete frame/account object cannot
     # accidentally be persisted through this metadata field.
     allowed = ("lighting", "distance_mm", "pose", "eyewear", "location_id", "mode", "pai_subtype", "capture_outcome")
@@ -123,6 +204,8 @@ def make_observation(*, presentation_id, subject_id, consent_id, consent, kind, 
            "split": split, "instrument_id": instrument_id if kind != "live" else None,
            "calib_version": calib_version, "binding": dict(binding), "frames": cleaned,
            "conditions": selected}
+    if candidate is not None:
+        row["candidate_binding"] = candidate
     canonical_json(row)  # reject non-JSON metadata; no lossy default=str on arrays
     return row
 
@@ -229,6 +312,8 @@ def evaluate_observations(rows, *, binding, calib_version, policy=None, independ
             raise ValueError("mixed model, pipeline or sensor calibration")
         fields = {k: row[k] for k in ("presentation_id", "subject_id", "consent_id", "consent", "kind",
                   "split", "instrument_id", "calib_version", "binding", "frames", "conditions")}
+        if "candidate_binding" in row:
+            fields["candidate_binding"] = row["candidate_binding"]
         clean = make_observation(**fields)
         if clean["presentation_id"] in ids:
             raise ValueError("duplicate presentation: adjacent frames are not independent trials")

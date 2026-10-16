@@ -1,0 +1,1062 @@
+{
+  "tested_at": "2026-10-16T01:36:41.142177+00:00",
+  "source_sha256": {
+    "live.html": "c608708a33a5c2ebaa070e0081ebe0cec2ef72e9dbb0a3913ffecf5bde9b23e9",
+    "live.css": "c70bba5e4f8ba08169440050417496fa04f009db2b84e0fc22853144c4e935a9",
+    "live.js": "a4ca5cd1e7008434ba69ad550ef72ddce8a0b56d4bd89a2907540786ee7de2d9"
+  },
+  "passed": true,
+  "checks": {
+    "fresh_no_implicit_start_or_consent": true,
+    "idle_1440x900_no_page_overflow": true,
+    "idle_1440x900_full_camera_mirrored_cover": true,
+    "idle_1440x900_svg_cover_crop": true,
+    "idle_1440x900_no_live_consent_or_extra_labels": true,
+    "idle_1440x900_small_action_clickable": true,
+    "idle_1440x900_nav-live_visible_hit_target": true,
+    "idle_1440x900_nav-accounts_visible_hit_target": true,
+    "idle_1440x900_nav-pad_visible_hit_target": true,
+    "idle_1440x900_caption_screen_size_and_crop": true,
+    "idle_1440x900_clean_idle_without_result_or_waiting": true,
+    "idle_1920x1080_no_page_overflow": true,
+    "idle_1920x1080_full_camera_mirrored_cover": true,
+    "idle_1920x1080_svg_cover_crop": true,
+    "idle_1920x1080_no_live_consent_or_extra_labels": true,
+    "idle_1920x1080_small_action_clickable": true,
+    "idle_1920x1080_nav-live_visible_hit_target": true,
+    "idle_1920x1080_nav-accounts_visible_hit_target": true,
+    "idle_1920x1080_nav-pad_visible_hit_target": true,
+    "idle_1920x1080_caption_screen_size_and_crop": true,
+    "idle_1920x1080_clean_idle_without_result_or_waiting": true,
+    "idle_390x844_no_page_overflow": true,
+    "idle_390x844_full_camera_mirrored_cover": true,
+    "idle_390x844_svg_cover_crop": true,
+    "idle_390x844_no_live_consent_or_extra_labels": true,
+    "idle_390x844_small_action_clickable": true,
+    "idle_390x844_nav-live_visible_hit_target": true,
+    "idle_390x844_nav-accounts_visible_hit_target": true,
+    "idle_390x844_nav-pad_visible_hit_target": true,
+    "idle_390x844_caption_screen_size_and_crop": true,
+    "idle_390x844_clean_idle_without_result_or_waiting": true,
+    "idle_320x568_no_page_overflow": true,
+    "idle_320x568_full_camera_mirrored_cover": true,
+    "idle_320x568_svg_cover_crop": true,
+    "idle_320x568_no_live_consent_or_extra_labels": true,
+    "idle_320x568_small_action_clickable": true,
+    "idle_320x568_nav-live_visible_hit_target": true,
+    "idle_320x568_nav-accounts_visible_hit_target": true,
+    "idle_320x568_nav-pad_visible_hit_target": true,
+    "idle_320x568_caption_screen_size_and_crop": true,
+    "idle_320x568_clean_idle_without_result_or_waiting": true,
+    "idle_844x390_no_page_overflow": true,
+    "idle_844x390_full_camera_mirrored_cover": true,
+    "idle_844x390_svg_cover_crop": true,
+    "idle_844x390_no_live_consent_or_extra_labels": true,
+    "idle_844x390_small_action_clickable": true,
+    "idle_844x390_nav-live_visible_hit_target": true,
+    "idle_844x390_nav-accounts_visible_hit_target": true,
+    "idle_844x390_nav-pad_visible_hit_target": true,
+    "idle_844x390_caption_screen_size_and_crop": true,
+    "idle_844x390_clean_idle_without_result_or_waiting": true,
+    "idle_568x320_no_page_overflow": true,
+    "idle_568x320_full_camera_mirrored_cover": true,
+    "idle_568x320_svg_cover_crop": true,
+    "idle_568x320_no_live_consent_or_extra_labels": true,
+    "idle_568x320_small_action_clickable": true,
+    "idle_568x320_nav-live_visible_hit_target": true,
+    "idle_568x320_nav-accounts_visible_hit_target": true,
+    "idle_568x320_nav-pad_visible_hit_target": true,
+    "idle_568x320_caption_screen_size_and_crop": true,
+    "idle_568x320_clean_idle_without_result_or_waiting": true,
+    "waiting_1440x900_no_page_overflow": true,
+    "waiting_1440x900_full_camera_mirrored_cover": true,
+    "waiting_1440x900_svg_cover_crop": true,
+    "waiting_1440x900_no_live_consent_or_extra_labels": true,
+    "waiting_1440x900_small_action_clickable": true,
+    "waiting_1440x900_nav-live_visible_hit_target": true,
+    "waiting_1440x900_nav-accounts_visible_hit_target": true,
+    "waiting_1440x900_nav-pad_visible_hit_target": true,
+    "waiting_1440x900_caption_screen_size_and_crop": true,
+    "waiting_1440x900_visible_waiting_without_result_card": true,
+    "waiting_390x844_no_page_overflow": true,
+    "waiting_390x844_full_camera_mirrored_cover": true,
+    "waiting_390x844_svg_cover_crop": true,
+    "waiting_390x844_no_live_consent_or_extra_labels": true,
+    "waiting_390x844_small_action_clickable": true,
+    "waiting_390x844_nav-live_visible_hit_target": true,
+    "waiting_390x844_nav-accounts_visible_hit_target": true,
+    "waiting_390x844_nav-pad_visible_hit_target": true,
+    "waiting_390x844_caption_screen_size_and_crop": true,
+    "waiting_390x844_visible_waiting_without_result_card": true,
+    "waiting_320x568_no_page_overflow": true,
+    "waiting_320x568_full_camera_mirrored_cover": true,
+    "waiting_320x568_svg_cover_crop": true,
+    "waiting_320x568_no_live_consent_or_extra_labels": true,
+    "waiting_320x568_small_action_clickable": true,
+    "waiting_320x568_nav-live_visible_hit_target": true,
+    "waiting_320x568_nav-accounts_visible_hit_target": true,
+    "waiting_320x568_nav-pad_visible_hit_target": true,
+    "waiting_320x568_caption_screen_size_and_crop": true,
+    "waiting_320x568_visible_waiting_without_result_card": true,
+    "waiting_568x320_no_page_overflow": true,
+    "waiting_568x320_full_camera_mirrored_cover": true,
+    "waiting_568x320_svg_cover_crop": true,
+    "waiting_568x320_no_live_consent_or_extra_labels": true,
+    "waiting_568x320_small_action_clickable": true,
+    "waiting_568x320_nav-live_visible_hit_target": true,
+    "waiting_568x320_nav-accounts_visible_hit_target": true,
+    "waiting_568x320_nav-pad_visible_hit_target": true,
+    "waiting_568x320_caption_screen_size_and_crop": true,
+    "waiting_568x320_visible_waiting_without_result_card": true,
+    "waiting_no_face_has_no_request": true,
+    "waiting_camera_continues": true,
+    "unknown_primary_keeps_waiting": true,
+    "paused_face_worker_shows_connection_cue": true,
+    "failed_face_worker_pauses_without_capture": true,
+    "face_worker_recovers_to_waiting": true,
+    "stale_worker_has_paused_cue": true,
+    "stale_known_face_does_not_trigger": true,
+    "hidden_page_does_not_trigger": true,
+    "exact_explicit_start_request": true,
+    "capture_uses_checking_cue_without_result": true,
+    "rejection_is_visible_and_keeps_watch": true,
+    "rejection_has_exit_phase": true,
+    "rejection_disappears_and_waits": true,
+    "approval_from_verified_result_stops_watch": true,
+    "approval_check_and_ripple_motion": true,
+    "approval_motion_does_not_restart_on_poll": true,
+    "approval_has_exit_phase": true,
+    "approval_disappears_to_clean_stopped_camera": true,
+    "expired_approval_does_not_rearm_or_reappear": true,
+    "navigation_does_not_resurrect_expired_result": true,
+    "approved_1440x900_no_page_overflow": true,
+    "approved_1440x900_full_camera_mirrored_cover": true,
+    "approved_1440x900_svg_cover_crop": true,
+    "approved_1440x900_no_live_consent_or_extra_labels": true,
+    "approved_1440x900_small_action_clickable": true,
+    "approved_1440x900_nav-live_visible_hit_target": true,
+    "approved_1440x900_nav-accounts_visible_hit_target": true,
+    "approved_1440x900_nav-pad_visible_hit_target": true,
+    "approved_1440x900_caption_screen_size_and_crop": true,
+    "approved_1440x900_approval_transient_on_camera": true,
+    "approved_390x844_no_page_overflow": true,
+    "approved_390x844_full_camera_mirrored_cover": true,
+    "approved_390x844_svg_cover_crop": true,
+    "approved_390x844_no_live_consent_or_extra_labels": true,
+    "approved_390x844_small_action_clickable": true,
+    "approved_390x844_nav-live_visible_hit_target": true,
+    "approved_390x844_nav-accounts_visible_hit_target": true,
+    "approved_390x844_nav-pad_visible_hit_target": true,
+    "approved_390x844_caption_screen_size_and_crop": true,
+    "approved_390x844_approval_transient_on_camera": true,
+    "approved_320x568_no_page_overflow": true,
+    "approved_320x568_full_camera_mirrored_cover": true,
+    "approved_320x568_svg_cover_crop": true,
+    "approved_320x568_no_live_consent_or_extra_labels": true,
+    "approved_320x568_small_action_clickable": true,
+    "approved_320x568_nav-live_visible_hit_target": true,
+    "approved_320x568_nav-accounts_visible_hit_target": true,
+    "approved_320x568_nav-pad_visible_hit_target": true,
+    "approved_320x568_caption_screen_size_and_crop": true,
+    "approved_320x568_approval_transient_on_camera": true,
+    "approved_568x320_no_page_overflow": true,
+    "approved_568x320_full_camera_mirrored_cover": true,
+    "approved_568x320_svg_cover_crop": true,
+    "approved_568x320_no_live_consent_or_extra_labels": true,
+    "approved_568x320_small_action_clickable": true,
+    "approved_568x320_nav-live_visible_hit_target": true,
+    "approved_568x320_nav-accounts_visible_hit_target": true,
+    "approved_568x320_nav-pad_visible_hit_target": true,
+    "approved_568x320_caption_screen_size_and_crop": true,
+    "approved_568x320_approval_transient_on_camera": true,
+    "connection_wait_distinct_from_face_wait": true,
+    "connection_restore_resumes_wait_without_request": true,
+    "stop_waiting_cleans_all_overlays": true,
+    "stop_waiting_prevents_later_capture": true,
+    "step_up_not_red_or_approved_result": true,
+    "service_error_not_red_or_approved_result": true,
+    "cancelled_capture_is_clean_and_stopped": true,
+    "stop_processing_keeps_checking_existing_request": true,
+    "stopped_processing_result_expires_without_retry": true,
+    "pending_start_stop_cancels_when_returned": true,
+    "late_snapshot_cannot_resurrect_checking": true,
+    "stale_participant_not_in_identification_request": true,
+    "enrollment_requires_consent": true,
+    "enrollment_circle_and_request_preserved": true,
+    "pad_test_live_auth_preserves_layout": true,
+    "pad_test_live_auth_requires_explicit_consent": true,
+    "pad_test_live_auth_correct_consented_request": true,
+    "pad_test_live_enroll_preserves_layout": true,
+    "pad_test_live_enroll_requires_explicit_consent": true,
+    "pad_test_live_enroll_correct_consented_request": true,
+    "pad_test_print_auth_preserves_layout": true,
+    "pad_test_print_auth_requires_explicit_consent": true,
+    "pad_test_print_auth_correct_consented_request": true,
+    "pad_test_replay_auth_preserves_layout": true,
+    "pad_test_replay_auth_requires_explicit_consent": true,
+    "pad_test_replay_auth_correct_consented_request": true,
+    "reduced_motion_waiting_visible": true,
+    "reduced_motion_waiting_suppressed": true,
+    "reduced_motion_retains_verified_identity": true,
+    "reduced_motion_results_suppressed": true,
+    "reduced_motion_result_still_expires": true
+  },
+  "details": {
+    "idle_1440x900_layout": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "scroll": [
+        1440,
+        900
+      ],
+      "rects": {
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "live-waiting-cue": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "start-authenticate": {
+          "x": 660,
+          "y": 828.75,
+          "width": 120,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        }
+      }
+    },
+    "idle_1920x1080_layout": {
+      "viewport": [
+        1920,
+        1080
+      ],
+      "scroll": [
+        1920,
+        1080
+      ],
+      "rects": {
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "live-waiting-cue": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "start-authenticate": {
+          "x": 900,
+          "y": 1008.75,
+          "width": 120,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        }
+      }
+    },
+    "idle_390x844_layout": {
+      "viewport": [
+        390,
+        844
+      ],
+      "scroll": [
+        390,
+        844
+      ],
+      "rects": {
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "live-waiting-cue": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "start-authenticate": {
+          "x": 135,
+          "y": 776.75,
+          "width": 120,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        }
+      }
+    },
+    "idle_320x568_layout": {
+      "viewport": [
+        320,
+        568
+      ],
+      "scroll": [
+        320,
+        568
+      ],
+      "rects": {
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "live-waiting-cue": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "start-authenticate": {
+          "x": 100,
+          "y": 500.75,
+          "width": 120,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        }
+      }
+    },
+    "idle_844x390_layout": {
+      "viewport": [
+        844,
+        390
+      ],
+      "scroll": [
+        844,
+        390
+      ],
+      "rects": {
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 844,
+          "height": 390,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 844,
+          "height": 390,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "live-waiting-cue": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "start-authenticate": {
+          "x": 362,
+          "y": 328.75,
+          "width": 120,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        }
+      }
+    },
+    "idle_568x320_layout": {
+      "viewport": [
+        568,
+        320
+      ],
+      "scroll": [
+        568,
+        320
+      ],
+      "rects": {
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 568,
+          "height": 320,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 568,
+          "height": 320,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "live-waiting-cue": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "start-authenticate": {
+          "x": 224,
+          "y": 258.75,
+          "width": 120,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        }
+      }
+    },
+    "waiting_1440x900_layout": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "scroll": [
+        1440,
+        900
+      ],
+      "rects": {
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "display": "none"
+        },
+        "identification-result": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "live-waiting-cue": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "hidden": false,
+          "display": "block"
+        },
+        "start-authenticate": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "stop-identification": {
+          "x": 660,
+          "y": 830.3125,
+          "width": 120,
+          "height": 45.6875,
+          "hidden": false,
+          "display": "flex"
+        }
+      }
+    },
+    "waiting_390x844_layout": {
+      "viewport": [
+        390,
+        844
+      ],
+      "scroll": [
+        390,
+        844
+      ],
+      "rects": {
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "display": "none"
+        },
+        "identification-result": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "live-waiting-cue": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "hidden": false,
+          "display": "block"
+        },
+        "start-authenticate": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "stop-identification": {
+          "x": 135,
+          "y": 778.3125,
+          "width": 120,
+          "height": 45.6875,
+          "hidden": false,
+          "display": "flex"
+        }
+      }
+    },
+    "waiting_320x568_layout": {
+      "viewport": [
+        320,
+        568
+      ],
+      "scroll": [
+        320,
+        568
+      ],
+      "rects": {
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "display": "none"
+        },
+        "identification-result": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "live-waiting-cue": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568,
+          "hidden": false,
+          "display": "block"
+        },
+        "start-authenticate": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "stop-identification": {
+          "x": 100,
+          "y": 502.3125,
+          "width": 120,
+          "height": 45.6875,
+          "hidden": false,
+          "display": "flex"
+        }
+      }
+    },
+    "waiting_568x320_layout": {
+      "viewport": [
+        568,
+        320
+      ],
+      "scroll": [
+        568,
+        320
+      ],
+      "rects": {
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 568,
+          "height": 320,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "display": "none"
+        },
+        "identification-result": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "live-waiting-cue": {
+          "x": 0,
+          "y": 0,
+          "width": 568,
+          "height": 320,
+          "hidden": false,
+          "display": "block"
+        },
+        "start-authenticate": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "stop-identification": {
+          "x": 224,
+          "y": 260.3125,
+          "width": 120,
+          "height": 45.6875,
+          "hidden": false,
+          "display": "flex"
+        }
+      }
+    },
+    "approved_1440x900_layout": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "scroll": [
+        1440,
+        900
+      ],
+      "rects": {
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 1440,
+          "height": 900,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 562.1356811523438,
+          "y": 545.34228515625,
+          "width": 315.7286376953125,
+          "height": 256.12872314453125,
+          "hidden": false,
+          "display": "flex"
+        },
+        "live-waiting-cue": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "start-authenticate": {
+          "x": 653.3984375,
+          "y": 828.75,
+          "width": 133.203125,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        }
+      }
+    },
+    "approved_390x844_layout": {
+      "viewport": [
+        390,
+        844
+      ],
+      "scroll": [
+        390,
+        844
+      ],
+      "rects": {
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 50.80670166015625,
+          "y": 517.4107666015625,
+          "width": 288.3865966796875,
+          "height": 239.25518798828125,
+          "hidden": false,
+          "display": "flex"
+        },
+        "live-waiting-cue": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "start-authenticate": {
+          "x": 128.3984375,
+          "y": 776.75,
+          "width": 133.203125,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        }
+      }
+    },
+    "approved_320x568_layout": {
+      "viewport": [
+        320,
+        568
+      ],
+      "scroll": [
+        320,
+        568
+      ],
+      "rects": {
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 320,
+          "height": 568,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 15.807586669921875,
+          "y": 241.41293334960938,
+          "width": 288.38482666015625,
+          "height": 239.25375366210938,
+          "hidden": false,
+          "display": "flex"
+        },
+        "live-waiting-cue": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "start-authenticate": {
+          "x": 93.3984375,
+          "y": 500.75,
+          "width": 133.203125,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        }
+      }
+    },
+    "approved_568x320_layout": {
+      "viewport": [
+        568,
+        320
+      ],
+      "scroll": [
+        568,
+        320
+      ],
+      "rects": {
+        "preview-image": {
+          "x": 0,
+          "y": 0,
+          "width": 568,
+          "height": 320,
+          "hidden": false,
+          "display": "block"
+        },
+        "face-overlay": {
+          "x": 0,
+          "y": 0,
+          "width": 568,
+          "height": 320,
+          "display": "block"
+        },
+        "identification-result": {
+          "x": 82.23173522949219,
+          "y": 149.57958984375,
+          "width": 403.5364990234375,
+          "height": 99.40779113769531,
+          "hidden": false,
+          "display": "grid"
+        },
+        "live-waiting-cue": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        },
+        "start-authenticate": {
+          "x": 217.3984375,
+          "y": 258.75,
+          "width": 133.203125,
+          "height": 47.25,
+          "hidden": false,
+          "display": "flex"
+        },
+        "stop-identification": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "hidden": true,
+          "display": "none"
+        }
+      }
+    }
+  },
+  "screenshots": [
+    "/tmp/paceauth-live-waiting-ui/idle_1440x900-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/idle_1920x1080-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/idle_390x844-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/idle_320x568-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/idle_844x390-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/idle_568x320-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/waiting_1440x900-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/waiting_390x844-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/waiting_320x568-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/waiting_568x320-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/checking-568x320-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/rejected-568x320-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/approval-expired-568x320-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/approved_1440x900-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/approved_390x844-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/approved_320x568-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/approved_568x320-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/connection-paused-desktop-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/enrollment-desktop-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/reduced-motion-waiting-synthetic.png",
+    "/tmp/paceauth-live-waiting-ui/reduced-motion-approved-synthetic.png"
+  ],
+  "js_errors": [],
+  "backend": "isolated mocked API; synthetic accounts and capture operation responses only",
+  "mode": "femto_geometry_experimental",
+  "test_scope": "Clean Live camera, waiting/checking/connection cues, transient final motion/result expiry, explicit-start 1:N lifecycle, responsive controls and preserved enrollment/PAD consent",
+  "empirical_pad_validation": "not_evaluated",
+  "human_media_persisted": false,
+  "synthetic_media_persisted": true
+}

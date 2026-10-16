@@ -1,0 +1,146 @@
+{
+  "deployed_at": "2026-10-16T01:55:55.487749+00:00",
+  "passed": true,
+  "url": "http://192.168.2.218:8080",
+  "mode": "femto_geometry_experimental",
+  "pad_enforcement_enabled": true,
+  "empirical_validation": "not_evaluated",
+  "production_validated": false,
+  "configuration_path": "deploy/pad/femto-geometry-experiment-enrollment-guide-20261016.json",
+  "configuration_sha256": "c2d5c910b86ffec50146c572aa5440c53bdef90dd2986c074a011564861586b6",
+  "source_hashes": {
+    "models/pad.py": "f2d990a9e6d5303bb04b507b05993c6336529c589a7c2548c24b1e806a778c33",
+    "models/scrfd.py": "b7385053327e49f141235344841e95a5c4652523291a664c7bacf87c096d941b",
+    "common/align.py": "a0112cda33add8da7d521a40a1c61055a3e5f49c754fe4811aaac68041063a67",
+    "common/packet.py": "e784908efa80c522f57753459b01ba88c3311dcdbf35ab6cfa56bb983b8db85e",
+    "terminal/orbbec.py": "61eff28802ff92bb1674b72061b30be0c09188a50358ed54682a0a28d09800b0",
+    "engine/main.py": "f3269b78fcbb524ab7cfbf5bb29dcf36636dfed2b4cb0340a7fd625ea58159ca",
+    "api/policy.py": "ffa3c79218981ebb904f20109f10844bb5b23d935384c19cb7c37195674e4209",
+    "terminal/live.py": "a3399cb74e5af44d10af04300cd1273de43c071b6721a81651ead821db9a0d49",
+    "terminal/web_auth.py": "de7e9eb9a57389d2cced88897d623758d8b1843bedc31bab20e8c0de1bfc135d",
+    "terminal/pipeline.py": "8ae072ef2b04ffccd6076264e4f73fe316358bc3b46a9efeb75db50122f10615",
+    "terminal/guide.py": "40ae452fe74cf1dd7c8f31c1fbdb08714a07dcdd0004acd60e2b1f60a475264c",
+    "models/femto_pad.py": "20fe96861cd4a5755a8c8d076f9931c2864342f352406f0b8a586b2f2d74433f",
+    "common/pad_validation.py": "13aa13260f3ad5db527155fc619034f9b239d370614343e484fb21312a5140b2",
+    "common/femto_pad_profile.py": "a013d0cb663ce6d500221726069d850c29f52776e4419ad5ceeae3b0d24ae738",
+    "common/femto_pad_experiment.py": "8801a8c4971f0268a3f466f3bf40d615b919bb3006d848d3b2bc10b09679aad0",
+    "api/app.py": "025fd8e4a6e262ce08eeec4fe24c1f99c4ca48d6692fb021e2ee7d7805a7375a",
+    "api/clients.py": "399b652534e21533f384b3c11a29d4e8984fc6262ee528654dede8e596bfe7c4"
+  },
+  "engines": {
+    "engine-1": {
+      "gpu_ready": true,
+      "mode": "femto_geometry_experimental",
+      "experiment": {
+        "ready": true,
+        "reasons": [],
+        "profile_sha256": "c2d5c910b86ffec50146c572aa5440c53bdef90dd2986c074a011564861586b6",
+        "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+        "scope": [
+          "print",
+          "replay"
+        ],
+        "experimental": true,
+        "production_validated": false,
+        "empirical_validation": "not_evaluated"
+      },
+      "production_pad_ready": false,
+      "candidate_binding": {
+        "schema": "faceauth.femto_pad.binding.v1",
+        "feature_schema": "faceauth.femto_pad.features.v2",
+        "feature_code_sha256": "20fe96861cd4a5755a8c8d076f9931c2864342f352406f0b8a586b2f2d74433f",
+        "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5",
+        "pipeline_sha256": "c56d159cda0aa9e4342366f8a4f0fedfcfb905a47993881fc522e4ed475b5676"
+      }
+    },
+    "engine-2": {
+      "gpu_ready": true,
+      "mode": "femto_geometry_experimental",
+      "experiment": {
+        "ready": true,
+        "reasons": [],
+        "profile_sha256": "c2d5c910b86ffec50146c572aa5440c53bdef90dd2986c074a011564861586b6",
+        "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+        "scope": [
+          "print",
+          "replay"
+        ],
+        "experimental": true,
+        "production_validated": false,
+        "empirical_validation": "not_evaluated"
+      },
+      "production_pad_ready": false,
+      "candidate_binding": {
+        "schema": "faceauth.femto_pad.binding.v1",
+        "feature_schema": "faceauth.femto_pad.features.v2",
+        "feature_code_sha256": "20fe96861cd4a5755a8c8d076f9931c2864342f352406f0b8a586b2f2d74433f",
+        "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5",
+        "pipeline_sha256": "c56d159cda0aa9e4342366f8a4f0fedfcfb905a47993881fc522e4ed475b5676"
+      }
+    }
+  },
+  "apis_config_and_health_verified": true,
+  "camera": {
+    "state": "streaming",
+    "fps": 30.1
+  },
+  "auth": {
+    "ready": true,
+    "capture_ready": true,
+    "console_mode": true,
+    "pad_enabled": true,
+    "pad_mode": "femto_geometry_experimental",
+    "pad_profile_sha256": "c2d5c910b86ffec50146c572aa5440c53bdef90dd2986c074a011564861586b6"
+  },
+  "assets_sha256": {
+    "live.html": "c608708a33a5c2ebaa070e0081ebe0cec2ef72e9dbb0a3913ffecf5bde9b23e9",
+    "live.css": "c70bba5e4f8ba08169440050417496fa04f009db2b84e0fc22853144c4e935a9",
+    "live.js": "4ef561b73bbe7b459425bf446a398b888c933ecea9742229ce2070aa4e1b4ec5"
+  },
+  "assets_cache_control_no_store": true,
+  "live_ui": {
+    "full_viewport_camera": true,
+    "default_view": "rgb",
+    "results_on_stream": true,
+    "compact_start_stop": true,
+    "identification_start_contract": {
+      "start": true
+    },
+    "live_consent_form": false,
+    "enrollment_and_observation_consent_preserved": true
+  },
+  "enrollment_fix": {
+    "confirmed_recent_rejections": 3,
+    "reason": "pad_fail",
+    "all_attempts_completed_18_frames_9_directions": true,
+    "specific_depth_failure_unknown": true,
+    "guide_requires_exact_final_depth_check": true,
+    "final_checks_all_frames": true,
+    "thresholds_unchanged": true,
+    "geometry_unchanged": true,
+    "raw_images_collected": false,
+    "affected_account_registration_confirmed_after_fix": false
+  },
+  "tests": {
+    "backend_passed": 373,
+    "browser_checks_passed": 44,
+    "js_errors": [],
+    "new_physical_pad_presentations": 0,
+    "new_real_face_approvals_tested": 0
+  },
+  "preserved_original_evidence": {
+    "observations": "4ab99a8296084df15304a5119430515d3f9a45485dbf4e3e7cacd911415a0056",
+    "frozen_profile": "907454b8797ec94c9688b6252f271d851ef4e336ef7a4c6f83b9154a858f770d",
+    "runtime_protocol": "ee95d5516aa7d08c29327169e7ad7c6b9837ba3c3aeaf4941499c08cc48c7417",
+    "rows": 103,
+    "terminal_source": "de7e9eb9a57389d2cced88897d623758d8b1843bedc31bab20e8c0de1bfc135d"
+  },
+  "geometry_report": "reports/deployment/femto_bolt_pad_nose_robust_synthetic_20261015.json",
+  "browser_report": "reports/deployment/femto_bolt_enrollment_pad_feedback_ui_20261016.json",
+  "limitations": [
+    "Synthetic computation tests do not establish physical live acceptance or attack rejection rates.",
+    "Prior numeric observations cannot be recalculated using v2 because raw depth and landmarks were not stored.",
+    "Strong yaw/self-occlusion may be rejected conservatively; 3D masks and real bent prints are not validated.",
+    "Unchanged v1 minima are engineering initialization, not v2 calibration; historical failures remain failures."
+  ]
+}

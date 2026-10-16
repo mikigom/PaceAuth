@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 
 from faceauth.engine import main as engine
+from faceauth.common.pad_validation import CANDIDATE_SCHEMA, CANDIDATE_FEATURES
 
 
 @pytest.mark.parametrize("invalid", [False, True])
@@ -36,6 +37,10 @@ def models(monkeypatch, ready=False):
     m.rec = SimpleNamespace(dim=2, embed=Mock(return_value=np.array([[1, 0]], np.float32)))
     m.pad_validation = SimpleNamespace(binding={"fixture": "binding"}, status=lambda calibration: {
         "ready": ready, "calib_version": calibration, "reasons": [] if ready else ["pad_validation_required"]})
+    m.candidate_binding = {"schema": "faceauth.femto_pad.binding.v1", "feature_schema": CANDIDATE_SCHEMA,
+                           "feature_code_sha256": "a" * 64, "detector_model_json_sha256": "b" * 64,
+                           "pipeline_sha256": "c" * 64}
+    m.pad_pilot = None
     m.pool = ThreadPoolExecutor(1)
     m.pose = SimpleNamespace(crop="demo", predict_crops=Mock(return_value=[[30, 0, 0]]))
     m.pad = SimpleNamespace(size=16, zoom=1, fx=385, cnn=Mock(return_value=[0.9]), decide=Mock(return_value={
@@ -90,8 +95,8 @@ def test_auth_pose_rule_cannot_be_overridden_by_capture_purpose(monkeypatch):
         m.pool.shutdown()
 
 
-@pytest.mark.parametrize("mode", ["auth", "enroll"])
-def test_final_modes_require_validation_before_running_any_model(monkeypatch, mode):
+@pytest.mark.parametrize("mode", ["auth"])
+def test_auth_requires_validation_before_running_any_model(monkeypatch, mode):
     m = models(monkeypatch)
     m.process = Mock(side_effect=AssertionError("unvalidated frames must never reach inference"))
     try:
@@ -129,6 +134,104 @@ def test_disabled_pilot_diagnostic_still_measures_pad_without_embedding(monkeypa
     try:
         out = m.analyze_batch([({"mode": "observe", "capture_purpose": "auth", "calib_version": "bolt"}, [None])])[0]
         assert out["frames"][0]["pad"] is not None and out["frames"][0]["emb"] is None
+        m.pad.cnn.assert_called_once()
+        m.rec.embed.assert_not_called()
+    finally:
+        m.pool.shutdown()
+
+
+def test_candidate_observe_is_separate_from_old_pad_and_never_decides(monkeypatch):
+    m = models(monkeypatch)
+    measurement = {"schema": CANDIDATE_SCHEMA, "valid": True, "reasons": [],
+                   "features": dict.fromkeys(CANDIDATE_FEATURES, 1.0)}
+    measure = Mock(return_value=measurement)
+    monkeypatch.setattr(engine, "measure_features", measure)
+    try:
+        out = m.analyze_batch([({"mode": "observe", "capture_purpose": "enroll", "calib_version": "bolt"}, [None])])[0]
+        frame = out["frames"][0]
+        assert out["candidate_binding"] == m.candidate_binding
+        assert frame["pad_candidate"] == measurement
+        assert frame["pad"]["live"] is False and frame["pad"]["score"] == 0
+        assert frame["pad"]["cnn"] == .9
+        assert not out["pad_validation"]["ready"]
+        assert not {"live", "score", "emb", "kps", "rgb", "depth", "ir"} & frame["pad_candidate"].keys()
+        measure.assert_called_once()
+        m.rec.embed.assert_not_called()
+    finally:
+        m.pool.shutdown()
+
+
+@pytest.mark.parametrize("failure", ["missing_face", "measurement_error"])
+def test_candidate_failures_remain_nonresponses_in_observations(monkeypatch, failure):
+    m = models(monkeypatch)
+    if failure == "missing_face":
+        m._frame = lambda *args: ({"reasons": ["no_face"], "pad": None, "emb": None}, None)
+    monkeypatch.setattr(engine, "measure_features", Mock(side_effect=ValueError("fixture invalid input")))
+    try:
+        out = m.analyze_batch([({"mode": "observe", "capture_purpose": "auth", "calib_version": "bolt"}, [None])])[0]
+        candidate = out["frames"][0]["pad_candidate"]
+        assert candidate["valid"] is False
+        assert candidate["reasons"] == ["not_measured" if failure == "missing_face" else "measurement_error"]
+        assert all(value is None for value in candidate["features"].values())
+    finally:
+        m.pool.shutdown()
+
+
+@pytest.mark.parametrize("mode", ["guide", "auth", "enroll"])
+def test_candidate_does_not_enter_existing_decision_modes(monkeypatch, mode):
+    m = models(monkeypatch, ready=True)
+    measure = Mock(side_effect=AssertionError("no feature candidate in the existing decision path"))
+    monkeypatch.setattr(engine, "measure_features", measure)
+    try:
+        out = m.analyze_batch([({"mode": mode, "capture_purpose": "enroll", "calib_version": "bolt"}, [None])])[0]
+        assert "candidate_binding" not in out
+        assert "pad_candidate" not in out["frames"][0]
+        measure.assert_not_called()
+    finally:
+        m.pool.shutdown()
+
+
+@pytest.mark.parametrize("mode", ["auth", "enroll"])
+@pytest.mark.parametrize("ready", [False, True])
+def test_experimental_pilot_requires_its_profile_and_preserves_strict_validation(monkeypatch, mode, ready):
+    monkeypatch.setattr(engine, "PAD_MODE", "femto_geometry_pilot")
+    monkeypatch.setattr(engine, "PAD_ENABLED", True)
+    m = models(monkeypatch, ready=False)
+    m.pad_pilot = SimpleNamespace(status=Mock(return_value={"ready": ready, "reasons": [] if ready else ["fixture"],
+        "profile_sha256": "d" * 64, "scope": ["print", "replay"], "experimental": True}),
+        decide=Mock(return_value={"score": 0.0, "live": False, "nonresponse": False, "failed": ["plane_residual_mm"]}))
+    try:
+        out = m.analyze_batch([({"mode": mode, "calib_version": "bolt"}, [None])])[0]
+        assert out["pad_mode"] == "femto_geometry_pilot" and out["pad_enabled"] is True
+        assert out["pad_validation"]["ready"] is False
+        assert out["pad_pilot_validation"]["ready"] is ready
+        assert out["candidate_binding"] == m.candidate_binding
+        assert out["versions"]["pad"] == "femto_geometry_pilot@" + "d" * 64
+        m.pad.cnn.assert_not_called()
+        if mode == "enroll":
+            assert out["frames"][0]["pad"] is None
+            m.pad_pilot.decide.assert_not_called()
+            m.rec.embed.assert_called_once()
+        elif ready:
+            assert out["frames"][0]["pad"] == {"score": 0.0, "live": False, "nonresponse": False}
+            m.pad_pilot.decide.assert_called_once()
+            m.rec.embed.assert_called_once()
+        else:
+            assert out["frames"][0]["reasons"] == ["pad_validation_required"]
+            m.pad_pilot.decide.assert_not_called()
+            m.rec.embed.assert_not_called()
+    finally:
+        m.pool.shutdown()
+
+
+def test_missing_pilot_profile_never_blocks_diagnostic_collection(monkeypatch):
+    monkeypatch.setattr(engine, "PAD_MODE", "femto_geometry_pilot")
+    monkeypatch.setattr(engine, "PAD_ENABLED", True)
+    m = models(monkeypatch)
+    try:
+        out = m.analyze_batch([({"mode": "observe", "capture_purpose": "enroll", "calib_version": "bolt"}, [None])])[0]
+        assert out["pad_pilot_validation"]["reasons"] == ["pad_pilot_profile_missing"]
+        assert "pad_candidate" in out["frames"][0]
         m.pad.cnn.assert_called_once()
         m.rec.embed.assert_not_called()
     finally:

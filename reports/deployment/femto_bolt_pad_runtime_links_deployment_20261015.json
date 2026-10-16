@@ -1,0 +1,49 @@
+{
+  "checked_at": "2026-10-15T10:34:28.796321+00:00",
+  "assets": {
+    "live.html": {
+      "sha256": "34a2fdd81fedeb887f317a66cfc93ad4b3df44f0e169e3b2c3bba464b751858d",
+      "matches_source": true,
+      "cache_control": "no-store, max-age=0"
+    },
+    "live.css": {
+      "sha256": "79462dbc6e5e671a97616fca5d53f635a68385e525cad2d95a5e5958570cea75",
+      "matches_source": true,
+      "cache_control": "no-store, max-age=0"
+    },
+    "live.js": {
+      "sha256": "cf8370ec9fdb790a9fd8fc4c4963cb2207bbbbd829f54a3533172dce39bdaf44",
+      "matches_source": true,
+      "cache_control": "no-store, max-age=0"
+    }
+  },
+  "healthz": 200,
+  "camera_state": "streaming",
+  "capture_ready": true,
+  "pad_mode": "disabled_pilot",
+  "private_state": {
+    "frozen_profile": {
+      "sha256": "907454b8797ec94c9688b6252f271d851ef4e336ef7a4c6f83b9154a858f770d",
+      "mode": "0o600"
+    },
+    "corrections": {
+      "sha256": "ae8dd32b025b06485e47ff9c56caab339175d215e1be3345d913ee72de4dd4a0",
+      "mode": "0o600"
+    },
+    "observations": {
+      "sha256": "8c0adbe7f39fe3095769425a995893e64d470fbfac2bd16c2530d1b9ce738028",
+      "mode": "0o600",
+      "rows": 91
+    },
+    "candidate_bindings_match": true
+  },
+  "ui_tests_passed": 217,
+  "explicit_test_links": [
+    "pad-test-live-auth",
+    "pad-test-live-enroll",
+    "pad-test-print-auth",
+    "pad-test-replay-auth"
+  ],
+  "raw_capture_saved": false,
+  "pad_activated": false
+}

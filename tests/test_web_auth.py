@@ -85,9 +85,10 @@ class FakeClient:
     def close(self):
         pass
 
-    def create_session(self, purpose, action):
+    def create_session(self, purpose, action, *, timeout_ms=None):
         self.created += 1
         self.calls = 0
+        self.session_timeout_ms = timeout_ms
         return {"session_id": "fixture-session", "challenge": "unpredictable-fixture", "purpose": purpose}
 
     def capture_guide(self, session, frame, ts, purpose):
@@ -158,7 +159,7 @@ def finish(client, op):
         response = client.get("/api/auth/operation", params={"id": op["id"]})
         assert response.status_code == 200
         current = response.json()
-        if current["state"] in ("succeeded", "error", "rejected", "cancelled"):
+        if current["state"] in ("succeeded", "error", "rejected", "cancelled", "expired"):
             return current
         time.sleep(0.02)
     raise AssertionError("operation did not finish")
@@ -476,6 +477,124 @@ def test_observation_response_must_match_calibration_and_purpose(setup):
     response = client.post("/api/auth/observe", json=body, headers=HEADERS)
     assert finish(client, response.json())["state"] == "error"
     assert not (service.state_dir / "pad-observations.jsonl").exists()
+
+
+def candidate_fixture():
+    from faceauth.common.pad_validation import CANDIDATE_FEATURES
+    binding = {"schema": "faceauth.femto_pad.binding.v1", "feature_schema": "faceauth.femto_pad.features.v1",
+               "feature_code_sha256": "a" * 64, "detector_model_json_sha256": "b" * 64,
+               "pipeline_sha256": "c" * 64}
+    measurement = {"schema": binding["feature_schema"], "valid": True, "reasons": [],
+                   "features": dict.fromkeys(CANDIDATE_FEATURES, 1.0)}
+    measurement["features"].update(depth_median_mm=650.0, plane_residual_mm=8.0, nose_protrusion_mm=6.0)
+    return binding, measurement
+
+
+def test_candidate_observation_saves_only_numbers_even_when_old_cnn_rejects(setup):
+    client, service, backend = setup
+    signup(client)
+    binding, measurement = candidate_fixture()
+    service.backend["candidate_binding"] = binding
+    readiness, observe = backend.readiness, backend.observe
+    backend.readiness = lambda: {**readiness(), "candidate_binding": binding}
+
+    def measured(*args, **kwargs):
+        out = observe(*args, **kwargs)
+        out["candidate_binding"] = binding
+        for i, frame in enumerate(out["frames"]):
+            frame["pad"]["score"] = 0.0
+            frame["pad_candidate"] = {**measurement, "rgb": "never-retain-this-image",
+                                      "features": {**measurement["features"], "identity": "never-retain-this-name"}}
+            if i == 4:
+                frame["pad_candidate"] = {"schema": measurement["schema"], "valid": False,
+                                          "reasons": ["depth_missing"], "features": {}}
+        return out
+
+    backend.observe = measured
+    assert client.get("/api/status").json()["auth"]["pad_candidate_available"] is True
+    response = client.post("/api/auth/observe", json={**CONSENT, "observation_mode": "diagnostic",
+        "kind": "print", "split": "train", "subject_id": "study-001", "instrument_id": "paper-001"}, headers=HEADERS)
+    assert response.status_code == 202
+    result = finish(client, response.json())
+    assert result["state"] == "succeeded" and result["result"]["authentication_approved"] is False
+    summary = result["result"]["candidate_summary"]
+    assert (summary["frames"], summary["measured_frames"], summary["valid_frames"]) == (5, 5, 4)
+    assert summary["features"]["depth_median_mm"] == 650.0 and summary["reasons"] == {"depth_missing": 1}
+    raw = (service.state_dir / "pad-observations.jsonl").read_text()
+    assert "never-retain" not in raw and "not-to-be-saved" not in raw
+    row = json.loads(raw)
+    assert row["candidate_binding"] == binding and row["split"] == "train"
+    assert all(frame["pad"]["score"] == 0 for frame in row["frames"])
+    assert row["frames"][0]["pad_candidate"]["valid"] is True
+    assert not hasattr(backend, "enrollment")
+    assert not list(service.state_dir.glob("*.jpg")) and not list(service.state_dir.glob("*.png"))
+
+
+@pytest.mark.parametrize("change", ["drop", "change"])
+def test_candidate_observation_rejects_changed_binding(setup, change):
+    client, service, backend = setup
+    signup(client)
+    binding, _ = candidate_fixture()
+    readiness, observe = backend.readiness, backend.observe
+    backend.readiness = lambda: {**readiness(), "candidate_binding": binding}
+
+    def changed(*args, **kwargs):
+        out = observe(*args, **kwargs)
+        if change == "change":
+            out["candidate_binding"] = {**binding, "feature_code_sha256": "d" * 64}
+        return out
+
+    backend.observe = changed
+    response = client.post("/api/auth/observe", json={**CONSENT, "kind": "live", "split": "calibration",
+                                                    "subject_id": "study-001"}, headers=HEADERS)
+    assert finish(client, response.json())["state"] == "error"
+    assert not (service.state_dir / "pad-observations.jsonl").exists()
+
+
+def test_attack_observation_requires_instrument_before_starting_capture(setup):
+    client, service, backend = setup
+    signup(client)
+    response = client.post("/api/auth/observe", json={**CONSENT, "kind": "replay", "split": "calibration",
+                                                    "subject_id": "study-001"}, headers=HEADERS)
+    assert response.status_code == 400 and backend.created == 0
+    assert not (service.state_dir / "pad-observations.jsonl").exists()
+
+
+@pytest.mark.parametrize("changed", [None, "missing_claims", "claim_profile", "claim_mode", "claim_disabled", "response_profile"])
+def test_experimental_approval_requires_matching_signed_mode_and_profile(setup, changed):
+    client, service, backend = setup
+    signup(client)
+    mode = {"pad_enabled": True, "pad_mode": "femto_geometry_pilot", "pad_profile_sha256": "d" * 64}
+    service.backend.update(**mode, pad_pilot_validation={"ready": True}, pad_validation={"ready": False})
+    original = backend.authenticate
+
+    def authenticate(*args, **kwargs):
+        out = original(*args, **kwargs)
+        claims = token.verify(backend.key.public_key(), out["approval_token"])
+        if changed != "missing_claims":
+            claims.update(mode)
+        if changed == "claim_profile":
+            claims["pad_profile_sha256"] = "e" * 64
+        elif changed == "claim_mode":
+            claims["pad_mode"] = "enabled"
+        elif changed == "claim_disabled":
+            claims["pad_enabled"] = False
+        out.update(mode, approval_token=token.sign(backend.key, claims))
+        if changed == "response_profile":
+            out["pad_profile_sha256"] = "f" * 64
+        return out
+
+    backend.authenticate = authenticate
+    status = client.get("/api/status").json()["auth"]
+    assert status["pad_pilot_validation"]["ready"] and status["pad_validation"]["ready"] is False
+    response = client.post("/api/auth/authenticate", json=CONSENT, headers=HEADERS)
+    assert response.json()["pad_profile_sha256"] == mode["pad_profile_sha256"]
+    result = finish(client, response.json())
+    assert "approval_token" not in json.dumps(result)
+    if changed:
+        assert result["state"] == "error" and result["result"]["reason"] == "approval_scope_mismatch"
+    else:
+        assert result["state"] == "succeeded" and result["result"]["pad_profile_sha256"] == mode["pad_profile_sha256"]
 
 
 @pytest.mark.parametrize("mode", ["auth", "enroll"])

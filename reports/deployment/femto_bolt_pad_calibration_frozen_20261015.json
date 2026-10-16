@@ -1,0 +1,170 @@
+{
+  "profile_container": "paceauth-live-terminal-1",
+  "profile_path": "/var/lib/paceauth/pad-profiles/calibration-907454b8797ec94c.json",
+  "profile_sha256": "907454b8797ec94c9688b6252f271d851ef4e336ef7a4c6f83b9154a858f770d",
+  "profile_permissions": "0o600",
+  "candidate_binding": {
+    "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5",
+    "feature_code_sha256": "d4b057446e45f0aec9531e8a2a83695f5cacc6f15e6db25c4f83adff1df8a210",
+    "feature_schema": "faceauth.femto_pad.features.v1",
+    "pipeline_sha256": "e848eadc9c9477939ed7f0a6cade4f1831a2aba7291ae72ff8b062db527c486d",
+    "schema": "faceauth.femto_pad.binding.v1"
+  },
+  "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+  "thresholds": {
+    "nose_protrusion_mm": 4.563589938099597,
+    "plane_residual_mm": 0.3536019972420733
+  },
+  "calibration_presentations": 37,
+  "calibration_summary": {
+    "live": {
+      "accepted": 4,
+      "error_metric": "bpcer",
+      "error_rate": 0.0,
+      "error_upper95": 0.5271291954984121,
+      "errors": 0,
+      "nonresponse_upper95": 0.5271291954984121,
+      "nonresponses": 0,
+      "presentations": 4,
+      "responding": 4
+    },
+    "print": {
+      "accepted": 0,
+      "error_metric": "apcer",
+      "error_rate": 0.0,
+      "error_upper95": 0.2831288355631135,
+      "errors": 0,
+      "nonresponse_upper95": 0.7413493902510877,
+      "nonresponses": 11,
+      "presentations": 20,
+      "responding": 9
+    },
+    "replay": {
+      "accepted": 0,
+      "error_metric": "apcer",
+      "error_rate": 0.0,
+      "error_upper95": 0.3481636551311609,
+      "errors": 0,
+      "nonresponse_upper95": 0.712950997205611,
+      "nonresponses": 6,
+      "presentations": 13,
+      "responding": 7
+    }
+  },
+  "calibration_mode_counts": {
+    "diagnostic": 37
+  },
+  "unique_subjects": 1,
+  "unique_instruments": 2,
+  "normalized_separation_margin": 0.4673109969099389,
+  "measurement_summary": {
+    "live": {
+      "frames": 20,
+      "valid_frames": 20,
+      "valid_frame_ranges": {
+        "depth_median_mm": {
+          "min": 351.0,
+          "max": 544.0
+        },
+        "plane_residual_mm": {
+          "min": 9.089824363628203,
+          "max": 10.307328340751106
+        },
+        "nose_protrusion_mm": {
+          "min": 8.567081189262012,
+          "max": 14.621439656216864
+        }
+      },
+      "valid_candidate_quality_reasons": {}
+    },
+    "print": {
+      "frames": 100,
+      "valid_frames": 46,
+      "valid_frame_ranges": {
+        "depth_median_mm": {
+          "min": 350.0,
+          "max": 402.0
+        },
+        "plane_residual_mm": {
+          "min": 0.7072039944841466,
+          "max": 1.5199987484710116
+        },
+        "nose_protrusion_mm": {
+          "min": -1.3486355046758831,
+          "max": 0.7407430688107581
+        }
+      },
+      "valid_candidate_quality_reasons": {
+        "depth_invalid": 1,
+        "pose_out_of_range": 15
+      }
+    },
+    "replay": {
+      "frames": 65,
+      "valid_frames": 35,
+      "valid_frame_ranges": {
+        "depth_median_mm": {
+          "min": 224.0,
+          "max": 261.0
+        },
+        "plane_residual_mm": {
+          "min": 1.0517634280511732,
+          "max": 2.4597921622646424
+        },
+        "nose_protrusion_mm": {
+          "min": -1.060648061992822,
+          "max": 1.1539411448191572
+        }
+      },
+      "valid_candidate_quality_reasons": {
+        "blur": 5,
+        "depth_invalid": 35,
+        "pose_out_of_range": 2
+      }
+    }
+  },
+  "runtime_status": {
+    "ready": false,
+    "reasons": [
+      "pilot_evaluation_missing"
+    ],
+    "profile_sha256": "907454b8797ec94c9688b6252f271d851ef4e336ef7a4c6f83b9154a858f770d",
+    "calib_version": "femto-bolt-v1-50beeef1ae82fb27",
+    "scope": [
+      "print",
+      "replay"
+    ],
+    "experimental": true,
+    "production_validated": false
+  },
+  "recorded_at": "2026-10-15T09:59:24.860745+00:00",
+  "frozen_at": "2026-10-15T09:57:10.332017+00:00",
+  "pad_activated": false,
+  "raw_observations_exported": false,
+  "media_captured_or_exported": false,
+  "test_protocol": {
+    "split": "test",
+    "frozen_thresholds": true,
+    "new_presentations": {
+      "live": {
+        "auth": 2,
+        "enroll": 1
+      },
+      "print": {
+        "auth": 3
+      },
+      "replay": {
+        "auth": 3
+      }
+    },
+    "same_subjects_or_instruments_allowed_for_local_pilot_only": true,
+    "independent_assessment": false
+  },
+  "limitations": [
+    "Calibration separation is not held-out test performance.",
+    "Prior nonresponses are retained and reported separately from responding attack rejection.",
+    "Valid geometry does not guarantee auth/enroll capture quality; all calibration replay valid frames were below the existing authentication depth threshold.",
+    "Sensor depths are measured values, not independently verified physical distances.",
+    "Do not change feature code, thresholds, or source binding while collecting the new test presentations."
+  ]
+}

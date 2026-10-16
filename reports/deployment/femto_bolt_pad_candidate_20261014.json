@@ -1,0 +1,46 @@
+{
+  "checked_at": "2026-10-14T09:14:44.609938+00:00",
+  "url": "http://192.168.2.218:8080",
+  "checks": {
+    "http_status_available": true,
+    "console_enabled": true,
+    "candidate_collection_ready": true,
+    "existing_pilot_mode_truthful": true,
+    "both_engines_capture_ready": true,
+    "both_engines_current_source_binding": true,
+    "served_html_matches_source": true,
+    "served_js_matches_source": true,
+    "collection_panel_available": true,
+    "test_label_does_not_claim_independence": true,
+    "no_images_requested_or_saved": true,
+    "no_capture_requested": true
+  },
+  "passed": true,
+  "candidate_binding": {
+    "schema": "faceauth.femto_pad.binding.v1",
+    "feature_schema": "faceauth.femto_pad.features.v1",
+    "feature_code_sha256": "d4b057446e45f0aec9531e8a2a83695f5cacc6f15e6db25c4f83adff1df8a210",
+    "detector_model_json_sha256": "8269a252e4dac123c470f5e6bc614f940afc5c4eafd7aca25e84f0c06531a1d5",
+    "pipeline_sha256": "e848eadc9c9477939ed7f0a6cade4f1831a2aba7291ae72ff8b062db527c486d"
+  },
+  "pad_enabled": false,
+  "pad_mode": "disabled_pilot",
+  "formal_validation_ready": false,
+  "candidate_scope": [
+    "print",
+    "replay"
+  ],
+  "physical_candidate_presentations_collected_by_this_check": 0,
+  "activation_pending": [
+    "physical_calibration_live_print_replay",
+    "frozen_profile_test_auth_enroll"
+  ],
+  "validation": {
+    "backend_regression_passed": 360,
+    "focused_final_passed": 118,
+    "feature_and_profile_passed": 59,
+    "browser_candidate_passed": 43,
+    "browser_enrollment_regression_passed": 86,
+    "counts_overlap": true
+  }
+}

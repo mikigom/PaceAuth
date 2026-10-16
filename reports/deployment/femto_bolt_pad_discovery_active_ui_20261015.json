@@ -1,0 +1,19 @@
+{
+  "tested_at": "2026-10-15T00:08:15.221021+00:00",
+  "source_sha256": {
+    "live.html": "8c9e970baa8b0227b5c81d5c8388b714bd92ad8dc0c2526b9bf1b76800cb7be4",
+    "live.css": "834aefca6a49adba9d8c6cb271bf5370755d98a5bb22548101746c992be24c0a",
+    "live.js": "1148b5821d912025802ae3efe0ae6c70a3da1a19bc079bea67d90f21b5cea583"
+  },
+  "passed": true,
+  "checks": {
+    "existing_capture_deeplink_does_not_open_pad_or_redirect": true,
+    "existing_capture_disables_pad_navigation": true,
+    "existing_capture_deeplink_does_not_mutate_consent_or_start_capture": true
+  },
+  "screenshots": [],
+  "js_errors": [],
+  "backend": "isolated mocked API; no real accounts, consent or capture",
+  "human_media_persisted": false,
+  "synthetic_media_persisted": false
+}

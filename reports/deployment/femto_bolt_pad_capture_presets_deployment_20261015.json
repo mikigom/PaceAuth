@@ -1,0 +1,28 @@
+{
+  "verified_at": "2026-10-15T10:15:22.157838+00:00",
+  "checks": {
+    "live.html_matches_source": true,
+    "live.html_no_store": true,
+    "live.css_matches_source": true,
+    "live.css_no_store": true,
+    "live.js_matches_source": true,
+    "live.js_no_store": true,
+    "camera_streaming": true,
+    "capture_ready": true,
+    "pad_still_disabled": true,
+    "healthz_ok": true
+  },
+  "assets": {
+    "live.html": "34a2fdd81fedeb887f317a66cfc93ad4b3df44f0e169e3b2c3bba464b751858d",
+    "live.css": "79462dbc6e5e671a97616fca5d53f635a68385e525cad2d95a5e5958570cea75",
+    "live.js": "006c2f793b02c5a4f1918aafaaa374b75e340a60a42cf1f0d3ef68453000c943"
+  },
+  "passed": true,
+  "calibration_links": [
+    "http://192.168.2.218:8080/#pad-calibration-auth",
+    "http://192.168.2.218:8080/#pad-calibration-enroll"
+  ],
+  "browser_checks_passed": 107,
+  "correction_and_profile_tests_passed": 63,
+  "capture_triggered": false
+}

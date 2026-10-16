@@ -23,10 +23,13 @@ import onnxruntime as ort
 import psycopg
 from fastapi import FastAPI, HTTPException, Request, Response
 
+from faceauth.common.femto_pad_experiment import MEASUREMENT_REASONS
 from faceauth.common.packet import decode_frame
-from faceauth.common.pad_validation import PADValidationGate, _finite_measurements
+from faceauth.common.pad_validation import (CANDIDATE_SCHEMA, PADValidationGate, _finite_measurements, candidate_binding,
+                                           clean_candidate_measurement)
 from faceauth.common.registry import active_entries, load_registry
 from faceauth.models.headpose import CROPS, HeadPose
+from faceauth.models.femto_pad import measure_features
 from faceauth.models.pad import PAD, face_features
 from faceauth.models.recog import Recognizer
 from faceauth.models.scrfd import SCRFD
@@ -48,8 +51,15 @@ MAX_LIVE_FACES = 16
 # path). Several SCRFD sessions = several CUDA streams + concurrent pre/post-processing; PAD physics on threads.
 DET_SESSIONS = int(os.environ.get("FA_ENGINE_DET_SESSIONS", "2"))   # SCRFD-34G tops out ~350 frames/s per A6000
 CPU_THREADS = int(os.environ.get("FA_ENGINE_CPU_THREADS", "6"))
-PAD_ENABLED = os.environ.get("FA_PILOT_DISABLE_PAD", "0") != "1"
-PAD_MODE = "enabled" if PAD_ENABLED else "disabled_pilot"
+PAD_MODE = os.environ.get("FA_PAD_MODE") or (
+    "disabled_pilot" if os.environ.get("FA_PILOT_DISABLE_PAD", "0") == "1" else "enabled")
+GEOMETRY_MODES = ("femto_geometry_pilot", "femto_geometry_experimental")
+if PAD_MODE not in ("enabled", "disabled_pilot", *GEOMETRY_MODES):
+    raise ValueError("unknown FA_PAD_MODE")
+PAD_ENABLED = PAD_MODE != "disabled_pilot"
+PAD_DIAGNOSTIC_REASONS = MEASUREMENT_REASONS | frozenset((
+    "plane_residual_mm", "nose_protrusion_mm", "measurement_invalid", "profile_not_ready",
+))
 
 
 cv2.setNumThreads(1)  # frames are parallelised above; OpenCV's own pool would fight them on a 128-core host
@@ -96,11 +106,53 @@ class Models:
         self.pad_validation = PADValidationGate(entries[PAD_MODEL]["path"],
             release_pub=os.environ.get("FA_RELEASE_PUB", "/run/secrets/release_pub"),
             detector_dir=entries[DETECTOR]["path"])
+        self.candidate_binding = candidate_binding(detector_dir=entries[DETECTOR]["path"])
+        self.pad_pilot = None
+        self.pad_experiment = None
+        if PAD_MODE == "femto_geometry_pilot":
+            path, digest = os.environ.get("FA_FEMTO_PAD_PROFILE"), os.environ.get("FA_FEMTO_PAD_PROFILE_SHA256")
+            if path and digest:
+                from faceauth.common.femto_pad_profile import FemtoPADProfile
+                self.pad_pilot = FemtoPADProfile(path, digest)
+        elif PAD_MODE == "femto_geometry_experimental":
+            path, digest = os.environ.get("FA_FEMTO_PAD_PROFILE"), os.environ.get("FA_FEMTO_PAD_PROFILE_SHA256")
+            if path and digest:
+                from faceauth.common.femto_pad_experiment import FemtoPADExperiment
+                self.pad_experiment = FemtoPADExperiment(path, digest)
         self.versions = {"detector": self.det.version + ("+trt16" if trt else ""), "pose": self.pose.version,
                          "recog": self.rec.version, "align": self.rec.align, "pad": self.pad.version,
                          "quality": QUALITY}
+        if PAD_MODE == "femto_geometry_experimental":
+            digest = getattr(self.pad_experiment, "profile_sha256", None) or "unconfigured"
+            self.versions["pad"] = PAD_MODE + "@" + digest
         self.providers = got
         self.warmup = self._warmup()
+
+    def pilot_status(self, calibration):
+        profile = getattr(self, "pad_pilot", None)
+        if profile is None:
+            return {"ready": False, "reasons": ["pad_pilot_profile_missing"], "profile_sha256": None,
+                    "scope": ["print", "replay"], "experimental": True}
+        return profile.status(calibration, self.candidate_binding)
+
+    def experiment_status(self, calibration):
+        """Configuration integrity is not empirical PAD validation."""
+        profile = getattr(self, "pad_experiment", None)
+        if profile is None:
+            return {"ready": False, "reasons": ["pad_experiment_profile_missing"], "profile_sha256": None,
+                    "calib_version": None, "scope": ["print", "replay"], "experimental": True,
+                    "production_validated": False, "empirical_validation": "not_evaluated"}
+        return profile.status(calibration, self.candidate_binding)
+
+    @staticmethod
+    def _candidate(face):
+        if face is None:
+            return clean_candidate_measurement(None)
+        try:
+            return clean_candidate_measurement(measure_features(face[1], face[2], face[3]["kps"]))
+        except Exception:  # Measurements must fail closed without dropping the failed presentation.
+            return clean_candidate_measurement({"schema": CANDIDATE_SCHEMA, "valid": False,
+                                                "reasons": ["measurement_error"], "features": {}})
 
     def _warmup(self):
         """Exercise every GPU model on generated tensors before advertising readiness.
@@ -221,6 +273,25 @@ class Models:
         results = [result for result, _ in prepared]
         measured = [(context, r, face) for (context, _), (_, items) in zip(flat, prepared) for r, face in items]
         contexts, res, faces = zip(*measured) if measured else ((), (), ())
+        candidate_idx = [i for i, context in enumerate(contexts) if context["mode"] == "observe"
+                         or (PAD_MODE in GEOMETRY_MODES and context["mode"] == "auth")]
+        if candidate_idx:
+            measurements = list(self.pool.map(self._candidate, [faces[i] for i in candidate_idx]))
+            for i, measurement in zip(candidate_idx, measurements):
+                if contexts[i]["mode"] == "observe":
+                    res[i]["pad_candidate"] = measurement
+                elif faces[i] is not None:
+                    profile = self.pad_experiment if PAD_MODE == "femto_geometry_experimental" else self.pad_pilot
+                    pad = profile.decide(measurement)
+                    res[i]["pad"] = {key: pad[key] for key in ("score", "live", "nonresponse")}
+                    if PAD_MODE == "femto_geometry_experimental":
+                        # Internal API diagnostics only: carry condition names, never
+                        # feature values/crops. This does not change the PAD decision.
+                        failed = pad.get("failed")
+                        res[i]["pad"]["failed"] = sorted({
+                            reason for reason in (failed[:32] if isinstance(failed, list) else [])
+                            if isinstance(reason, str) and reason in PAD_DIAGNOSTIC_REASONS
+                        })
         idx = [i for i, f in enumerate(faces) if f is not None]
         if idx:
             crop, resize = CROPS[self.pose.crop]
@@ -243,8 +314,9 @@ class Models:
                 embs = self.rec.embed([r for r, _, _, _ in recog_faces], [f["kps"] for _, _, _, f in recog_faces])
                 for i, emb in zip(recog_idx, embs):
                     res[i]["emb"] = emb.astype("<f4").tobytes()
-            pad_idx = [i for i in idx if contexts[i]["mode"] == "observe"
-                       or (PAD_ENABLED and contexts[i]["mode"] in ("auth", "enroll"))]
+            pad_idx = [i for i in idx if (contexts[i]["mode"] == "observe" and PAD_MODE != "femto_geometry_experimental")
+                       or (PAD_ENABLED and PAD_MODE not in GEOMETRY_MODES
+                           and contexts[i]["mode"] == "auth")]
             if pad_idx:
                 p = self.pad
                 feats = list(self.pool.map(lambda x: face_features(x[0], x[1], x[2], x[3]["kps"],
@@ -271,7 +343,27 @@ class Models:
                            "capture_purpose": context.get("capture_purpose"),
                            "calib_version": context["calib_version"], "pad_validation": validation,
                            "model_binding": dict(self.pad_validation.binding)})
-            if PAD_ENABLED and context["mode"] in ("auth", "enroll") and validation["ready"] is not True:
+            if context["mode"] == "observe":
+                output[-1]["candidate_binding"] = dict(self.candidate_binding)
+            pilot = self.pilot_status(context["calib_version"]) if PAD_MODE == "femto_geometry_pilot" else None
+            experiment = (self.experiment_status(context["calib_version"])
+                          if PAD_MODE == "femto_geometry_experimental" else None)
+            if pilot is not None:
+                output[-1]["pad_pilot_validation"] = pilot
+                output[-1]["candidate_binding"] = dict(self.candidate_binding)
+                if context["mode"] in ("auth", "enroll"):
+                    output[-1]["versions"]["pad"] = "femto_geometry_pilot@" + (pilot.get("profile_sha256") or "unconfigured")
+            if experiment is not None:
+                output[-1]["pad_experiment"] = experiment
+                output[-1]["candidate_binding"] = dict(self.candidate_binding)
+                if context["mode"] in ("auth", "enroll"):
+                    output[-1]["versions"]["pad"] = PAD_MODE + "@" + (experiment.get("profile_sha256") or "unconfigured")
+            ready = (experiment["ready"] if experiment is not None else
+                     pilot["ready"] if pilot is not None else validation["ready"])
+            # Enrollment is an administrator-authorized template operation, not
+            # an authentication assertion. Only the server-selected auth mode
+            # requires PAD; capture_purpose can never override that boundary.
+            if PAD_ENABLED and context["mode"] == "auth" and ready is not True:
                 output[-1]["frames"] = [{"ok": False, "reasons": ["pad_validation_required"],
                                           "n_faces": 0, "pad": None, "emb": None} for _ in frames]
             else:
@@ -388,9 +480,20 @@ async def readiness(calib_version: str):
     if m is None:
         raise HTTPException(503, "models_not_ready")
     validation = m.pad_validation.status(calib_version)
-    return {"ready": not PAD_ENABLED or validation["ready"], "capture_ready": True, "pad_validation": validation,
+    pilot = m.pilot_status(calib_version) if PAD_MODE == "femto_geometry_pilot" else None
+    experiment = m.experiment_status(calib_version) if PAD_MODE == "femto_geometry_experimental" else None
+    configured = (experiment["ready"] if experiment is not None else
+                  pilot["ready"] if pilot is not None else validation["ready"])
+    state = {"ready": not PAD_ENABLED or configured,
+            "capture_ready": True, "pad_validation": validation,
             "pad_enabled": PAD_ENABLED, "pad_mode": PAD_MODE,
-            "versions": m.versions, "model_binding": m.pad_validation.binding, "calib_version": calib_version}
+            "versions": m.versions, "model_binding": m.pad_validation.binding, "calib_version": calib_version,
+            "candidate_binding": dict(m.candidate_binding)}
+    if pilot is not None:
+        state["pad_pilot_validation"] = pilot
+    if experiment is not None:
+        state["pad_experiment"] = experiment
+    return state
 
 
 @app.get("/healthz")

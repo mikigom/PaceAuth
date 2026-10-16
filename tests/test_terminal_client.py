@@ -175,6 +175,36 @@ def test_final_submission_waits_for_gateway_without_slowing_guidance_or_readines
     c.close()
 
 
+def test_identification_deadline_bounds_each_http_phase_and_session_ttl(monkeypatch):
+    requests = []
+    c = _mock_client(requests)
+    monkeypatch.setattr("faceauth.terminal.client.time.monotonic", lambda: 100.0)
+    c.deadline_monotonic = 102.5
+    c.create_session("auth", "pilot-check", timeout_ms=2500)
+    assert json.loads(requests[-1].content)["timeout_ms"] == 2500
+    frames, ts = _frames(3), synced_ts(range(3), 1_760_000_000_000)
+    c.capture_guide(SESSION, frames[0], ts[0])
+    c.authenticate(SESSION, frames, ts)
+    assert requests[-1].extensions["timeout"] == {"connect": 2, "read": 2.5, "write": 2.5, "pool": 2.5}
+    assert all(0 < value <= 2.5 for request in requests for value in request.extensions["timeout"].values())
+    c.deadline_monotonic = 99.9
+    with pytest.raises(httpx.TimeoutException):
+        c.authenticate(SESSION, frames, ts)
+    assert len(requests) == 3
+    c.close()
+
+
+@pytest.mark.parametrize("purpose,timeout_ms", [("enroll", 1000), ("auth", 0), ("auth", 10001),
+                                              ("auth", True), ("auth", "1000")])
+def test_short_session_timeout_is_strictly_auth_only(purpose, timeout_ms):
+    requests = []
+    c = _mock_client(requests)
+    with pytest.raises(ValueError):
+        c.create_session(purpose, "pilot-check", timeout_ms=timeout_ms)
+    assert not requests
+    c.close()
+
+
 def test_live_recognition_signs_one_auth_frame_with_device_and_challenge():
     requests = []
     c = _mock_client(requests, reply={"demo": True, "faces": []})

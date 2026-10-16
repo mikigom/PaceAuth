@@ -113,7 +113,7 @@ def decision_body(body):
     """Ignore the added explicit mode fields while checking legacy decision contracts."""
     if "pad_enabled" in body:
         assert body["pad_enabled"] is True and body["pad_mode"] == "enabled"
-    return {k: v for k, v in body.items() if k not in ("pad_enabled", "pad_mode")}
+    return {k: v for k, v in body.items() if k not in ("pad_enabled", "pad_mode", "enrollment_pad_enabled")}
 
 
 def reason_of(session):
@@ -351,13 +351,14 @@ def test_enroll_incomplete_coverage(dev):
     assert q1("SELECT count(*) FROM subjects WHERE account_id = %s", acct)[0] == 0
 
 
-def test_enroll_pad_failure_is_final(dev):
-    frames = enroll_frames(uid("pad"))
-    frames[5] = frame("x", POSES["UL"], live=False)
-    r, acct, s = enroll(dev, "x", frames=frames)
-    assert r.json()["status"] == "rejected" and r.json()["reason"] == "denied"
-    assert reason_of(s) == "pad_fail"
-    assert q1("SELECT count(*) FROM subjects WHERE account_id = %s", acct)[0] == 0
+def test_enroll_does_not_use_pad_as_registration_gate(dev):
+    ident = uid("pad")
+    frames = enroll_frames(ident)
+    frames[5] = frame(ident, POSES["UL"], live=False)
+    r, acct, s = enroll(dev, ident, frames=frames)
+    assert r.json()["status"] == "active" and r.json()["enrollment_pad_enabled"] is False
+    assert reason_of(s) == "ok"
+    assert q1("SELECT count(*) FROM subjects WHERE account_id = %s", acct)[0] == 1
 
 
 def test_enroll_same_person_failure(dev):
@@ -749,7 +750,8 @@ def test_capture_readiness_and_api_gate_missing_validation(dev):
         a, s = auth(dev, "unvalidated")
         assert a.json()["decision"] == "rejected" and reason_of(s) == "pad_validation_required"
         e, _, s = enroll(dev, "unvalidated")
-        assert e.json()["status"] == "rejected" and reason_of(s) == "pad_validation_required"
+        assert e.json()["status"] == "active" and reason_of(s) == "ok"
+        assert e.json()["enrollment_pad_enabled"] is False
         s = dev.session()
         assert capture(dev, "guide", s, [frame("unvalidated")]).status_code == 200
         observation = capture(dev, "observe", s, [frame("unvalidated") for _ in range(3)])

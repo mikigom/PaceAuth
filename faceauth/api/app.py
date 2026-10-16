@@ -5,7 +5,7 @@ Invariants
 - Fail closed: any DB / engine / search / KMS error -> 503, never a relaxed decision path.
 - Decision responses never expose candidates or scores. Signed capture diagnostics expose only quality/PAD
   measurements; they cannot approve authentication or store templates.
-- A session is consumed (UPDATE ... WHERE consumed_at IS NULL AND expires_at > now() RETURNING) in the same
+- A session is consumed (UPDATE ... WHERE consumed_at IS NULL AND expires_at > clock_timestamp() RETURNING) in the same
   transaction as its decision, approval / step-up row and audit row; the audit row is always the LAST statement.
 - Template outbox events are written under pg_advisory_xact_lock(7001).
 
@@ -40,7 +40,9 @@ from pydantic import BaseModel, Field
 from faceauth.api import policy
 from faceauth.api.clients import Deps, Unavailable
 from faceauth.common import token
+from faceauth.common.femto_pad_experiment import MEASUREMENT_REASONS
 from faceauth.common.packet import b64u, parse_packet, verify_packet
+from faceauth.common.pad_validation import clean_candidate_binding, clean_candidate_measurement
 
 log = logging.getLogger("faceauth.api")
 
@@ -48,6 +50,9 @@ TTL = {"enroll": 180, "auth": 30}          # session lifetime, seconds (§6)
 APPROVAL_TTL, STEPUP_TTL = 30, 120         # approval token exp = iat + 30 s; step-up must complete within 120 s
 LOCKOUT_REJECTS = 10                       # >= 10 rejected auth decisions of a device in 5 min -> 429
 MAX_FRAMES = {"enroll": 64, "auth": 16}
+PAD_DIAGNOSTIC_REASONS = MEASUREMENT_REASONS | frozenset((
+    "plane_residual_mm", "nose_protrusion_mm", "measurement_invalid", "profile_not_ready",
+))
 MAX_BODY = 32 << 20                        # the gateway enforces the same limit
 C = SimpleNamespace(cfg=None, pool=None, deps=None)
 
@@ -78,7 +83,12 @@ class Config:
         self.consent_version = e["FA_CONSENT_VERSION"]
         self.high_risk = {a.strip() for a in e.get("FA_HIGH_RISK_ACTIONS", "").split(",") if a.strip()}
         self.min_dirs = int(e.get("FA_ENROLL_MIN_DIRS", "9"))
-        self.pad_enabled = e.get("FA_PILOT_DISABLE_PAD", "0") != "1"
+        self.pad_mode = e.get("FA_PAD_MODE") or (
+            "disabled_pilot" if e.get("FA_PILOT_DISABLE_PAD", "0") == "1" else "enabled")
+        if self.pad_mode not in ("enabled", "disabled_pilot", "femto_geometry_pilot", "femto_geometry_experimental"):
+            raise RuntimeError("invalid FA_PAD_MODE")
+        self.pad_enabled = self.pad_mode != "disabled_pilot"
+        self.pad_profile_sha256 = e.get("FA_FEMTO_PAD_PROFILE_SHA256", "")
         # device identity headers are honoured only from these peers (hostnames or IPs): the gateway
         self.trusted_proxies = [h.strip() for h in e.get("FA_TRUSTED_PROXIES", "gateway").split(",") if h.strip()]
         self.approval_key = serialization.load_pem_private_key(
@@ -99,7 +109,8 @@ async def lifespan(_app):
     await pool.open(wait=False)  # start even if the DB is down: requests then fail closed (503)
     C.cfg, C.pool = cfg, pool
     C.deps = Deps(cfg.engine_urls, cfg.search_urls, cfg.kms_url, cfg.kms_token, cfg.admin_token,
-                  pad_enabled=cfg.pad_enabled)
+                  pad_enabled=cfg.pad_enabled, pad_mode=cfg.pad_mode,
+                  pad_profile_sha256=cfg.pad_profile_sha256)
     try:
         yield
     finally:
@@ -242,7 +253,7 @@ def _integrity(header: dict, sig: bytes, frames: list, dev: dict, purpose: str) 
 async def _session(conn, sid: uuid.UUID, device_id: str, purpose: str, challenge):
     """-> (session, reason). session is None when it must not be consumed by this request (absent, another
     device's, wrong purpose, already consumed or expired); else reason is None or "challenge_mismatch"."""
-    s = await _one(conn, "SELECT *, consumed_at IS NULL AS unconsumed, expires_at > now() AS live "
+    s = await _one(conn, "SELECT *, consumed_at IS NULL AS unconsumed, expires_at > clock_timestamp() AS live "
                          "FROM sessions WHERE id = %s", (sid,))
     if s is None:
         return None, "session_not_found"
@@ -261,8 +272,10 @@ async def _session(conn, sid: uuid.UUID, device_id: str, purpose: str, challenge
 
 async def _consume(conn, sid, decision: str, reason: str) -> bool:
     """Atomic single use: False => already consumed / expired meanwhile (replay) -> the caller rejects."""
-    row = await _one(conn, "UPDATE sessions SET consumed_at = now(), decision = %s, reason = %s "
-                           "WHERE id = %s AND consumed_at IS NULL AND expires_at > now() RETURNING id",
+    # Subject locking before this call may wait beyond the transaction start.
+    # Check the current database clock so that wait cannot extend authentication.
+    row = await _one(conn, "UPDATE sessions SET consumed_at = clock_timestamp(), decision = %s, reason = %s "
+                           "WHERE id = %s AND consumed_at IS NULL AND expires_at > clock_timestamp() RETURNING id",
                      (decision, reason, sid))
     return row is not None
 
@@ -279,6 +292,28 @@ def _check_model(an: dict, active):
 
 
 def _pad_validated(an: dict, calib_version: str) -> bool:
+    # The experimental branch checks configuration integrity, not empirical
+    # validation. Its distinct mode is retained in every result/signed token.
+    if _pad_mode()["pad_mode"] == "femto_geometry_experimental":
+        experiment = an.get("pad_experiment")
+        expected = getattr(C.cfg, "pad_profile_sha256", "")
+        return (isinstance(experiment, dict) and experiment.get("ready") is True
+                and experiment.get("experimental") is True
+                and experiment.get("production_validated") is False
+                and experiment.get("empirical_validation") == "not_evaluated"
+                and experiment.get("scope") == ["print", "replay"]
+                and len(expected) == 64 and experiment.get("profile_sha256") == expected
+                and experiment.get("calib_version") == calib_version
+                and an.get("calib_version") == calib_version)
+    if _pad_mode()["pad_mode"] == "femto_geometry_pilot":
+        validation = an.get("pad_pilot_validation")
+        expected = getattr(C.cfg, "pad_profile_sha256", "")
+        return (isinstance(validation, dict) and validation.get("ready") is True
+                and validation.get("experimental") is True
+                and validation.get("scope") == ["print", "replay"]
+                and len(expected) == 64 and validation.get("profile_sha256") == expected
+                and validation.get("calib_version") == calib_version
+                and an.get("calib_version") == calib_version)
     validation = an.get("pad_validation")
     return (isinstance(validation, dict) and validation.get("ready") is True
             and validation.get("calib_version") == calib_version and an.get("calib_version") == calib_version)
@@ -286,13 +321,22 @@ def _pad_validated(an: dict, calib_version: str) -> bool:
 
 def _pad_mode():
     enabled = getattr(C.cfg, "pad_enabled", True)
-    return {"pad_enabled": enabled, "pad_mode": "enabled" if enabled else "disabled_pilot"}
+    mode = getattr(C.cfg, "pad_mode", "enabled" if enabled else "disabled_pilot")
+    result = {"pad_enabled": enabled, "pad_mode": mode}
+    if mode in ("femto_geometry_pilot", "femto_geometry_experimental"):
+        result["pad_profile_sha256"] = getattr(C.cfg, "pad_profile_sha256", "")
+    return result
 
 
-def _pad_required(an: dict) -> bool:
+def _pad_required(an: dict, *, profile_required=True) -> bool:
     mode = _pad_mode()
     if an.get("pad_enabled") is not mode["pad_enabled"] or an.get("pad_mode") != mode["pad_mode"]:
         raise Unavailable("pad_mode_mismatch")
+    profile_key = "pad_experiment" if mode["pad_mode"] == "femto_geometry_experimental" else "pad_pilot_validation"
+    if profile_required and mode["pad_mode"] in ("femto_geometry_pilot", "femto_geometry_experimental") and (
+            not mode["pad_profile_sha256"] or
+            (an.get(profile_key) or {}).get("profile_sha256") != mode["pad_profile_sha256"]):
+        raise Unavailable("pad_profile_mismatch")
     return mode["pad_enabled"]
 
 
@@ -365,10 +409,14 @@ class SessionIn(BaseModel):
     purpose: Literal["enroll", "auth"]
     device_id: str = Field(min_length=1, max_length=64)
     action_id: str = Field(min_length=1, max_length=128)
+    timeout_ms: int | None = Field(default=None, strict=True, ge=1, le=10000)
 
 
 @app.post("/v1/sessions")
 async def create_session(body: SessionIn, request: Request):
+    if body.timeout_ms is not None and body.purpose != "auth":
+        raise HTTPException(422, "timeout_requires_auth")
+    ttl = body.timeout_ms / 1000 if body.timeout_ms is not None else TTL[body.purpose]
     async with C.pool.connection() as conn:
         dev = await _device(request, conn, body.device_id)
         rejects = await _one(conn, "SELECT count(*) AS n FROM sessions WHERE device_id = %s AND purpose = 'auth' "
@@ -378,8 +426,8 @@ async def create_session(body: SessionIn, request: Request):
             raise HTTPException(429, "device_locked")
         sid, challenge = uuid.uuid4(), b64u(secrets.token_bytes(32))
         row = await _one(conn, "INSERT INTO sessions (id, purpose, device_id, action_id, challenge, expires_at) "
-                               "VALUES (%s, %s, %s, %s, %s, now() + %s * interval '1 second') RETURNING expires_at",
-                         (sid, body.purpose, dev["id"], body.action_id, challenge, TTL[body.purpose]))
+                               "VALUES (%s, %s, %s, %s, %s, clock_timestamp() + %s * interval '1 second') RETURNING expires_at",
+                         (sid, body.purpose, dev["id"], body.action_id, challenge, ttl))
     return {"session_id": str(sid), "challenge": challenge, "expires_at": row["expires_at"].isoformat()}
 
 
@@ -498,15 +546,65 @@ async def capture_observe(request: Request):
     # Never return embeddings, RGB-D-IR images, identity scores, or an approval from diagnostics.
     pad_fields = ("score", "live", "nonresponse", "cnn", "checks", "failed")
     measured = []
+    try:
+        candidate_binding = clean_candidate_binding(an["candidate_binding"]) if an.get("candidate_binding") is not None else None
+    except (ValueError, TypeError) as exc:
+        raise Unavailable("invalid candidate measurement binding") from exc
     for frame in an["frames"]:
         pad = frame.get("pad")
-        measured.append({"ok": frame.get("ok"), "reasons": frame.get("reasons", []),
-                         "quality": frame.get("quality", {}),
-                         "pad": {k: pad[k] for k in pad_fields if k in pad} if isinstance(pad, dict) else None})
+        item = {"ok": frame.get("ok"), "reasons": frame.get("reasons", []),
+                "quality": frame.get("quality", {}),
+                "pad": {k: pad[k] for k in pad_fields if k in pad} if isinstance(pad, dict) else None}
+        if "pad_candidate" in frame:
+            try:
+                if candidate_binding is None:
+                    raise ValueError("candidate measurement requires binding")
+                item["pad_candidate"] = clean_candidate_measurement(frame["pad_candidate"])
+            except (ValueError, TypeError) as exc:
+                raise Unavailable("invalid candidate measurements") from exc
+        measured.append(item)
     return {"diagnostic": True, "capture_purpose": header["capture_purpose"],
             "frames": measured, "versions": an["versions"],
             "pad_validation": an.get("pad_validation"), "model_binding": an.get("model_binding"),
+            "candidate_binding": candidate_binding,
             "calib_version": an.get("calib_version")}
+
+
+def _auth_pad_diagnostics(analysis):
+    """Bounded audit counts only; never input to a decision or public response.
+
+    Failed includes nonresponses. Unmeasured means that PAD did not run; it is
+    separate from a measured failure. Multiple failed conditions can apply to
+    the same frame, so reason counts need not sum to failed_frames.
+    """
+    if _pad_mode()["pad_mode"] != "femto_geometry_experimental":
+        return {}
+    frames = analysis.get("frames")
+    if not isinstance(frames, list):
+        return {}
+    summary = {"schema_version": 1, "total_frames": min(len(frames), MAX_FRAMES["auth"]),
+               "passed_frames": 0, "failed_frames": 0, "nonresponse_frames": 0,
+               "unmeasured_frames": 0, "truncated": len(frames) > MAX_FRAMES["auth"],
+               "reason_counts": {}}
+    for frame in frames[:MAX_FRAMES["auth"]]:
+        pad = frame.get("pad") if isinstance(frame, dict) else None
+        if not isinstance(pad, dict):
+            summary["unmeasured_frames"] += 1
+            reasons = {"not_measured"}
+        elif pad.get("live") is True:
+            summary["passed_frames"] += 1
+            continue
+        else:
+            summary["failed_frames"] += 1
+            summary["nonresponse_frames"] += int(pad.get("nonresponse") is True)
+            failed = pad.get("failed")
+            reasons = {reason for reason in (failed[:32] if isinstance(failed, list) else [])
+                       if isinstance(reason, str) and reason in PAD_DIAGNOSTIC_REASONS}
+            if not reasons:
+                reasons = {"unspecified_failure"}
+        for reason in sorted(reasons):
+            summary["reason_counts"][reason] = summary["reason_counts"].get(reason, 0) + 1
+    return {"pad_diagnostics": summary}
 
 
 @app.post("/v1/authentications")
@@ -528,20 +626,21 @@ async def authenticate(request: Request):
     an = await C.deps.analyze("auth", frames, dev["calib_version"])
     _check_model(an, active)
     pad_required = _pad_required(an)
+    diagnostics = _auth_pad_diagnostics(an)
     if pad_required and not _pad_validated(an, dev["calib_version"]):
-        return await _auth_final(sess, dev, "pad_validation_required")
+        return await _auth_final(sess, dev, "pad_validation_required", diagnostics)
     bad = policy.frame_reasons(an["frames"])
     if bad:                                                            # 2. all modalities, one face, quality
-        return await _auth_final(sess, dev, "quality:" + ",".join(bad))
+        return await _auth_final(sess, dev, "quality:" + ",".join(bad), diagnostics)
     if pad_required and not policy.pad_live(an["frames"]):            # 3. PAD, unless explicitly disabled for pilot
-        return await _auth_final(sess, dev, "pad_fail")
+        return await _auth_final(sess, dev, "pad_fail", diagnostics)
     embs = _embeddings(an)
     consistent, min_cos = policy.same_person_sequence(embs, C.cfg.t_same)
     if not consistent:
-        return await _auth_final(sess, dev, "same_person", {"min_pair_cos": round(min_cos, 4)})
+        return await _auth_final(sess, dev, "same_person", {"min_pair_cos": round(min_cos, 4), **diagnostics})
     subject, why, top1, top2 = policy.identify(await C.deps.search(active, embs), C.cfg.t_id,
                                                C.cfg.margin)               # 4. threshold AND margin
-    scores = {"top1": round(top1, 4), "top2": round(top2, 4)}         # audit only, never returned
+    scores = {"top1": round(top1, 4), "top2": round(top2, 4), **diagnostics}  # audit only, never returned
     return await _auth_final(sess, dev, why, scores, subject)
 
 
@@ -594,7 +693,8 @@ async def complete_stepup(stepup_id: uuid.UUID, body: AssertionIn, request: Requ
     # A pending face factor cannot change its PAD provenance across a pilot-mode switch.
     original_mode = (origin or {}).get("detail", {})
     if why is None and (original_mode.get("pad_enabled", True) is not _pad_mode()["pad_enabled"]
-                       or original_mode.get("pad_mode", "enabled") != _pad_mode()["pad_mode"]):
+                       or original_mode.get("pad_mode", "enabled") != _pad_mode()["pad_mode"]
+                       or original_mode.get("pad_profile_sha256") != _pad_mode().get("pad_profile_sha256")):
         why = "session_pad_mode_changed"
     out = {"decision": "rejected"}
     async with C.pool.connection() as conn, conn.transaction():
@@ -669,7 +769,8 @@ async def enroll(request: Request):
         if sess is None:
             await audit(conn, _actor(dev), "enroll_decision", session_id=sid, device_id=dev["id"],
                         detail={"status": "rejected", "reason": why, **_pad_mode()})
-            return {"status": "rejected", "coverage": {}, "reason": "session", **_pad_mode()}
+            return {"status": "rejected", "coverage": {}, "reason": "session", **_pad_mode(),
+                    "enrollment_pad_enabled": False}
         active = await _active_recog(conn)
         a, why_a = _assertion(header.get("account_assertion"), sess["challenge"])
         existing = a and await _one(conn, "SELECT id, status FROM subjects WHERE account_id = %s AND "
@@ -686,16 +787,15 @@ async def enroll(request: Request):
         return await _enroll_commit(sess, dev, "already_enrolled")
     an = await C.deps.analyze("enroll", frames, dev["calib_version"])
     _check_model(an, active)
-    pad_required = _pad_required(an)
-    if pad_required and not _pad_validated(an, dev["calib_version"]):
-        return await _enroll_commit(sess, dev, "pad_validation_required")
+    # This endpoint is purpose-bound to an enrollment session above. Maintain
+    # deployment consistency, but do not require PAD for managed registration.
+    # Authentication continues to require PAD independently on every attempt.
+    _pad_required(an, profile_required=False)
     fr = an["frames"]
     dirs, cov = policy.coverage([f.get("pose") if f.get("ok") is True else None for f in fr], _direction_of())
     bad = policy.frame_reasons(fr)
     if bad:
         return await _enroll_commit(sess, dev, "quality:" + ",".join(bad), cov)
-    if pad_required and not policy.pad_live(fr):
-        return await _enroll_commit(sess, dev, "pad_fail", cov)
     if sum(cov.values()) < cfg.min_dirs:
         return await _enroll_commit(sess, dev, "coverage", cov)
     embs = _embeddings(an)
@@ -741,8 +841,10 @@ async def _enroll_commit(sess, dev, reason: str, coverage=None, detail=None, sto
         await audit(conn, _actor(dev), "enroll_decision", subject_id=subject_id if out else None,
                     session_id=sess["id"], device_id=dev["id"],
                     detail={"status": status, "reason": reason, **out, **(detail or {}),
-                            "directions": sum((coverage or {}).values()), **_pad_mode()})
-    body = {"status": status, **out, "coverage": coverage or {}, "reason": policy.external(reason), **_pad_mode()}
+                            "directions": sum((coverage or {}).values()), **_pad_mode(),
+                            "enrollment_pad_enabled": False})
+    body = {"status": status, **out, "coverage": coverage or {}, "reason": policy.external(reason), **_pad_mode(),
+            "enrollment_pad_enabled": False}
     return JSONResponse(body, status_code=409 if reason == "already_enrolled" else 200)
 
 
